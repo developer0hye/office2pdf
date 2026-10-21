@@ -8,6 +8,8 @@
 //! - Each line break's `w:clear` (issue #2230). docx-rs keeps only a `w:br`'s
 //!   `w:type`, so a break that resumes text below a floating table reached the
 //!   converter as a plain one.
+//! - A Word horizontal line, the `v:rect o:hr="t"` in the run's `w:pict`
+//!   (issue #2251). docx-rs keeps a VML `v:shape` only.
 //!
 //! TODO(docx-rs drops w:clear): read it from `docx_rs::Break` once the
 //! published fork carries it.
@@ -28,7 +30,7 @@ use std::cell::Cell;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 
-use crate::ir::{BreakClear, Ligatures};
+use crate::ir::{BreakClear, HorizontalRule, Ligatures};
 use crate::parser::xml_util::{OOXML_XML_VERSION, decode_general_ref};
 
 use super::super::styles::parse_ligatures_value;
@@ -36,6 +38,7 @@ use super::super::text::is_line_break;
 use super::paragraph_cursor::{
     ParagraphCursor, ScannedParagraph, attribute_value, is_skipped_subtree,
 };
+use super::vml::horizontal_rule;
 
 /// A `w:r` as the scan saw it.
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -48,6 +51,8 @@ pub(in super::super) struct ScannedRun {
     /// The `w:clear` of each of the run's line breaks, in order: every `w:br`
     /// but a page or column break, which never clears.
     line_break_clears: Vec<Option<BreakClear>>,
+    /// The VML horizontal rules the run's own `w:pict` holds (issue #2251).
+    horizontal_rules: Vec<HorizontalRule>,
 }
 
 /// What the scan read for one converted run.
@@ -57,6 +62,7 @@ pub(in super::super) struct RunScan<'a> {
     /// One entry per line break of the run, in order, or none at all when
     /// the scan cannot vouch for them.
     pub(in super::super) line_break_clears: &'a [Option<BreakClear>],
+    pub(in super::super) horizontal_rules: &'a [HorizontalRule],
 }
 
 /// A `w:br`'s `w:clear`; `none`, an absent value and an unknown one clear
@@ -123,6 +129,9 @@ impl RunScanContext {
         let mut in_text = false;
         let mut skipped_depth: usize = 0;
         let mut dropped_depth: usize = 0;
+        // The converted run whose own `w:pict` is open. A VML picture is
+        // otherwise skipped, but its horizontal rule is the run's content.
+        let mut pict_run: Option<(usize, usize)> = None;
 
         // The run whose own content is being read: the innermost open `w:r`,
         // when it belongs to the innermost open paragraph.
@@ -141,6 +150,9 @@ impl RunScanContext {
                     let name = element.local_name();
                     if skipped_depth > 0 {
                         skipped_depth -= usize::from(is_skipped_subtree(name.as_ref()));
+                        if skipped_depth == 0 {
+                            pict_run = None;
+                        }
                         continue;
                     }
                     dropped_depth -= usize::from(dropped_depth > 0 && drops_runs(name.as_ref()));
@@ -188,6 +200,15 @@ impl RunScanContext {
             };
             let name = element.local_name();
             if skipped_depth > 0 || is_skipped_subtree(name.as_ref()) {
+                if skipped_depth == 0 && !is_empty && name.as_ref() == b"pict" {
+                    pict_run = current_run(&open_paragraphs, &open_runs);
+                } else if skipped_depth == 1
+                    && name.as_ref() == b"rect"
+                    && let Some((paragraph, run)) = pict_run
+                    && let Some(rule) = horizontal_rule(&reader, &element)
+                {
+                    paragraphs[paragraph].value[run].horizontal_rules.push(rule);
+                }
                 skipped_depth += usize::from(!is_empty && is_skipped_subtree(name.as_ref()));
                 continue;
             }
@@ -336,6 +357,7 @@ impl<'a> ParagraphRunScan<'a> {
         RunScan {
             ligatures: scanned.ligatures,
             line_break_clears,
+            horizontal_rules: &scanned.horizontal_rules,
         }
     }
 }
@@ -343,6 +365,7 @@ impl<'a> ParagraphRunScan<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ir::{Alignment, HorizontalRulePaint, HorizontalRuleWidth};
 
     const STANDARD: Ligatures = Ligatures {
         standard: true,
@@ -367,7 +390,88 @@ mod tests {
             text_key: text_key.to_string(),
             ligatures,
             line_break_clears: Vec::new(),
+            horizontal_rules: Vec::new(),
         }
+    }
+
+    fn rule_run(horizontal_rules: Vec<HorizontalRule>) -> ScannedRun {
+        ScannedRun {
+            horizontal_rules,
+            ..ScannedRun::default()
+        }
+    }
+
+    /// Word's *Insert > Horizontal Line* is a VML `v:rect` in the run's
+    /// `w:pict`, which docx-rs drops (issue #2251). Its width is `o:hrpct`
+    /// tenths of a percent, and the `style` width only with `o:hrpct="0"`.
+    /// Without `o:hrpct`, only Word's own unitless `width:0` is the whole
+    /// paragraph: Word drew a Google Docs `width:0.0pt` rule as a one-twip
+    /// sliver, so a rule whose width is written any other way is not read.
+    /// Any other `v:rect` is not a rule, and a rule in a text box's
+    /// `mc:Fallback` copy never converts.
+    #[test]
+    fn reads_the_horizontal_rule_a_runs_pict_holds() {
+        let xml = r##"<w:document xmlns:w="urn:w" xmlns:v="urn:v" xmlns:o="urn:o" xmlns:mc="urn:mc"><w:body>
+          <w:p>
+            <w:r><w:t>before</w:t></w:r>
+            <w:r><w:pict><v:rect style="width:0;height:1.5pt" o:hralign="center" o:hrstd="t" o:hr="t" fillcolor="#a0a0a0" stroked="f"/></w:pict></w:r>
+            <w:r><w:pict><v:rect style="width:100pt;height:20pt" fillcolor="red"/></w:pict></w:r>
+            <w:r><mc:AlternateContent><mc:Fallback><w:pict>
+              <v:rect style="width:0;height:3pt" o:hr="t"/>
+            </w:pict></mc:Fallback></mc:AlternateContent></w:r>
+          </w:p>
+          <w:p><w:r><w:pict>
+            <v:rect style="width:291.7pt;height:2pt" o:hrpct="609" o:hralign="right" o:hrnoshade="t" o:hr="t" fillcolor="gray"/>
+          </w:pict></w:r></w:p>
+          <w:p><w:r><w:pict>
+            <v:rect style="width:120pt;height:1pt" o:hrpct="0" o:hr="t" fillcolor="#123"/>
+          </w:pict></w:r></w:p>
+          <w:p>
+            <w:r><w:pict><v:rect style="width:0.0pt;height:1.5pt" o:hr="t" o:hrstd="t" o:hralign="center" fillcolor="#A0A0A0" stroked="f"/></w:pict></w:r>
+            <w:r><w:pict><v:rect style="width:120pt;height:1.5pt" o:hr="t" fillcolor="#a0a0a0"/></w:pict></w:r>
+            <w:r><w:pict><v:rect style="height:1.5pt" o:hr="t" fillcolor="#a0a0a0"/></w:pict></w:r>
+          </w:p>
+        </w:body></w:document>"##;
+
+        let full_width = HorizontalRule {
+            width: HorizontalRuleWidth::Fraction(1.0),
+            height: 1.5,
+            alignment: Alignment::Center,
+            paint: HorizontalRulePaint::Shaded,
+        };
+        let partial_solid = HorizontalRule {
+            width: HorizontalRuleWidth::Fraction(0.609),
+            height: 2.0,
+            alignment: Alignment::Right,
+            paint: HorizontalRulePaint::Solid(crate::ir::Color::new(0x80, 0x80, 0x80)),
+        };
+        let stated_width = HorizontalRule {
+            width: HorizontalRuleWidth::Points(120.0),
+            height: 1.0,
+            alignment: Alignment::Left,
+            paint: HorizontalRulePaint::Shaded,
+        };
+        assert_eq!(
+            scanned(xml),
+            vec![
+                vec![
+                    scanned_run("before", None),
+                    rule_run(vec![full_width]),
+                    rule_run(Vec::new()),
+                    rule_run(Vec::new()),
+                ],
+                vec![rule_run(vec![partial_solid])],
+                vec![rule_run(vec![stated_width])],
+                vec![
+                    rule_run(Vec::new()),
+                    rule_run(Vec::new()),
+                    rule_run(vec![HorizontalRule {
+                        alignment: Alignment::Left,
+                        ..full_width
+                    }]),
+                ],
+            ]
+        );
     }
 
     #[test]

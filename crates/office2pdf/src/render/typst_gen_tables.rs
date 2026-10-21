@@ -4103,6 +4103,10 @@ fn generate_cell_paragraph(
         );
     }
     match paragraph_mark_line_pt {
+        // TODO(#2251 rules in table cells): a cell paragraph's horizontal
+        // rule is not drawn. Word drew those in docxide-pdf's
+        // `maine_criminal_history_record` autofit cells as one-twip slivers,
+        // and no export of a rule in another cell is at hand.
         Some(height_pt) => {
             let _ = write!(out, "#box(width: 0pt, height: {}pt)", format_f64(height_pt));
         }

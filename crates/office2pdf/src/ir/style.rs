@@ -177,6 +177,10 @@ pub struct ParagraphStyle {
     /// `border` is — four more `f64` inline push the paragraph-carrying enum
     /// variants past clippy's size threshold.
     pub border_space: Option<Box<super::elements::Insets>>,
+    /// A VML horizontal rule that is the paragraph's only content, drawn at the
+    /// bottom of its line outside table cells (issue #2251). Boxed for the
+    /// same reason `border` is.
+    pub horizontal_rule: Option<Box<HorizontalRule>>,
     /// The font family of the paragraph mark — the empty run PowerPoint keeps
     /// after the last character, written as `<a:endParaRPr>`.
     ///
@@ -222,6 +226,37 @@ pub struct ParagraphStyle {
     /// glyphs whose hidden advance precedes that prefix; `Some("")` still
     /// selects the split layout when no leading glyph is reserved.
     pub sheet_number_format_accounting_leading_reserved_glyphs: Option<Box<str>>,
+}
+
+/// Word's *Insert > Horizontal Line*: a VML `v:rect` with `o:hr="t"`.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct HorizontalRule {
+    pub width: HorizontalRuleWidth,
+    /// The rule's height in points, from its `style`.
+    pub height: f64,
+    /// Where a rule narrower than its paragraph sits (`o:hralign`).
+    pub alignment: Alignment,
+    pub paint: HorizontalRulePaint,
+}
+
+/// How wide a horizontal rule is.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum HorizontalRuleWidth {
+    /// A fraction of the paragraph's width between its indents: `o:hrpct` in
+    /// tenths of a percent, or the whole width when the attribute is absent
+    /// and the `style` width is Word's unitless `0`.
+    Fraction(f64),
+    /// The `style` width in points, which Word uses only with `o:hrpct="0"`.
+    Points(f64),
+}
+
+/// How a horizontal rule is painted.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum HorizontalRulePaint {
+    /// Word's default shaded rule, which ignores `fillcolor`.
+    Shaded,
+    /// `o:hrnoshade="t"`: a solid bar in the rule's `fillcolor`.
+    Solid(Color),
 }
 
 /// A custom tab stop definition.

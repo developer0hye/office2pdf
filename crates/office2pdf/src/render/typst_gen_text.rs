@@ -485,6 +485,10 @@ pub(super) fn generate_paragraph(
             "#v({}pt)",
             format_f64(empty_paragraph_placeholder_height_pt)
         );
+        if let Some(rule) = style.horizontal_rule.as_deref() {
+            out.push('\n');
+            write_horizontal_rule(out, rule);
+        }
         if wraps_in_style_block {
             out.push_str("\n]");
         }
@@ -811,6 +815,53 @@ pub(super) fn paragraph_indent_pt(style: &ParagraphStyle) -> Option<(f64, f64)> 
     (left != 0.0 || right != 0.0).then_some((left, right))
 }
 
+/// The black outline Word for Mac paints around a shaded horizontal rule,
+/// whatever its `fillcolor`, and how far inside the rule's top and bottom its
+/// path runs. In docxide-pdf's `isla_language_lesson_plan`, a 1.5pt rule in an
+/// Arial 12pt header paragraph below an 18.95pt table row is stroked at y
+/// 67.40–68.50, where that 13.8pt line ends at 68.75. A body rule in
+/// `croatian_grant_guidelines` and a 60.9% header rule in
+/// `slovak_pedagogical_practice_agreement` are stroked alike: a 1.10pt-tall
+/// path under a 0.75pt black line (issue #2251). Measured on 1.5pt rules only.
+const SHADED_RULE_OUTLINE_PT: f64 = 0.75;
+const SHADED_RULE_INSET_PT: f64 = 0.2;
+
+/// Place a paragraph's horizontal rule on the bottom of the block it is
+/// written into, which spans the paragraph's line between its indents (issue
+/// #2251). Word stands the rule on the bottom of its line.
+fn write_horizontal_rule(out: &mut String, rule: &HorizontalRule) {
+    let width: String = match rule.width {
+        HorizontalRuleWidth::Fraction(fraction) => format!("{}%", format_f64(fraction * 100.0)),
+        HorizontalRuleWidth::Points(points) => format!("{}pt", format_f64(points)),
+    };
+    let alignment: &str = match rule.alignment {
+        Alignment::Center => "center",
+        Alignment::Right => "right",
+        Alignment::Left | Alignment::Justify => "left",
+    };
+    match rule.paint {
+        HorizontalRulePaint::Shaded => {
+            let _ = write!(
+                out,
+                "#place(bottom + {alignment}, dy: -{}pt, rect(width: {width}, height: {}pt, \
+                 fill: none, stroke: {}pt + rgb(0, 0, 0)))",
+                format_f64(SHADED_RULE_INSET_PT),
+                format_f64((rule.height - 2.0 * SHADED_RULE_INSET_PT).max(0.0)),
+                format_f64(SHADED_RULE_OUTLINE_PT),
+            );
+        }
+        HorizontalRulePaint::Solid(color) => {
+            let _ = write!(
+                out,
+                "#place(bottom + {alignment}, rect(width: {width}, height: {}pt, fill: {}, \
+                 stroke: none))",
+                format_f64(rule.height),
+                rgb(&color),
+            );
+        }
+    }
+}
+
 fn write_paragraph_indent_inset(out: &mut String, indent: Option<(f64, f64)>) {
     if let Some((left, right)) = indent {
         let _ = write!(
@@ -828,7 +879,10 @@ fn write_paragraph_indent_inset(out: &mut String, indent: Option<(f64, f64)>) {
 /// first-line origin separately. Counting it here would add a duplicate bare
 /// wrapper that only leaks Typst's default block spacing.
 pub(super) fn needs_block_wrapper(style: &ParagraphStyle) -> bool {
-    style.space_before.is_some()
+    // A horizontal rule is placed against the bottom of its paragraph's own
+    // block (issue #2251).
+    style.horizontal_rule.is_some()
+        || style.space_before.is_some()
         || style.space_after.is_some()
         || style.background.is_some()
         || style.border.is_some()

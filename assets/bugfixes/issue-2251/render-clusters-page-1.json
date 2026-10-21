@@ -1,0 +1,6276 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 3318.912,
+      "bbox_pt": {
+        "height": 51.84,
+        "width": 77.76,
+        "x": 329.28,
+        "y": 84.0
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2408"
+        ],
+        "kind": "issue",
+        "note": "Overlap of Word's second header logo with our raised body title: both causes in one component."
+      },
+      "id": "p1-52e641a65066",
+      "region": "top"
+    },
+    {
+      "area_pt2": 3306.7008,
+      "bbox_pt": {
+        "height": 49.92,
+        "width": 66.24,
+        "x": 78.72,
+        "y": 147.36
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-903454fbb382",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 895.104,
+      "bbox_pt": {
+        "height": 48.48,
+        "width": 27.36,
+        "x": 85.92,
+        "y": 69.12
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-f78638aa9d88",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 655.488,
+      "bbox_pt": {
+        "height": 1.92,
+        "width": 454.56,
+        "x": 71.04,
+        "y": 557.28
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-30c8273b0f2a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 595.8144,
+      "bbox_pt": {
+        "height": 24.0,
+        "width": 52.8,
+        "x": 408.96,
+        "y": 109.92
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2408"
+        ],
+        "kind": "issue",
+        "note": "Overlap of Word's second header logo with our raised body title: both causes in one component."
+      },
+      "id": "p1-bee817775417",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 436.3776,
+      "bbox_pt": {
+        "height": 1.44,
+        "width": 454.08,
+        "x": 70.56,
+        "y": 470.88
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-e4fbaffb2b22",
+      "region": "center"
+    },
+    {
+      "area_pt2": 411.264,
+      "bbox_pt": {
+        "height": 24.96,
+        "width": 50.4,
+        "x": 177.6,
+        "y": 210.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-7eeb87a7cb27",
+      "region": "top"
+    },
+    {
+      "area_pt2": 387.9936,
+      "bbox_pt": {
+        "height": 28.8,
+        "width": 48.96,
+        "x": 242.4,
+        "y": 209.76
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-9fbd8f8701fa",
+      "region": "top"
+    },
+    {
+      "area_pt2": 387.5328,
+      "bbox_pt": {
+        "height": 28.8,
+        "width": 47.04,
+        "x": 376.32,
+        "y": 210.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-99f6595f110d",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 376.2432,
+      "bbox_pt": {
+        "height": 24.48,
+        "width": 41.76,
+        "x": 107.52,
+        "y": 332.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-a5a573571e30",
+      "region": "left"
+    },
+    {
+      "area_pt2": 365.8752,
+      "bbox_pt": {
+        "height": 28.32,
+        "width": 38.88,
+        "x": 289.92,
+        "y": 210.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-b32357d750dc",
+      "region": "top"
+    },
+    {
+      "area_pt2": 336.1536,
+      "bbox_pt": {
+        "height": 23.52,
+        "width": 32.64,
+        "x": 289.92,
+        "y": 331.68
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-d3df013491b5",
+      "region": "center"
+    },
+    {
+      "area_pt2": 332.4672,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 54.24,
+        "x": 177.6,
+        "y": 96.0
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-23ff354ade2d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 326.2464,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 37.92,
+        "x": 424.32,
+        "y": 90.72
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-3d747fda3cbd",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 315.1872,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 32.16,
+        "x": 329.76,
+        "y": 331.68
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-1ef564e3b2bd",
+      "region": "center"
+    },
+    {
+      "area_pt2": 309.4272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 55.2,
+        "x": 120.96,
+        "y": 96.0
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-d6e31677f871",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 304.8192,
+      "bbox_pt": {
+        "height": 24.96,
+        "width": 33.6,
+        "x": 144.0,
+        "y": 210.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-30c234abded4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 271.4112,
+      "bbox_pt": {
+        "height": 28.8,
+        "width": 32.16,
+        "x": 348.0,
+        "y": 210.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-82f9c5173c08",
+      "region": "top"
+    },
+    {
+      "area_pt2": 253.2096,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 26.88,
+        "x": 454.56,
+        "y": 331.68
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-88b0dfa86539",
+      "region": "right"
+    },
+    {
+      "area_pt2": 250.2144,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 47.04,
+        "x": 165.12,
+        "y": 84.96
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-6aa818563bd7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 226.0224,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 21.12,
+        "x": 268.32,
+        "y": 333.6
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-58a790d85e0c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 219.1104,
+      "bbox_pt": {
+        "height": 0.48,
+        "width": 456.48,
+        "x": 69.6,
+        "y": 140.16
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-6090228cee99",
+      "region": "top"
+    },
+    {
+      "area_pt2": 218.4192,
+      "bbox_pt": {
+        "height": 24.96,
+        "width": 30.72,
+        "x": 431.04,
+        "y": 210.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-96feb3c30883",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 208.9728,
+      "bbox_pt": {
+        "height": 33.6,
+        "width": 15.36,
+        "x": 229.44,
+        "y": 331.68
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-abadf08b9a13",
+      "region": "center"
+    },
+    {
+      "area_pt2": 194.4576,
+      "bbox_pt": {
+        "height": 28.8,
+        "width": 22.08,
+        "x": 327.36,
+        "y": 209.76
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-d1e8e5f2544c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 182.016,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 21.6,
+        "x": 163.2,
+        "y": 335.52
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-412c2556c726",
+      "region": "left"
+    },
+    {
+      "area_pt2": 180.864,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 31.68,
+        "x": 120.96,
+        "y": 84.96
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-96a93e1455bc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 173.2608,
+      "bbox_pt": {
+        "height": 29.28,
+        "width": 17.28,
+        "x": 242.88,
+        "y": 335.52
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-bac8f48bb67b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 164.5056,
+      "bbox_pt": {
+        "height": 24.96,
+        "width": 17.76,
+        "x": 378.24,
+        "y": 333.6
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-02c852979306",
+      "region": "center"
+    },
+    {
+      "area_pt2": 155.2896,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 16.32,
+        "x": 462.24,
+        "y": 110.4
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-17d221f39a0e",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 155.0592,
+      "bbox_pt": {
+        "height": 35.04,
+        "width": 13.92,
+        "x": 358.56,
+        "y": 320.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-3fee33825ed1",
+      "region": "center"
+    },
+    {
+      "area_pt2": 147.456,
+      "bbox_pt": {
+        "height": 20.64,
+        "width": 16.32,
+        "x": 432.96,
+        "y": 332.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-076b6c550ae6",
+      "region": "right"
+    },
+    {
+      "area_pt2": 130.176,
+      "bbox_pt": {
+        "height": 24.48,
+        "width": 20.64,
+        "x": 229.92,
+        "y": 210.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-7cdf1ac73658",
+      "region": "top"
+    },
+    {
+      "area_pt2": 122.8032,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 16.8,
+        "x": 292.8,
+        "y": 116.16
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-d7b63824d7c5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 121.8816,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 13.44,
+        "x": 185.28,
+        "y": 335.52
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-18f2604a1bc8",
+      "region": "left"
+    },
+    {
+      "area_pt2": 119.808,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 12.96,
+        "x": 410.88,
+        "y": 90.24
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-25e044eeff56",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 119.5776,
+      "bbox_pt": {
+        "height": 25.44,
+        "width": 14.4,
+        "x": 213.12,
+        "y": 108.0
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-1f449dda7d95",
+      "region": "top"
+    },
+    {
+      "area_pt2": 114.7392,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 12.96,
+        "x": 417.6,
+        "y": 335.52
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-8d678dc42b32",
+      "region": "right"
+    },
+    {
+      "area_pt2": 110.8224,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 12.0,
+        "x": 211.2,
+        "y": 335.52
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-38012f6a35c9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 106.9056,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 10.08,
+        "x": 199.2,
+        "y": 331.68
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-529ca510c902",
+      "region": "center"
+    },
+    {
+      "area_pt2": 105.5232,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 24.0,
+        "x": 240.48,
+        "y": 98.4
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-b4b174c6d2a4",
+      "region": "top"
+    },
+    {
+      "area_pt2": 105.2928,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 23.04,
+        "x": 266.4,
+        "y": 316.32
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-6ee052d6fd90",
+      "region": "center"
+    },
+    {
+      "area_pt2": 105.0624,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 13.92,
+        "x": 462.72,
+        "y": 94.08
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-41a52502ddbd",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 104.832,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 12.96,
+        "x": 492.0,
+        "y": 110.4
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-31b0ceefd14b",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 103.4496,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 17.76,
+        "x": 144.48,
+        "y": 116.16
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-15ac7f231d4e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 103.4496,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 17.76,
+        "x": 178.08,
+        "y": 116.16
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-d3b9e55f9080",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 98.1504,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 12.96,
+        "x": 163.68,
+        "y": 116.16
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-7df15abbbf27",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 98.1504,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 12.96,
+        "x": 277.92,
+        "y": 116.16
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-b3e6237a955b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 97.6896,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 18.72,
+        "x": 252.0,
+        "y": 116.16
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-0602fa56d5a0",
+      "region": "top"
+    },
+    {
+      "area_pt2": 96.5376,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 18.24,
+        "x": 262.08,
+        "y": 498.72
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-164ae1e70547",
+      "region": "center"
+    },
+    {
+      "area_pt2": 95.1552,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 13.92,
+        "x": 236.64,
+        "y": 116.16
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-6c7bca9a7de8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 94.0032,
+      "bbox_pt": {
+        "height": 24.96,
+        "width": 13.44,
+        "x": 420.96,
+        "y": 210.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-70da43fb5d8a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 94.0032,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 9.12,
+        "x": 404.16,
+        "y": 335.52
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-599dcec8afa0",
+      "region": "right"
+    },
+    {
+      "area_pt2": 92.3904,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 15.36,
+        "x": 268.8,
+        "y": 426.72
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-395d583a3611",
+      "region": "center"
+    },
+    {
+      "area_pt2": 92.3904,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 15.36,
+        "x": 323.52,
+        "y": 497.28
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-1f8f87655f5a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 91.008,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 14.88,
+        "x": 92.64,
+        "y": 341.28
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-671abde53ff1",
+      "region": "left"
+    },
+    {
+      "area_pt2": 87.7824,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 14.4,
+        "x": 298.08,
+        "y": 426.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-2c7d28d17516",
+      "region": "center"
+    },
+    {
+      "area_pt2": 86.1696,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 9.6,
+        "x": 480.96,
+        "y": 335.52
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-061c4eb05797",
+      "region": "right"
+    },
+    {
+      "area_pt2": 84.7872,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 14.4,
+        "x": 214.56,
+        "y": 356.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-3ab16ca206aa",
+      "region": "center"
+    },
+    {
+      "area_pt2": 83.8656,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 13.44,
+        "x": 107.52,
+        "y": 426.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-0bcd53dbbd56",
+      "region": "left"
+    },
+    {
+      "area_pt2": 83.4048,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 13.92,
+        "x": 352.32,
+        "y": 356.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-3e6ed5049cbc",
+      "region": "center"
+    },
+    {
+      "area_pt2": 82.7136,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 14.4,
+        "x": 211.68,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-9e45cf3d8520",
+      "region": "center"
+    },
+    {
+      "area_pt2": 82.2528,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 15.36,
+        "x": 197.28,
+        "y": 116.16
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-cb835d691936",
+      "region": "top"
+    },
+    {
+      "area_pt2": 80.8704,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 9.12,
+        "x": 153.6,
+        "y": 174.24
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-d1e357199e64",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 79.488,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 14.4,
+        "x": 408.48,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-fe1d4eb4aae8",
+      "region": "right"
+    },
+    {
+      "area_pt2": 76.9536,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 8.64,
+        "x": 154.08,
+        "y": 335.52
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-437cbc5b30e7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 75.1104,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 10.08,
+        "x": 447.84,
+        "y": 335.52
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-051c0762d206",
+      "region": "right"
+    },
+    {
+      "area_pt2": 72.3456,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 22.56,
+        "x": 107.52,
+        "y": 226.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-afe05fdc746f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 70.7328,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 7.2,
+        "x": 261.12,
+        "y": 335.52
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-594f4c7ab737",
+      "region": "center"
+    },
+    {
+      "area_pt2": 70.0416,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 8.16,
+        "x": 509.28,
+        "y": 113.76
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-339f17992b0d",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 69.8112,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 9.6,
+        "x": 332.64,
+        "y": 356.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-4e7adfb0225c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 69.12,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 9.6,
+        "x": 213.6,
+        "y": 429.6
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-9ab9b21aa270",
+      "region": "center"
+    },
+    {
+      "area_pt2": 69.12,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 9.6,
+        "x": 329.76,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-28a60e7a7ef0",
+      "region": "center"
+    },
+    {
+      "area_pt2": 67.0464,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 8.16,
+        "x": 188.16,
+        "y": 177.6
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-63fa1fd87ba0",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 66.1248,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 12.48,
+        "x": 153.12,
+        "y": 84.96
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-331db6fdd48f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 66.1248,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.64,
+        "x": 482.88,
+        "y": 114.24
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-5e0b1975cea9",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 65.2032,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 18.24,
+        "x": 206.88,
+        "y": 320.64
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-152dfcb77091",
+      "region": "center"
+    },
+    {
+      "area_pt2": 65.2032,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 9.12,
+        "x": 233.28,
+        "y": 426.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-d935403f7ff6",
+      "region": "center"
+    },
+    {
+      "area_pt2": 64.7424,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 11.04,
+        "x": 284.16,
+        "y": 351.84
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-b152770e49cd",
+      "region": "center"
+    },
+    {
+      "area_pt2": 64.512,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 9.6,
+        "x": 361.92,
+        "y": 426.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-1e10a7394f02",
+      "region": "center"
+    },
+    {
+      "area_pt2": 64.0512,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 13.44,
+        "x": 289.92,
+        "y": 316.32
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-939bfd6965d2",
+      "region": "center"
+    },
+    {
+      "area_pt2": 63.1296,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 9.12,
+        "x": 199.68,
+        "y": 426.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-d4f8258f07f6",
+      "region": "center"
+    },
+    {
+      "area_pt2": 63.1296,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 9.12,
+        "x": 312.96,
+        "y": 426.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-ad8e66393608",
+      "region": "center"
+    },
+    {
+      "area_pt2": 62.208,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 9.12,
+        "x": 432.48,
+        "y": 425.76
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-ba39ed0af280",
+      "region": "right"
+    },
+    {
+      "area_pt2": 61.9776,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 13.92,
+        "x": 108.48,
+        "y": 248.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-ff43f95a851c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 61.5168,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 9.12,
+        "x": 319.2,
+        "y": 116.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2408"
+        ],
+        "kind": "issue",
+        "note": "Overlap of Word's second header logo with our raised body title: both causes in one component."
+      },
+      "id": "p1-a7187613672c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 61.5168,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 13.44,
+        "x": 185.28,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-ec632b36dafb",
+      "region": "left"
+    },
+    {
+      "area_pt2": 61.2864,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 10.08,
+        "x": 342.72,
+        "y": 426.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-8a375e7e23ef",
+      "region": "center"
+    },
+    {
+      "area_pt2": 61.2864,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 10.08,
+        "x": 471.84,
+        "y": 426.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-3d64e4349ed9",
+      "region": "right"
+    },
+    {
+      "area_pt2": 61.2864,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 10.08,
+        "x": 282.72,
+        "y": 446.88
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-76d0fe03f3c7",
+      "region": "center"
+    },
+    {
+      "area_pt2": 60.3648,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 213.6,
+        "y": 177.6
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-782ae1f5fd81",
+      "region": "top"
+    },
+    {
+      "area_pt2": 60.1344,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 13.92,
+        "x": 478.56,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-774ebebcc849",
+      "region": "right"
+    },
+    {
+      "area_pt2": 59.4432,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 9.6,
+        "x": 322.56,
+        "y": 356.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-8be2d9332ee6",
+      "region": "center"
+    },
+    {
+      "area_pt2": 59.2128,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 7.2,
+        "x": 311.04,
+        "y": 116.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-e36c5a40be92",
+      "region": "top"
+    },
+    {
+      "area_pt2": 59.2128,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 253.44,
+        "y": 177.6
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-9550bf496b78",
+      "region": "top"
+    },
+    {
+      "area_pt2": 58.9824,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 13.92,
+        "x": 481.92,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-e07fbefd13df",
+      "region": "right"
+    },
+    {
+      "area_pt2": 58.752,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 8.16,
+        "x": 153.6,
+        "y": 154.08
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-b31907018d15",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 58.752,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 8.16,
+        "x": 422.88,
+        "y": 249.12
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-272690d82399",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 58.752,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 13.92,
+        "x": 435.84,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-f88ff429751c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 58.752,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 12.96,
+        "x": 193.92,
+        "y": 317.76
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-70c75c87866a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 58.752,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 12.96,
+        "x": 498.72,
+        "y": 341.76
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-e151be235411",
+      "region": "right"
+    },
+    {
+      "area_pt2": 58.5216,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 176.16,
+        "y": 156.96
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-08a69b89f676",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 58.5216,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 13.44,
+        "x": 281.76,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-2cfb417520eb",
+      "region": "top"
+    },
+    {
+      "area_pt2": 58.2912,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 7.68,
+        "x": 205.92,
+        "y": 174.24
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-b36605f46b5f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 57.8304,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 212.16,
+        "y": 156.96
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-d1ee29a91ff2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 57.6,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 8.16,
+        "x": 284.64,
+        "y": 496.32
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-d862ca5cb429",
+      "region": "center"
+    },
+    {
+      "area_pt2": 55.9872,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 15.36,
+        "x": 252.96,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-6b8ada6783c6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 55.7568,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.64,
+        "x": 372.48,
+        "y": 335.52
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-c56aea448932",
+      "region": "center"
+    },
+    {
+      "area_pt2": 55.7568,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.64,
+        "x": 250.56,
+        "y": 356.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-e49d95a9c229",
+      "region": "center"
+    },
+    {
+      "area_pt2": 55.7568,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.64,
+        "x": 268.8,
+        "y": 356.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-d2d04394d8c7",
+      "region": "center"
+    },
+    {
+      "area_pt2": 55.7568,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.64,
+        "x": 343.2,
+        "y": 356.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-99811be8eaf5",
+      "region": "center"
+    },
+    {
+      "area_pt2": 55.296,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 10.56,
+        "x": 221.28,
+        "y": 86.4
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-a9fd8826e466",
+      "region": "top"
+    },
+    {
+      "area_pt2": 54.8352,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 10.56,
+        "x": 186.72,
+        "y": 109.92
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-6bc3ea222bf3",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 54.8352,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 9.12,
+        "x": 242.88,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-361276986378",
+      "region": "center"
+    },
+    {
+      "area_pt2": 54.8352,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 9.12,
+        "x": 352.32,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-daefcb24b5a6",
+      "region": "center"
+    },
+    {
+      "area_pt2": 54.8352,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 9.12,
+        "x": 418.08,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-15a2469322d0",
+      "region": "right"
+    },
+    {
+      "area_pt2": 54.8352,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 9.12,
+        "x": 320.16,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-953ee595be9d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 54.8352,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 14.4,
+        "x": 90.72,
+        "y": 718.56
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-2c3130754808",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 54.6048,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 120.96,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-c04d92893d2d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 54.6048,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 372.48,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-cf266f6503ab",
+      "region": "center"
+    },
+    {
+      "area_pt2": 54.6048,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 404.64,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-0dcddde362af",
+      "region": "right"
+    },
+    {
+      "area_pt2": 54.6048,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 454.56,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-a3e5e5a2bae3",
+      "region": "right"
+    },
+    {
+      "area_pt2": 54.6048,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 247.68,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-ea7524c791e0",
+      "region": "center"
+    },
+    {
+      "area_pt2": 54.6048,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 265.44,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-6215a36cc464",
+      "region": "center"
+    },
+    {
+      "area_pt2": 54.6048,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 340.32,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-b22c654439a3",
+      "region": "center"
+    },
+    {
+      "area_pt2": 54.3744,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 236.16,
+        "y": 177.6
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-c733e7dfed42",
+      "region": "top"
+    },
+    {
+      "area_pt2": 54.3744,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 9.12,
+        "x": 307.2,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-232582706baa",
+      "region": "center"
+    },
+    {
+      "area_pt2": 54.3744,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 17.76,
+        "x": 202.56,
+        "y": 667.68
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-292c05ecad4b",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 54.144,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 7.2,
+        "x": 367.2,
+        "y": 583.68
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-e307d9959446",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 53.6832,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 163.68,
+        "y": 177.6
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-7c71050b7bbb",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.6832,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 9.12,
+        "x": 166.56,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-a46a7fb50d01",
+      "region": "left"
+    },
+    {
+      "area_pt2": 53.6832,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 9.12,
+        "x": 332.64,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-db816c21fa30",
+      "region": "center"
+    },
+    {
+      "area_pt2": 53.6832,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 9.12,
+        "x": 348.96,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-0c209b83227a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 53.2224,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 167.04,
+        "y": 156.96
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-f80cb595d371",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 52.992,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 6.24,
+        "x": 503.52,
+        "y": 110.88
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-b6c5146c356d",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 52.992,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.64,
+        "x": 178.56,
+        "y": 177.6
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-e8ccc0206819",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 52.7616,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 7.2,
+        "x": 367.68,
+        "y": 496.8
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-1ec3d8f47dd9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 52.7616,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 9.12,
+        "x": 329.28,
+        "y": 583.68
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-920e08562f78",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 52.5312,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 12.96,
+        "x": 479.04,
+        "y": 226.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-5f9d609d7ce1",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 51.6096,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 11.04,
+        "x": 129.12,
+        "y": 109.92
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-fc5a2f520e43",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 51.3792,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 196.8,
+        "y": 177.6
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-a11374d62f27",
+      "region": "top"
+    },
+    {
+      "area_pt2": 51.1488,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 224.16,
+        "y": 335.52
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-8352f79b2b05",
+      "region": "center"
+    },
+    {
+      "area_pt2": 50.9184,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 7.68,
+        "x": 375.36,
+        "y": 497.28
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-3d4c495c72b6",
+      "region": "center"
+    },
+    {
+      "area_pt2": 50.688,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 146.88,
+        "y": 335.52
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-a088a648ee64",
+      "region": "left"
+    },
+    {
+      "area_pt2": 50.688,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 295.68,
+        "y": 356.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-a05f9d04bb93",
+      "region": "center"
+    },
+    {
+      "area_pt2": 50.4576,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 184.8,
+        "y": 156.96
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-ffa184ccfc6e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 50.4576,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 8.64,
+        "x": 122.4,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-ac02b67e8e2d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 50.4576,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 8.64,
+        "x": 284.16,
+        "y": 583.68
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-048444e69815",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 50.2272,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.2,
+        "x": 227.04,
+        "y": 177.6
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-6dc52d6ae671",
+      "region": "top"
+    },
+    {
+      "area_pt2": 49.9968,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 13.44,
+        "x": 288.48,
+        "y": 761.28
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-fcb6dc1aa2ab",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 49.7664,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 8.16,
+        "x": 83.52,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-c8b438c6b8c2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 49.7664,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 9.12,
+        "x": 228.96,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-6b1880ec0061",
+      "region": "center"
+    },
+    {
+      "area_pt2": 49.7664,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 9.12,
+        "x": 82.56,
+        "y": 344.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-dd515dc51d39",
+      "region": "left"
+    },
+    {
+      "area_pt2": 49.3056,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 8.64,
+        "x": 154.08,
+        "y": 246.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-69f5e8d8e910",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 49.3056,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 8.64,
+        "x": 330.24,
+        "y": 246.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-afbde4c377b2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 49.0752,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 8.64,
+        "x": 172.32,
+        "y": 246.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-2ecfeb0492d7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 49.0752,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 8.64,
+        "x": 368.16,
+        "y": 344.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-f49900ca55ff",
+      "region": "center"
+    },
+    {
+      "area_pt2": 48.8448,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 11.04,
+        "x": 380.16,
+        "y": 248.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-4455936612cf",
+      "region": "top"
+    },
+    {
+      "area_pt2": 48.384,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 8.64,
+        "x": 211.2,
+        "y": 246.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-5de5ee9177ed",
+      "region": "top"
+    },
+    {
+      "area_pt2": 48.384,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 7.68,
+        "x": 343.2,
+        "y": 497.28
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-2833b8d7298c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 48.1536,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 7.2,
+        "x": 375.36,
+        "y": 583.68
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-d2627950661b",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 47.0016,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 8.16,
+        "x": 459.36,
+        "y": 246.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-f5edd8ffca67",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 47.0016,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 13.92,
+        "x": 105.6,
+        "y": 718.08
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-b615c435c242",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 9.12,
+        "x": 295.2,
+        "y": 246.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-a0ecad05dff3",
+      "region": "top"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 9.6,
+        "x": 101.76,
+        "y": 316.8
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-d5b3e6615bb1",
+      "region": "left"
+    },
+    {
+      "area_pt2": 46.3104,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 9.6,
+        "x": 102.24,
+        "y": 222.72
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-a4f5d9f8a44f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 46.3104,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 9.12,
+        "x": 131.52,
+        "y": 246.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-075096b124fa",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 46.08,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 8.64,
+        "x": 169.44,
+        "y": 316.32
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-911bae08d879",
+      "region": "left"
+    },
+    {
+      "area_pt2": 46.08,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 8.64,
+        "x": 341.28,
+        "y": 316.32
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-ab823003f80a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 45.6192,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 146.88,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-8ec72c4627dc",
+      "region": "left"
+    },
+    {
+      "area_pt2": 45.6192,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 176.64,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-47fc2ffa8f3c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 45.6192,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 224.16,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-293d62301554",
+      "region": "center"
+    },
+    {
+      "area_pt2": 45.6192,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 387.36,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-afee47e6f07b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 45.6192,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 226.56,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-2c6ae7711962",
+      "region": "center"
+    },
+    {
+      "area_pt2": 45.6192,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 292.8,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-1155743bb80a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 45.3888,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.16,
+        "x": 193.44,
+        "y": 156.96
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-4a640e05447b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 45.3888,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 8.64,
+        "x": 235.2,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-aa8b58776b32",
+      "region": "top"
+    },
+    {
+      "area_pt2": 45.3888,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.64,
+        "x": 252.96,
+        "y": 500.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-e8ff0f994d6f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 44.928,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 11.04,
+        "x": 146.4,
+        "y": 109.92
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-025e6b2fbd3f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 44.928,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 7.2,
+        "x": 343.2,
+        "y": 583.68
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-5f71db504bca",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 44.2368,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.64,
+        "x": 266.88,
+        "y": 587.04
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-aed2dfcc876a",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 44.0064,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 252.96,
+        "y": 587.04
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-75c88a1e48d4",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 43.5456,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 261.12,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-95fff10617bf",
+      "region": "center"
+    },
+    {
+      "area_pt2": 43.5456,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 13.44,
+        "x": 288.48,
+        "y": 788.64
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-b5031315fa8d",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 42.3936,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 10.56,
+        "x": 316.8,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-1833d385470c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 42.1632,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 186.24,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-020cf82b213c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 42.1632,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 199.2,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-5645c28b8d89",
+      "region": "top"
+    },
+    {
+      "area_pt2": 42.1632,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.68,
+        "x": 314.88,
+        "y": 356.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-56eb0c5ffd93",
+      "region": "center"
+    },
+    {
+      "area_pt2": 41.472,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.72,
+        "x": 322.56,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-b1fdfed7dcc2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 41.472,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.72,
+        "x": 491.52,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-0c4a96e498cd",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 41.2416,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 7.2,
+        "x": 300.96,
+        "y": 500.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-df2a3f8d712f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 41.0112,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 5.28,
+        "x": 303.84,
+        "y": 356.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-c5576a527289",
+      "region": "center"
+    },
+    {
+      "area_pt2": 41.0112,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 5.28,
+        "x": 366.24,
+        "y": 356.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-4ce70326494b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 40.7808,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.68,
+        "x": 129.6,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-fbccdc27eca2",
+      "region": "left"
+    },
+    {
+      "area_pt2": 40.7808,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.68,
+        "x": 252.48,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-eb91b308fe32",
+      "region": "center"
+    },
+    {
+      "area_pt2": 40.7808,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.68,
+        "x": 311.52,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-7fd0578faffb",
+      "region": "center"
+    },
+    {
+      "area_pt2": 40.32,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 10.08,
+        "x": 469.44,
+        "y": 226.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-ff3007aba99b",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 40.32,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 9.12,
+        "x": 259.2,
+        "y": 356.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-c207ae50fff9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 40.32,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 13.92,
+        "x": 180.0,
+        "y": 670.08
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-97e351696fd3",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 39.8592,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 396.48,
+        "y": 335.52
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-018c2583073e",
+      "region": "right"
+    },
+    {
+      "area_pt2": 39.8592,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 5.28,
+        "x": 155.04,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-a8ba3a09c72c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 39.8592,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 5.28,
+        "x": 300.48,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-55466c5e8b66",
+      "region": "center"
+    },
+    {
+      "area_pt2": 39.8592,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 5.28,
+        "x": 363.36,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-882e8c169673",
+      "region": "center"
+    },
+    {
+      "area_pt2": 39.8592,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 7.2,
+        "x": 300.48,
+        "y": 587.04
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-9406f84efcb1",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.64,
+        "x": 140.64,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-f339d1c1b3c8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 258.72,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-3aef2f02926d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 333.12,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-924e3f190140",
+      "region": "center"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 453.12,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-e94445f83b6a",
+      "region": "right"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 220.32,
+        "y": 344.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-e73c6be750c4",
+      "region": "center"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 322.08,
+        "y": 344.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-5dc50f0db2ae",
+      "region": "center"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 491.04,
+        "y": 344.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-26ea899e3d16",
+      "region": "right"
+    },
+    {
+      "area_pt2": 39.168,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 8.64,
+        "x": 404.64,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-804450ee1bb3",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 38.7072,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 6.24,
+        "x": 381.12,
+        "y": 426.72
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-f97cf3f607bd",
+      "region": "center"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 9.12,
+        "x": 385.44,
+        "y": 320.64
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-36d84216032f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 9.12,
+        "x": 113.28,
+        "y": 344.64
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-68e7f5e0e1ec",
+      "region": "left"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 447.84,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-a97faa2bd7bc",
+      "region": "right"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 235.68,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-4fefd762a426",
+      "region": "center"
+    },
+    {
+      "area_pt2": 38.2464,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 14.88,
+        "x": 133.44,
+        "y": 226.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-a41b51e64e2b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 38.016,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 244.8,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-0e4b94148d3e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.016,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 413.76,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-ed34eca187ed",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 38.016,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 450.24,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-c2aac8c577ea",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 38.016,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 9.12,
+        "x": 147.36,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-196d8f5d083a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 38.016,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 9.12,
+        "x": 430.56,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-c53564185883",
+      "region": "right"
+    },
+    {
+      "area_pt2": 38.016,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 9.12,
+        "x": 460.8,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-79bda9a76071",
+      "region": "right"
+    },
+    {
+      "area_pt2": 38.016,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.72,
+        "x": 219.36,
+        "y": 500.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-08710a622429",
+      "region": "center"
+    },
+    {
+      "area_pt2": 38.016,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.72,
+        "x": 231.84,
+        "y": 500.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-c1ae16a050e9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 163.2,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-5ef7da6b1aab",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 289.92,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-5a6146775f86",
+      "region": "center"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 463.68,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-caa1ce4e1e1f",
+      "region": "right"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 274.56,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-cb39e18c9035",
+      "region": "center"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 10.08,
+        "x": 143.04,
+        "y": 667.68
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-67ab81e2fdd4",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 37.3248,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 93.12,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-b51cefa06922",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 37.0944,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 156.96,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-7d5c90c218b9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.0944,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 373.44,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-ae3cd17e1dfe",
+      "region": "center"
+    },
+    {
+      "area_pt2": 37.0944,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 423.36,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-4a4392d39e3c",
+      "region": "right"
+    },
+    {
+      "area_pt2": 37.0944,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 391.68,
+        "y": 344.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-41a1c37ab10a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 36.864,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.24,
+        "x": 246.24,
+        "y": 500.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-29bb58487d2d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 36.6336,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 277.44,
+        "y": 356.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-03d2e7d1e65e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 36.4032,
+      "bbox_pt": {
+        "height": 18.24,
+        "width": 7.2,
+        "x": 189.12,
+        "y": 210.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-0464df379e76",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 36.4032,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 8.16,
+        "x": 461.28,
+        "y": 226.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-2323ac04787e",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 36.4032,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 468.0,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-b0bc88a535f6",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 36.4032,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 504.0,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-47e85037e880",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 36.4032,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 5.76,
+        "x": 323.04,
+        "y": 583.68
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-25a87ffbbb76",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 36.1728,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 220.8,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-404828574707",
+      "region": "top"
+    },
+    {
+      "area_pt2": 36.1728,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 4.8,
+        "x": 241.92,
+        "y": 446.88
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-babb7e9b7622",
+      "region": "center"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 368.16,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-4ffd26c8dec3",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 391.68,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-65f6cb478568",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.712,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.16,
+        "x": 240.48,
+        "y": 86.4
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-654d233b1c89",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.712,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 5.76,
+        "x": 226.08,
+        "y": 496.32
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-ab357aa26307",
+      "region": "center"
+    },
+    {
+      "area_pt2": 35.712,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.72,
+        "x": 245.76,
+        "y": 587.04
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-ae367eaaf7e2",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 112.32,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-de5aa381e3a7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 178.08,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-a2a3416a1690",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 244.8,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-d6ec53b7b229",
+      "region": "center"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 355.2,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-40d9d03df347",
+      "region": "center"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 399.36,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-52a6391c777c",
+      "region": "right"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 470.4,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-c9c57f35452f",
+      "region": "right"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 8.16,
+        "x": 413.28,
+        "y": 344.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-ca424b98744e",
+      "region": "right"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.24,
+        "x": 226.08,
+        "y": 583.68
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-6eb3db2373cb",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 4.8,
+        "x": 307.68,
+        "y": 587.04
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-cdbd67418d79",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 35.2512,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 10.56,
+        "x": 155.04,
+        "y": 74.4
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-ee0f2c90a2b8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 35.2512,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 4.8,
+        "x": 308.16,
+        "y": 500.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-bb34379e32d9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 35.0208,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.24,
+        "x": 219.36,
+        "y": 587.04
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-210fc86d5bc8",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 35.0208,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.24,
+        "x": 231.84,
+        "y": 587.04
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-cf621a7c8cfd",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 34.7904,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 10.56,
+        "x": 198.72,
+        "y": 74.4
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-a216bef7ea42",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.7904,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 9.12,
+        "x": 137.76,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-e90f96c35068",
+      "region": "left"
+    },
+    {
+      "area_pt2": 34.7904,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 9.12,
+        "x": 256.32,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-9e8722363cd2",
+      "region": "center"
+    },
+    {
+      "area_pt2": 34.56,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 396.48,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-29369ea1903b",
+      "region": "right"
+    },
+    {
+      "area_pt2": 34.56,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.24,
+        "x": 355.68,
+        "y": 583.68
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-8e1383d57a05",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 34.3296,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 165.12,
+        "y": 108.0
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-08d4ad2f3ef8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 34.3296,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 4.32,
+        "x": 247.68,
+        "y": 177.6
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-068e94f6e112",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.3296,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 268.8,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-c8f4e6cbeb9a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.3296,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 351.36,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-3090fb926090",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.3296,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 10.56,
+        "x": 197.76,
+        "y": 695.52
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-36c14d5ee4ec",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 34.0992,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 9.6,
+        "x": 249.12,
+        "y": 86.4
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-701868f5eb7b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 33.6384,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.76,
+        "x": 172.8,
+        "y": 177.6
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-ae50d83167d8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.76,
+        "x": 206.4,
+        "y": 156.96
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-0df0e58afd58",
+      "region": "top"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 9.6,
+        "x": 108.0,
+        "y": 745.44
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-67411720d07e",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 4.32,
+        "x": 383.52,
+        "y": 496.8
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-70cd9421c098",
+      "region": "center"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 4.32,
+        "x": 207.36,
+        "y": 496.8
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-17c5e548c18a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 32.256,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 9.6,
+        "x": 154.08,
+        "y": 695.52
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-923227f38fb1",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 32.0256,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 9.6,
+        "x": 358.56,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-37845e402138",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.7952,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 104.64,
+        "y": 695.04
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-45a80d70bd37",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 31.5648,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 140.64,
+        "y": 108.0
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-4aabda85bf92",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.5648,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 101.76,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-2b3a836cf3b6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 356.16,
+        "y": 497.28
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-e61f7b35967c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 228.96,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-a91c7dcee5a1",
+      "region": "top"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 339.36,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-ce7da09d45e2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 187.2,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-6eae42d26e4f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 7.68,
+        "x": 120.96,
+        "y": 320.64
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-578448431a9e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 228.48,
+        "y": 344.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-d322c37d321f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 212.16,
+        "y": 500.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-6ed4f23f71d2",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 309.6,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-95c80b69f276",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 445.44,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-f7a9414a15ad",
+      "region": "right"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 5.28,
+        "x": 326.4,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-d99c273d6104",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 120.96,
+        "y": 667.68
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-0c3c24655bfb",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 4.8,
+        "x": 383.04,
+        "y": 583.68
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-61e48ab4eab9",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 293.76,
+        "y": 587.04
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-92a65e120545",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 239.04,
+        "y": 500.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-a9b95653c8e0",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 293.76,
+        "y": 500.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-6a5e07e2a7ac",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 4.8,
+        "x": 206.88,
+        "y": 583.68
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-31ab5f6d6507",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 5.28,
+        "x": 261.6,
+        "y": 584.64
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-21c82c2f0d17",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 9.12,
+        "x": 126.24,
+        "y": 695.52
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-acde92ffde09",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.2,
+        "x": 281.28,
+        "y": 759.84
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-c1b2d7ef0b6b",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 327.36,
+        "y": 335.52
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-6ffab351a9ff",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 372.48,
+        "y": 356.16
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-d95aaf81cf64",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 4.32,
+        "x": 180.0,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-fb927b03fd35",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 212.16,
+        "y": 587.04
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-051315322c9c",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 238.56,
+        "y": 587.04
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-3d7b04c24e21",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 4.8,
+        "x": 193.92,
+        "y": 246.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-a05836c48028",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 9.12,
+        "x": 133.92,
+        "y": 320.64
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-9059d3d602a5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 9.12,
+        "x": 252.96,
+        "y": 344.64
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-d18df47a22db",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 284.64,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-2d39d38c9a01",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 326.88,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-f0e40809a734",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 442.08,
+        "y": 429.6
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-5839937c412b",
+      "region": "right"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 358.56,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-06284548d0d9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 369.6,
+        "y": 450.24
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2409"
+        ],
+        "kind": "issue",
+        "note": "Raised title lines plus our second title line starting with a repeated hyphen ('-moslava\u010dkoj')."
+      },
+      "id": "p1-2e6b7cfded0d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 743.52
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-f610ef3c6f0a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.8,
+        "x": 197.76,
+        "y": 108.0
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-2fc5ab557252",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.76,
+        "x": 180.48,
+        "y": 109.92
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-e9cb13b83bd3",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.0352,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 4.32,
+        "x": 476.16,
+        "y": 246.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-214937651a7b",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 26.0352,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 4.32,
+        "x": 350.4,
+        "y": 316.32
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-ebc19a0c5ed9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.8048,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 5.28,
+        "x": 485.76,
+        "y": 248.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-45ed27f0e860",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 157.44,
+        "y": 109.92
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-dd31bcc0d964",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 9.6,
+        "x": 140.16,
+        "y": 720.48
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-4ecfb0b0d173",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 4.8,
+        "x": 143.52,
+        "y": 74.4
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-65288c2fc395",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 162.72,
+        "y": 718.56
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-0cdec5b5b7a2",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 142.56,
+        "y": 743.52
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-729e228bd858",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 232.32,
+        "y": 98.4
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-39edd24391f5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 4.8,
+        "x": 276.48,
+        "y": 248.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-15ae5a8659fb",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 5.28,
+        "x": 345.6,
+        "y": 248.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-bc760573916f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 5.28,
+        "x": 498.72,
+        "y": 248.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-21aa73857697",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 267.36,
+        "y": 98.4
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-6be9627ca274",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 171.36,
+        "y": 109.92
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-128145ceef05",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 7.2,
+        "x": 91.2,
+        "y": 693.12
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-dfaa7debc243",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.76,
+        "x": 120.96,
+        "y": 74.4
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-4d87a7fd1a79",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.24,
+        "x": 315.84,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-d4e5d4d082e8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 227.04,
+        "y": 109.92
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-e00b613f81aa",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 259.2,
+        "y": 86.4
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-469f4df054ee",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.24,
+        "x": 238.08,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-b7b4de6d14d0",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 3.36,
+        "x": 350.4,
+        "y": 222.24
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-5f161767a2ba",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 4.8,
+        "x": 252.0,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-b156523a0b2b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 4.8,
+        "x": 179.04,
+        "y": 344.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-ef76e21999a2",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 4.8,
+        "x": 397.44,
+        "y": 344.16
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-44f2e1491512",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 202.56,
+        "y": 109.92
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-c429ccc34426",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 210.72,
+        "y": 109.92
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-77c7f407cc73",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 4.32,
+        "x": 398.4,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#2164",
+        "kind": "issue",
+        "note": "Body content from the title through the second title line sits ~94pt higher than Word because the inline header pictures do not reserve their height."
+      },
+      "id": "p1-59ebbb814158",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.68,
+        "x": 174.24,
+        "y": 720.48
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-673e0878bb75",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 5.28,
+        "width": 7.68,
+        "x": 154.08,
+        "y": 745.44
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-754c5dcbcded",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 2.4,
+        "x": 245.28,
+        "y": 177.6
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-6dadb28f0c7c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 232.32,
+        "y": 86.4
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-b7f3c2b730f6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 169.92,
+        "y": 667.68
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-370a45d8a245",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 2.4,
+        "x": 163.2,
+        "y": 157.44
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-91fcb54e65a1",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 2.4,
+        "x": 202.56,
+        "y": 157.44
+      },
+      "disposition": {
+        "issue": "#2408",
+        "kind": "issue",
+        "note": "Word sets the second header logo right-aligned at the tab on the first logo's line; ours wraps it below the first logo."
+      },
+      "id": "p1-da17347b7e71",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 173.76,
+        "y": 74.4
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-16317d94b03c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 98.88,
+        "y": 693.12
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-1f58cfdf5ab5",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 276.0,
+        "y": 758.88
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-207ebc70bdb4",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 267.36,
+        "y": 86.4
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-c63201686d0a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 216.48,
+        "y": 109.92
+      },
+      "disposition": {
+        "issues": [
+          "#2062",
+          "#2164"
+        ],
+        "kind": "issue",
+        "note": "Our first header logo overlaps our raised title and its bottom border."
+      },
+      "id": "p1-705cac7cb446",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 91.2,
+        "y": 667.68
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-39505ceff73f",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 519.36,
+        "y": 668.64
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-5490a04a8409",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 276.0,
+        "y": 786.24
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-9417d5db7d8d",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.32,
+        "x": 276.0,
+        "y": 587.04
+      },
+      "disposition": {
+        "issues": [
+          "#2164",
+          "#2410",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "The horizontal rule and '(referentni broj' line: ~94pt raised by the header reservation, ~7pt lower relative to the title because the rule paragraph takes its 18pt run line; rule outline weight and width match Word, its x start is 0.75pt left of Word's (sub-material, #1874)."
+      },
+      "id": "p1-85bbc18399fd",
+      "region": "bottom"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.32,
+        "x": 519.84,
+        "y": 694.08
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-0ddd03903838",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.32,
+        "x": 519.84,
+        "y": 719.04
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-e0ad75847b45",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 102.24,
+        "y": 743.04
+      },
+      "disposition": {
+        "issue": "#2399",
+        "kind": "issue",
+        "note": "Our computed TOC outline is printed on page 1; Word's page 1 has none."
+      },
+      "id": "p1-52d6b69373c2",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.2,
+        "x": 281.28,
+        "y": 787.68
+      },
+      "disposition": {
+        "issue": "#2062",
+        "kind": "issue",
+        "note": "First header logo 12pt higher and the footer 'Stranica 1' 27pt lower than Word: header/footer paragraph spacing and empty paragraphs are dropped."
+      },
+      "id": "p1-f66b0b828b55",
+      "region": "bottom"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 366,
+    "duplicate": 0,
+    "total": 366,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
