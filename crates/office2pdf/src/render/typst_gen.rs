@@ -3174,7 +3174,9 @@ fn flow_header_value(
 /// body text; the reference export pushes the body below all four (issue #736).
 /// On continuation pages, a page-anchored header shape that crosses the body
 /// top margin also reserves its bottom and any following empty header line
-/// boxes, as Word does (issue #1995).
+/// boxes, as Word does (issue #1995). A table in the story's flow counts with
+/// the story's lines (issue #2250), except in a section whose first page has
+/// its own story (`TODO(#2216)` below).
 ///
 /// A continuation page is one a continuous section sets up again after a page
 /// break it holds. It is never the section's first page, so it reserves only
@@ -3203,14 +3205,29 @@ fn flow_page_top_margin_pt(
             let overlay_bottom: Option<f64> = continuation_page
                 .then(|| page_anchored_header_shape_bottom_pt(header, size, page.margins.top))
                 .flatten();
+            // TODO(#2216): one margin serves both stories of a `w:titlePg`
+            // section, so a default story's table would also lower a first
+            // page that does not show it. Microsoft's Initials resume template
+            // has a 147.6pt exact-row table in its default header and no
+            // first-page story, and that one-page resume ran to two. Reserve
+            // tables there once the margin is per page (#2300).
+            let story_tables_pt: f64 = if first_header.is_none() {
+                hf_story_tables_height_pt(
+                    header,
+                    page.line_grid_pitch.filter(|_| page.line_grid_snaps_lines),
+                )
+            } else {
+                0.0
+            };
             // A story of nothing but empty paragraphs still has their lines
-            // (issue #2056).
+            // (issue #2056), and one of nothing but a table its rows.
             if !hf_has_flow_content(header)
                 && !header
                     .paragraphs
                     .iter()
                     .any(hf_paragraph_is_empty_flow_line)
                 && overlay_bottom.is_none()
+                && story_tables_pt <= 0.0
             {
                 return None;
             }
@@ -3240,7 +3257,11 @@ fn flow_page_top_margin_pt(
                 HfLineHeights::Natural
             };
             let drawn_reach: Option<f64> = content_reach(drawn_lines);
-            let word_reach: Option<f64> = content_reach(HfLineHeights::Declared);
+            // Word stacks the story's flow tables with its paragraphs. The
+            // drawn story leaves them out: they are placed at `w:header` in the
+            // page background, so its band shift does not ride on them.
+            let word_reach: Option<f64> =
+                content_reach(HfLineHeights::Declared).map(|reach| reach + story_tables_pt);
             if drawn_reach.is_none() && word_reach.is_none() && overlay_bottom.is_none() {
                 return None;
             }
@@ -3399,18 +3420,23 @@ fn hf_empty_paragraph_line_pt(
     }
 }
 
-/// How many lines a header or footer paragraph takes in `width_pt`.
+/// How many lines a header or footer paragraph takes in `width_pt`, as
+/// [`runs_line_count`] lays its runs out inside its indents.
+fn hf_paragraph_line_count(paragraph: &crate::ir::HeaderFooterParagraph, width_pt: f64) -> usize {
+    let available_pt: f64 = width_pt
+        - paragraph.style.indent_left.unwrap_or(0.0)
+        - paragraph.style.indent_right.unwrap_or(0.0);
+    runs_line_count(&hf_paragraph_metric_runs(paragraph), available_pt)
+}
+
+/// How many lines a paragraph's runs take in `available_pt`.
 ///
 /// Its words are laid greedily on the faces' own advances, as a line breaker
 /// fills them, and a hard break starts a line. Kerning is ignored, which the
 /// one-line-per-paragraph estimate this replaced ignored as well. A paragraph
 /// that cannot be measured — a run without a face, a tab, a face that does
 /// not resolve — counts one line, so the margin never grows on a guess.
-fn hf_paragraph_line_count(paragraph: &crate::ir::HeaderFooterParagraph, width_pt: f64) -> usize {
-    let available_pt: f64 = width_pt
-        - paragraph.style.indent_left.unwrap_or(0.0)
-        - paragraph.style.indent_right.unwrap_or(0.0);
-    let runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
+fn runs_line_count(runs: &[Run], available_pt: f64) -> usize {
     if available_pt <= 0.0 || runs.iter().any(|run| run.text.contains('\t')) {
         return 1;
     }
@@ -3425,7 +3451,7 @@ fn hf_paragraph_line_count(paragraph: &crate::ir::HeaderFooterParagraph, width_p
             *line_width += word_pt;
         }
     };
-    for run in &runs {
+    for run in runs {
         let Some(family) = run.style.font_family.as_deref() else {
             return 1;
         };
@@ -3465,6 +3491,9 @@ fn hf_paragraph_line_count(paragraph: &crate::ir::HeaderFooterParagraph, width_p
 }
 
 /// The bottom of a page-anchored header shape that crosses the body's top edge.
+///
+/// A table in the story's flow is not an overlay: its rows are measured with
+/// the story's paragraphs on every page (issue #2250).
 fn page_anchored_header_shape_bottom_pt(
     header: &HeaderFooter,
     size: &PageSize,
@@ -3473,6 +3502,7 @@ fn page_anchored_header_shape_bottom_pt(
     header
         .shapes
         .iter()
+        .filter(|shape| !shape.flows_in_story)
         .filter(|shape| shape.frame.vertical_anchor == crate::ir::FrameAnchor::Page)
         .filter_map(|shape| {
             if shape.height <= 0.0 {
@@ -3485,6 +3515,31 @@ fn page_anchored_header_shape_bottom_pt(
             (top < top_margin_pt && bottom > top_margin_pt).then_some(bottom)
         })
         .max_by(f64::total_cmp)
+}
+
+/// The height of the tables in a header story's flow, in points, which Word
+/// stacks with the story's paragraphs (issue #2250). A table that cannot be
+/// measured adds nothing, so the margin never grows on a guess.
+fn hf_story_tables_height_pt(header: &HeaderFooter, line_grid_pitch: Option<f64>) -> f64 {
+    header
+        .shapes
+        .iter()
+        .filter(|shape| shape.flows_in_story)
+        .filter_map(|shape| match &shape.content {
+            HeaderFooterShapeContent::Table(table) => {
+                let height_pt: Option<f64> =
+                    tables::word_story_table_height_pt(table, line_grid_pitch);
+                if height_pt.is_none() {
+                    tracing::debug!(
+                        rows = table.rows.len(),
+                        "header table in the story flow is not measurable; not reserved"
+                    );
+                }
+                height_pt
+            }
+            HeaderFooterShapeContent::Shape(_) => None,
+        })
+        .sum()
 }
 
 /// Reserve the final flowing header line below its page-anchored overlay.

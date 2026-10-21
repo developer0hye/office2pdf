@@ -1,0 +1,552 @@
+{
+ "pages": [
+  {
+   "lines": {
+    "gt": 23,
+    "out": 23,
+    "matched": 18,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 11,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 0.13219640909090524,
+    "worst_dy": 0.29109999999991487,
+    "worst_dy_signed": -0.29109999999991487,
+    "worst_line": "Theapplicationisforanorderdeclaringinthefirstpartthatcertain"
+   },
+   "dx0": {
+    "mean_abs": 24.537266363636373,
+    "worst": -79.08000000000001
+   },
+   "width": {
+    "mean_abs_pct": 0.05491040448443556,
+    "worst_pct": 0.24091396696799935
+   },
+   "instances": {
+    "compared": 22,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 9,
+    "large_shifts": [
+     {
+      "label": "JudgmentNo.CCZ14/2016",
+      "gt_x": 418.42,
+      "gt_y": 46.52999999999997,
+      "out_x": 366.2125,
+      "out_y": 46.473634,
+      "dx": -52.20750000000004,
+      "dy": -0.05636599999997571,
+      "width_pct": 0.13589258127887566
+     },
+     {
+      "label": "1",
+      "gt_x": 550.97,
+      "gt_y": 46.52999999999997,
+      "out_x": 499.06,
+      "out_y": 46.473634,
+      "dx": -51.910000000000025,
+      "dy": -0.05636599999997571,
+      "width_pct": 0.0
+     },
+     {
+      "label": "Const.ApplicationNo.CCZ67/13",
+      "gt_x": 389.17,
+      "gt_y": 59.77999999999997,
+      "out_x": 336.9078,
+      "out_y": 59.901369,
+      "dx": -52.26220000000001,
+      "dy": 0.12136900000002981,
+      "width_pct": 0.24091396696799935
+     },
+     {
+      "label": "(1)",
+      "gt_x": 148.58,
+      "gt_y": 156.04999999999995,
+      "out_x": 72.0,
+      "out_y": 155.86524,
+      "dx": -76.58000000000001,
+      "dy": -0.18475999999995452,
+      "width_pct": -0.057142475104563405
+     },
+     {
+      "label": "ZIMBABWEBROADCASTINGCORPORATION",
+      "gt_x": 196.58,
+      "gt_y": 156.04999999999995,
+      "out_x": 120.0,
+      "out_y": 155.86524,
+      "dx": -76.58000000000001,
+      "dy": -0.18475999999995452,
+      "width_pct": 5.613762164536708e-05
+     },
+     {
+      "label": "(2)",
+      "gt_x": 107.8,
+      "gt_y": 169.79999999999995,
+      "out_x": 72.0,
+      "out_y": 169.66407,
+      "dx": -35.8,
+      "dy": -0.13592999999994504,
+      "width_pct": -0.05714247510466486
+     },
+     {
+      "label": "MINISTEROFMEDIA,INFORMATIONANDPUBLICITY",
+      "gt_x": 152.83,
+      "gt_y": 169.79999999999995,
+      "out_x": 117.0,
+      "out_y": 169.66407,
+      "dx": -35.83000000000001,
+      "dy": -0.13592999999994504,
+      "width_pct": 0.03137025683303507
+     },
+     {
+      "label": "(3)",
+      "gt_x": 151.08,
+      "gt_y": 183.54999999999995,
+      "out_x": 72.0,
+      "out_y": 183.46289,
+      "dx": -79.08000000000001,
+      "dy": -0.08710999999996716,
+      "width_pct": -0.057142475104563405
+     },
+     {
+      "label": "THEATTORNEYGENERALOFZIMBABWE",
+      "gt_x": 193.08,
+      "gt_y": 183.54999999999995,
+      "out_x": 114.0,
+      "out_y": 183.46289,
+      "dx": -79.08000000000001,
+      "dy": -0.08710999999996716,
+      "width_pct": 0.04621199836658673
+     }
+    ],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 9,
+    "fine_shifts": [
+     {
+      "label": "JudgmentNo.CCZ14/2016",
+      "gt_x": 418.42,
+      "gt_y": 46.52999999999997,
+      "out_x": 366.2125,
+      "out_y": 46.473634,
+      "dx": -52.20750000000004,
+      "dy": -0.05636599999997571,
+      "width_pct": 0.13589258127887566
+     },
+     {
+      "label": "1",
+      "gt_x": 550.97,
+      "gt_y": 46.52999999999997,
+      "out_x": 499.06,
+      "out_y": 46.473634,
+      "dx": -51.910000000000025,
+      "dy": -0.05636599999997571,
+      "width_pct": 0.0
+     },
+     {
+      "label": "Const.ApplicationNo.CCZ67/13",
+      "gt_x": 389.17,
+      "gt_y": 59.77999999999997,
+      "out_x": 336.9078,
+      "out_y": 59.901369,
+      "dx": -52.26220000000001,
+      "dy": 0.12136900000002981,
+      "width_pct": 0.24091396696799935
+     },
+     {
+      "label": "(1)",
+      "gt_x": 148.58,
+      "gt_y": 156.04999999999995,
+      "out_x": 72.0,
+      "out_y": 155.86524,
+      "dx": -76.58000000000001,
+      "dy": -0.18475999999995452,
+      "width_pct": -0.057142475104563405
+     },
+     {
+      "label": "ZIMBABWEBROADCASTINGCORPORATION",
+      "gt_x": 196.58,
+      "gt_y": 156.04999999999995,
+      "out_x": 120.0,
+      "out_y": 155.86524,
+      "dx": -76.58000000000001,
+      "dy": -0.18475999999995452,
+      "width_pct": 5.613762164536708e-05
+     },
+     {
+      "label": "(2)",
+      "gt_x": 107.8,
+      "gt_y": 169.79999999999995,
+      "out_x": 72.0,
+      "out_y": 169.66407,
+      "dx": -35.8,
+      "dy": -0.13592999999994504,
+      "width_pct": -0.05714247510466486
+     },
+     {
+      "label": "MINISTEROFMEDIA,INFORMATIONANDPUBLICITY",
+      "gt_x": 152.83,
+      "gt_y": 169.79999999999995,
+      "out_x": 117.0,
+      "out_y": 169.66407,
+      "dx": -35.83000000000001,
+      "dy": -0.13592999999994504,
+      "width_pct": 0.03137025683303507
+     },
+     {
+      "label": "(3)",
+      "gt_x": 151.08,
+      "gt_y": 183.54999999999995,
+      "out_x": 72.0,
+      "out_y": 183.46289,
+      "dx": -79.08000000000001,
+      "dy": -0.08710999999996716,
+      "width_pct": -0.057142475104563405
+     },
+     {
+      "label": "THEATTORNEYGENERALOFZIMBABWE",
+      "gt_x": 193.08,
+      "gt_y": 183.54999999999995,
+      "out_x": 114.0,
+      "out_y": 183.46289,
+      "dx": -79.08000000000001,
+      "dy": -0.08710999999996716,
+      "width_pct": 0.04621199836658673
+     }
+    ]
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 17,
+    "worst_delta": 0.20115999999998735
+   },
+   "wraps": {
+    "count": 1,
+    "samples": [
+     "MALABADCJ:Thisisanapplicationforreliefmadeintermsofs85(1)(a)"
+    ]
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 1,
+    "out_count": 2,
+    "canonical_gt_count": 1,
+    "canonical_out_count": 1,
+    "matched": 1,
+    "unmatched_gt": 0,
+    "unmatched_out": 0,
+    "mean_center_delta": 52.045000000000016,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 1,
+    "raw_geometry_mismatch_samples": [
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       0
+      ],
+      "out_indices": [
+       0,
+       1
+      ],
+      "gt_bbox": [
+       545.23,
+       36.004999999999995,
+       545.98,
+       62.77999999999997
+      ],
+      "out_bbox": [
+       493.2,
+       36.0,
+       493.92,
+       62.85549
+      ],
+      "dx": -52.03000000000003,
+      "dy": -0.0049999999999954525,
+      "dwidth": -0.029999999999972715,
+      "dheight": 0.08049000000002593,
+      "edges": {
+       "left": -52.03000000000003,
+       "top": -0.0049999999999954525,
+       "right": -52.06,
+       "bottom": 0.07549000000003048
+      },
+      "center_dx": -52.045000000000016,
+      "center_dy": 0.03524500000001751,
+      "max_abs_delta": 52.06,
+      "visible_coverage": {
+       "status": "different",
+       "mismatch_area_pt2": 39.41727780000072,
+       "unmodeled_area_pt2": 0.0,
+       "unmodeled_samples": [],
+       "mismatch_samples": [
+        [
+         493.2,
+         36.0025,
+         493.92,
+         49.427745
+        ],
+        [
+         493.2,
+         49.427745,
+         493.92,
+         62.77999999999997
+        ],
+        [
+         493.2,
+         62.77999999999997,
+         493.92,
+         62.85549
+        ],
+        [
+         545.23,
+         36.0025,
+         545.98,
+         49.427745
+        ],
+        [
+         545.23,
+         49.427745,
+         545.98,
+         62.77999999999997
+        ]
+       ],
+       "raw_edge_coverage": {
+        "left": "different",
+        "right": "different",
+        "top": "unchanged",
+        "bottom": "different"
+       }
+      }
+     }
+    ],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 0,
+    "geometry_mismatch_count": 1,
+    "geometry_mismatch_samples": [
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       0
+      ],
+      "out_indices": [
+       0,
+       1
+      ],
+      "gt_bbox": [
+       545.23,
+       36.004999999999995,
+       545.98,
+       62.77999999999997
+      ],
+      "out_bbox": [
+       493.2,
+       36.0,
+       493.92,
+       62.85549
+      ],
+      "dx": -52.03000000000003,
+      "dy": -0.0049999999999954525,
+      "dwidth": -0.029999999999972715,
+      "dheight": 0.08049000000002593,
+      "edges": {
+       "left": -52.03000000000003,
+       "top": -0.0049999999999954525,
+       "right": -52.06,
+       "bottom": 0.07549000000003048
+      },
+      "center_dx": -52.045000000000016,
+      "center_dy": 0.03524500000001751,
+      "max_abs_delta": 52.06,
+      "visible_coverage": {
+       "status": "different",
+       "mismatch_area_pt2": 39.41727780000072,
+       "unmodeled_area_pt2": 0.0,
+       "unmodeled_samples": [],
+       "mismatch_samples": [
+        [
+         493.2,
+         36.0025,
+         493.92,
+         49.427745
+        ],
+        [
+         493.2,
+         49.427745,
+         493.92,
+         62.77999999999997
+        ],
+        [
+         493.2,
+         62.77999999999997,
+         493.92,
+         62.85549
+        ],
+        [
+         545.23,
+         36.0025,
+         545.98,
+         49.427745
+        ],
+        [
+         545.23,
+         49.427745,
+         545.98,
+         62.77999999999997
+        ]
+       ],
+       "raw_edge_coverage": {
+        "left": "different",
+        "right": "different",
+        "top": "unchanged",
+        "bottom": "different"
+       }
+      }
+     }
+    ],
+    "samples": [
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       0
+      ],
+      "out_indices": [
+       0,
+       1
+      ],
+      "gt_bbox": [
+       545.23,
+       36.004999999999995,
+       545.98,
+       62.77999999999997
+      ],
+      "out_bbox": [
+       493.2,
+       36.0,
+       493.92,
+       62.85549
+      ],
+      "dx": -52.03000000000003,
+      "dy": -0.0049999999999954525,
+      "dwidth": -0.029999999999972715,
+      "dheight": 0.08049000000002593,
+      "edges": {
+       "left": -52.03000000000003,
+       "top": -0.0049999999999954525,
+       "right": -52.06,
+       "bottom": 0.07549000000003048
+      },
+      "center_dx": -52.045000000000016,
+      "center_dy": 0.03524500000001751,
+      "max_abs_delta": 52.06,
+      "visible_coverage": {
+       "status": "different",
+       "mismatch_area_pt2": 39.41727780000072,
+       "unmodeled_area_pt2": 0.0,
+       "unmodeled_samples": [],
+       "mismatch_samples": [
+        [
+         493.2,
+         36.0025,
+         493.92,
+         49.427745
+        ],
+        [
+         493.2,
+         49.427745,
+         493.92,
+         62.77999999999997
+        ],
+        [
+         493.2,
+         62.77999999999997,
+         493.92,
+         62.85549
+        ],
+        [
+         545.23,
+         36.0025,
+         545.98,
+         49.427745
+        ],
+        [
+         545.23,
+         49.427745,
+         545.98,
+         62.77999999999997
+        ]
+       ],
+       "raw_edge_coverage": {
+        "left": "different",
+        "right": "different",
+        "top": "unchanged",
+        "bottom": "different"
+       }
+      }
+     }
+    ],
+    "x": {
+     "mean_abs": 52.03000000000003,
+     "worst": -52.03000000000003
+    },
+    "y": {
+     "mean_abs": 0.0049999999999954525,
+     "worst": -0.0049999999999954525
+    },
+    "width": {
+     "mean_abs": 0.029999999999972715,
+     "worst": -0.029999999999972715
+    },
+    "height": {
+     "mean_abs": 0.08049000000002593,
+     "worst": 0.08049000000002593
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 52.03000000000003,
+      "worst": -52.03000000000003
+     },
+     "top": {
+      "mean_abs": 0.0049999999999954525,
+      "worst": -0.0049999999999954525
+     },
+     "right": {
+      "mean_abs": 52.06,
+      "worst": -52.06
+     },
+     "bottom": {
+      "mean_abs": 0.07549000000003048,
+      "worst": 0.07549000000003048
+     }
+    }
+   },
+   "noise_floor": 0.12
+  }
+ ],
+ "gt_pages": 1,
+ "out_pages": 1
+}

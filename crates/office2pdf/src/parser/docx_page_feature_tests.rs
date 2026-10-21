@@ -903,6 +903,42 @@ fn header_table_content_reaches_the_generated_page_header() {
     );
 }
 
+/// A top-level header table sits in the story's flow, where Word stacks its
+/// rows with the story's paragraphs, unless a `w:tblpPr` with a positioning
+/// attribute lifts it out. Word ignores an empty `w:tblpPr` (issue #2250).
+#[test]
+fn a_header_table_flows_in_its_story_unless_tblppr_positions_it() {
+    const STYLES: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#;
+    for (positioning, flows_in_story) in [
+        ("", true),
+        ("<w:tblpPr/>", true),
+        (r#"<w:tblpPr w:tblpY="200"/>"#, false),
+        (
+            r#"<w:tblpPr w:vertAnchor="page" w:tblpYSpec="top"/>"#,
+            false,
+        ),
+    ] {
+        let header_xml: String = format!(
+            r#"<w:tbl><w:tblPr>{positioning}<w:tblW w:w="0" w:type="auto"/></w:tblPr><w:tblGrid><w:gridCol w:w="4000"/></w:tblGrid><w:tr><w:tc><w:tcPr><w:tcW w:w="4000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t>Cell</w:t></w:r></w:p></w:tc></w:tr></w:tbl><w:p/>"#
+        );
+        let page: FlowPage =
+            parse_flow_page(&build_docx_with_raw_header_styles(STYLES, &header_xml));
+        let header = page.header.as_ref().expect("the section declares a header");
+        let tables: Vec<bool> = header
+            .shapes
+            .iter()
+            .filter(|shape| matches!(shape.content, crate::ir::HeaderFooterShapeContent::Table(_)))
+            .map(|shape| shape.flows_in_story)
+            .collect();
+        assert_eq!(
+            tables,
+            vec![flows_in_story],
+            "a header table with `{positioning}` must flow in its story: {flows_in_story}"
+        );
+    }
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn floating_picture_in_header_table_obeys_paragraph_vertical_anchor() {

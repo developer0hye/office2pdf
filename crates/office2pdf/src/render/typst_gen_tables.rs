@@ -2563,6 +2563,140 @@ fn auto_row_frame_height_estimate_pt(
         })
 }
 
+/// The height a table in a header or footer story's flow takes, in points:
+/// each row's exact height, or the taller of its `atLeast` floor and its
+/// tallest cell (issue #2250).
+///
+/// A cell is its insets plus its paragraphs, each on the line box this file
+/// draws it in, with as many lines as its words wrap to and its `w:spacing`
+/// gaps. A docxide-pdf lesson plan's one-row header table of 12pt Calibri
+/// lines and 43-twip cell margins measures 19.20pt this way; Word draws the
+/// row's bottom border 19.03pt below `w:header`.
+///
+/// `None` when the table holds anything else — a vertically merged cell, a
+/// picture or text box in a run, a nested table or a drawing — or a face does
+/// not resolve, so the story's reservation leaves the table out rather than
+/// grow on a guess.
+pub(super) fn word_story_table_height_pt(
+    table: &Table,
+    line_grid_pitch: Option<f64>,
+) -> Option<f64> {
+    if table
+        .rows
+        .iter()
+        .flat_map(|row| &row.cells)
+        .any(|cell| cell.row_span != 1)
+    {
+        return None;
+    }
+    // The same default `generate_table_inner` lays the cells out with.
+    let default_cell_padding: Insets = table.default_cell_padding.unwrap_or(Insets {
+        top: 5.0,
+        right: 5.0,
+        bottom: 5.0,
+        left: 5.0,
+    });
+    table.rows.iter().try_fold(0.0, |height_pt, row| {
+        let row_pt: f64 = match row.height {
+            Some(exact_pt) => exact_pt,
+            None => {
+                let has_east_asian_text: bool = row_has_east_asian_text(row);
+                let row_east_asian = RowEastAsianMetrics {
+                    has_east_asian_text,
+                    takes_east_asian_metrics: !table.seats_bottom_aligned_text_on_descender
+                        && (has_east_asian_text || row_is_set_in_east_asian_face(row)),
+                };
+                let mut column: usize = 0;
+                let mut tallest_pt: f64 = 0.0;
+                for cell in &row.cells {
+                    let span: usize = (cell.col_span as usize).max(1);
+                    let width_pt: f64 =
+                        table.column_widths.get(column..column + span)?.iter().sum();
+                    column += span;
+                    let inset: Insets = cell_inset_with_border(cell, default_cell_padding);
+                    let content_pt: f64 = word_story_cell_content_height_pt(
+                        cell,
+                        width_pt - inset.left - inset.right,
+                        line_grid_pitch,
+                        row_east_asian,
+                        table.default_vertical_align,
+                    )?;
+                    tallest_pt = tallest_pt.max(inset.top + content_pt + inset.bottom);
+                }
+                tallest_pt.max(row.minimum_height.unwrap_or(0.0))
+            }
+        };
+        Some(height_pt + row_pt)
+    })
+}
+
+/// The height of a story table cell's paragraphs, as
+/// [`word_story_table_height_pt`] measures them in `text_width_pt`.
+fn word_story_cell_content_height_pt(
+    cell: &TableCell,
+    text_width_pt: f64,
+    line_grid_pitch: Option<f64>,
+    row_east_asian: RowEastAsianMetrics,
+    default_vertical_align: Option<CellVerticalAlign>,
+) -> Option<f64> {
+    let mut height_pt: f64 = 0.0;
+    for (index, block) in cell.content.iter().enumerate() {
+        let Block::Paragraph(paragraph) = block else {
+            return None;
+        };
+        if paragraph.runs.iter().any(|run| run.inline_box.is_some()) {
+            return None;
+        }
+        // A blank paragraph takes the line of the text beside it, as the
+        // header table is drawn (`prefer_sibling_metrics_for_empty_cell_paragraphs`).
+        let mark_runs: Option<Cow<'_, [Run]>> = if paragraph.runs.is_empty() {
+            Some(cell_paragraph_mark_metric_runs(
+                &cell.content,
+                index,
+                &paragraph.style,
+                true,
+            )?)
+        } else {
+            None
+        };
+        let runs: &[Run] = mark_runs.as_deref().unwrap_or(&paragraph.runs);
+        let line_box: CellLineBox = word_cell_line_box(
+            runs,
+            &paragraph.style,
+            line_grid_pitch,
+            row_east_asian,
+            cell.vertical_align.or(default_vertical_align),
+            false,
+            None,
+            None,
+            None,
+            false,
+        )?;
+        let lines: usize = if paragraph.runs.is_empty() {
+            1
+        } else {
+            super::runs_line_count(
+                runs,
+                text_width_pt
+                    - paragraph.style.indent_left.unwrap_or(0.0)
+                    - paragraph.style.indent_right.unwrap_or(0.0),
+            )
+        };
+        let line_pt: f64 = (line_box.top_em + line_box.bottom_em) * line_box.font_size_pt;
+        height_pt += paragraph.style.space_before.unwrap_or(0.0)
+            + lines as f64 * line_pt
+            + (lines - 1) as f64 * line_box.leading_pt;
+        if !cell_grid_absorbs_space_after(&paragraph.style, line_grid_pitch, row_east_asian) {
+            height_pt += paragraph.style.space_after.unwrap_or(0.0);
+        }
+        // The cell carries the line advance on to its next paragraph.
+        if index + 1 < cell.content.len() {
+            height_pt += line_box.leading_pt;
+        }
+    }
+    Some(height_pt)
+}
+
 /// Word's PDF graphics grid is 1/300 inch (0.24 pt). Its native exports snap
 /// a declared half-point table border to two grid units, or 0.48 pt (#724).
 const WORD_PDF_GRAPHICS_GRID_PT: f64 = 72.0 / 300.0;

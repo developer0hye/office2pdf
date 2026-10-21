@@ -924,9 +924,11 @@ fn convert_hf_table(
             .map(|row_height| height + row_height)
     });
     let frame: HeaderFooterFrame = hf_table_frame(source_table, &table, width_pt, height_pt);
+    let flows_in_story: bool = !table_is_positioned(source_table);
     tracing::debug!(
         table_width_pt = width_pt,
         has_declared_height = height_pt.is_some(),
+        flows_in_story,
         "parsed DOCX header/footer table"
     );
     HeaderFooterShape {
@@ -936,7 +938,22 @@ fn convert_hf_table(
         width: width_pt,
         height: height_pt.unwrap_or_default(),
         behind_text: true,
+        flows_in_story,
     }
+}
+
+/// Whether a `w:tblpPr` positions the table outside its story's text flow.
+/// Word ignores an empty one, as [`floating_table_frame`] does.
+fn table_is_positioned(source_table: &docx_rs::Table) -> bool {
+    serde_json::to_value(&source_table.property)
+        .ok()
+        .and_then(|properties| {
+            properties
+                .get("position")
+                .and_then(serde_json::Value::as_object)
+                .map(|position| !position.is_empty())
+        })
+        .unwrap_or(false)
 }
 
 /// The `w:tblpPr` frame of a body table, or `None` for a flow table.
@@ -1792,6 +1809,7 @@ fn hf_anchored_shapes(anchors: &[HfAnchorBox]) -> Vec<crate::ir::HeaderFooterSha
                 frame,
                 anchor_paragraph_index,
                 behind_text: anchor.behind_doc,
+                flows_in_story: false,
             })
         })
         .collect()
