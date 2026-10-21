@@ -1,0 +1,407 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 39.8592,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 11.04,
+        "x": 144.0,
+        "y": 76.8
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-1344c564dcf8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 38.2464,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 11.04,
+        "x": 99.36,
+        "y": 101.76
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-175c7731b528",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 12.48,
+        "x": 80.16,
+        "y": 31.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 300 DPI: \"FIRST HEADER\" on both sides at the same seat; only Times New Roman versus Liberation Serif glyph outlines differ."
+      },
+      "id": "p2-ce6dccec170f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.256,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.72,
+        "x": 123.36,
+        "y": 74.88
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-89d2143a5537",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.5648,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.72,
+        "x": 123.84,
+        "y": 98.4
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-db25ce89c0d9",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.64,
+        "x": 160.8,
+        "y": 31.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 300 DPI: \"FIRST HEADER\" on both sides at the same seat; only Times New Roman versus Liberation Serif glyph outlines differ."
+      },
+      "id": "p2-9406f3f3b043",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.48,
+        "y": 75.36
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-5df648f1da5a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.64,
+        "x": 72.48,
+        "y": 98.88
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-3ebd756b9f1f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 117.12,
+        "y": 78.24
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-c7a40ad90710",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 137.76,
+        "y": 78.24
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-4fc86c92b76b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.68,
+        "x": 95.04,
+        "y": 76.8
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-e016a2b6f7cb",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.2,
+        "x": 88.32,
+        "y": 101.76
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-587859926b87",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.0352,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.72,
+        "x": 103.2,
+        "y": 78.24
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-c77b41e1a44a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 10.08,
+        "x": 142.08,
+        "y": 31.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 300 DPI: \"FIRST HEADER\" on both sides at the same seat; only Times New Roman versus Liberation Serif glyph outlines differ."
+      },
+      "id": "p2-2d34f788b9d7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.2,
+        "x": 109.92,
+        "y": 102.24
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-1ef0d5172e38",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 117.6,
+        "y": 101.76
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-29bfd7832961",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 138.24,
+        "y": 101.76
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-acb5ce04501b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.16,
+        "x": 123.84,
+        "y": 31.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 300 DPI: \"FIRST HEADER\" on both sides at the same seat; only Times New Roman versus Liberation Serif glyph outlines differ."
+      },
+      "id": "p2-e673d83446fc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.2,
+        "x": 109.92,
+        "y": 78.24
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-478f15c2709c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 81.6,
+        "y": 78.24
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-cf99b029c4ed",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.2,
+        "x": 88.32,
+        "y": 78.24
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-d32f040e0057",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 133.92,
+        "y": 31.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 300 DPI: \"FIRST HEADER\" on both sides at the same seat; only Times New Roman versus Liberation Serif glyph outlines differ."
+      },
+      "id": "p2-e19000071e49",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 81.6,
+        "y": 101.76
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-1de73ad83e59",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 7.2,
+        "x": 144.0,
+        "y": 102.24
+      },
+      "disposition": {
+        "issue": "#2255",
+        "kind": "issue",
+        "note": "\"Continued text\" sits 23.81pt above Word's line because its 24pt w:before is dropped at the top of the next page; both copies of the line form these clusters."
+      },
+      "id": "p2-0d59719137c4",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 24,
+    "duplicate": 0,
+    "total": 24,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

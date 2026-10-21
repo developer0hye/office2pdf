@@ -2647,6 +2647,158 @@ fn a_continuous_sections_later_pages_leave_its_first_story_out_of_the_margin() {
     );
 }
 
+// ----- A continuous section's first page is where its first line lands (issue #2254) -----
+
+/// A two-section package on A4 with 72pt margins, whose 697.9pt body holds 43
+/// exact 16pt lines. Section one states the cover and running stories and
+/// `w:titlePg`, and ends with its `lines`-th line. The continuous second
+/// section closes with `second_section` and holds `continued` lines. The
+/// cover stories, and any `rIdOwnCover` the second section states, carry
+/// their names as text. The body declares Times New Roman, which resolves
+/// through Liberation Serif or Tinos where the native face is absent: an
+/// exact line keeps its height only for a declared face whose metrics resolve.
+fn continuous_title_page_package(
+    lines: usize,
+    continued: &[&str],
+    second_section: &str,
+) -> Vec<u8> {
+    let spacing = r#"<w:spacing w:before="0" w:after="0" w:line="320" w:lineRule="exact"/>"#;
+    let font = r#"<w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/></w:rPr>"#;
+    let first_section = section_properties_xml(
+        &[
+            ("headerReference", "first", "rIdCoverHead"),
+            ("footerReference", "first", "rIdCoverFoot"),
+            ("headerReference", "default", "rIdHead"),
+            ("footerReference", "default", "rIdFoot"),
+        ],
+        true,
+    );
+    let mut body = String::new();
+    for line in 1..=lines {
+        let mark: &str = if line == lines { &first_section } else { "" };
+        body.push_str(&format!(
+            r#"<w:p><w:pPr>{spacing}{mark}</w:pPr><w:r>{font}<w:t>Line {line}</w:t></w:r></w:p>"#
+        ));
+    }
+    for text in continued {
+        body.push_str(&format!(
+            r#"<w:p><w:pPr>{spacing}</w:pPr><w:r>{font}<w:t>{text}</w:t></w:r></w:p>"#
+        ));
+    }
+    body.push_str(
+        &second_section.replace("<w:sectPr>", r#"<w:sectPr><w:type w:val="continuous"/>"#),
+    );
+    build_docx_with_section_stories(
+        &body,
+        &[
+            ("rIdCoverHead", "header", "Cover head"),
+            ("rIdCoverFoot", "footer", "Cover foot"),
+            ("rIdHead", "header", "Running head"),
+            ("rIdFoot", "footer", "Running foot"),
+            ("rIdOwnCover", "header", "Own cover head"),
+        ],
+    )
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_continuous_title_page_section_shows_its_first_stories_where_its_first_line_lands() {
+    // Word's references for docxide-pdf `cont-first-*` give a continuous
+    // `w:titlePg` section's first-page stories to the page its first line
+    // lands on. When that line no longer fits under the previous section,
+    // the next page is the section's first page; when it fits, the shared
+    // page belongs to the previous section and later pages print the
+    // default stories. Our pages used to consult only the first section.
+    let linked = section_properties_xml(&[], true);
+    let opening = ["Opening line", "Second line", "Third line"];
+
+    // The opening line does not fit under 43 lines: page two is the second
+    // section's first page, and page three is not.
+    let data = continuous_title_page_package(43, &opening, &linked);
+    let page_two = compiled_page_text(&data, 1);
+    assert!(
+        page_two.contains("Opening line")
+            && page_two.contains("Cover head")
+            && page_two.contains("Cover foot"),
+        "page two opens the second section and takes its first stories, got {page_two:?}"
+    );
+    assert!(
+        !page_two.contains("Running head") && !page_two.contains("Running foot"),
+        "page two prints no default story, got {page_two:?}"
+    );
+    let data = continuous_title_page_package(
+        43,
+        &opening
+            .iter()
+            .copied()
+            .chain((1..=43).map(|_| "Filler"))
+            .collect::<Vec<_>>(),
+        &linked,
+    );
+    let page_three = compiled_page_text(&data, 2);
+    assert!(
+        page_three.contains("Running head") && page_three.contains("Running foot"),
+        "page three is not the second section's first page, got {page_three:?}"
+    );
+
+    // Under 42 lines the opening line fits, so page one is the second
+    // section's first page too, and page two, where its third line lands,
+    // takes the default stories.
+    let data = continuous_title_page_package(42, &opening, &linked);
+    let page_two = compiled_page_text(&data, 1);
+    assert!(
+        page_two.contains("Third line")
+            && page_two.contains("Running head")
+            && page_two.contains("Running foot")
+            && !page_two.contains("Cover"),
+        "a section that began on page one shows its default stories on page two, got {page_two:?}"
+    );
+
+    // Without `w:titlePg` the section has no first page of its own.
+    let data = continuous_title_page_package(43, &opening, &section_properties_xml(&[], false));
+    let page_two = compiled_page_text(&data, 1);
+    assert!(
+        page_two.contains("Running head") && !page_two.contains("Cover"),
+        "a section without w:titlePg prints its default stories, got {page_two:?}"
+    );
+
+    // A first story the section states itself is the one its first page shows,
+    // while the omitted footer still links to section one's.
+    let own_cover = section_properties_xml(&[("headerReference", "first", "rIdOwnCover")], true);
+    let data = continuous_title_page_package(43, &opening, &own_cover);
+    let page_two = compiled_page_text(&data, 1);
+    assert!(
+        page_two.contains("Own cover head") && page_two.contains("Cover foot"),
+        "the second section's first page shows its own first header, got {page_two:?}"
+    );
+
+    // A page the two sections share belongs to the first one: page one shows
+    // its cover story, not the second section's, and so does a later shared
+    // page show its default story.
+    let data = continuous_title_page_package(42, &opening, &own_cover);
+    let page_one = compiled_page_text(&data, 0);
+    assert!(
+        page_one.contains("Opening line")
+            && page_one.contains("Cover head")
+            && !page_one.contains("Own cover head"),
+        "the shared page keeps section one's first header, got {page_one:?}"
+    );
+    let page_two = compiled_page_text(&data, 1);
+    assert!(
+        page_two.contains("Running head") && !page_two.contains("Cover"),
+        "page two is neither section's first page, got {page_two:?}"
+    );
+    let data = continuous_title_page_package(53, &opening, &own_cover);
+    let page_two = compiled_page_text(&data, 1);
+    assert!(
+        page_two.contains("Line 53")
+            && page_two.contains("Opening line")
+            && page_two.contains("Running head")
+            && !page_two.contains("Cover"),
+        "a section beginning mid-page leaves that page to section one, got {page_two:?}"
+    );
+}
+
 // ----- Hangul wrap follows the same defined-style trigger (issue #833) -----
 
 /// A pure-Hangul sentence — no digit/Latin boundary, so the auto-space pass

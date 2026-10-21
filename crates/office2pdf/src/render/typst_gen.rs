@@ -140,6 +140,9 @@ struct GenCtx {
     /// Which flow section is being written, so a `<w:titlePg/>` header can
     /// label its own section's first page (issue #846).
     flow_section_index: usize,
+    /// The continuous `<w:titlePg/>` sections that share the page setup the
+    /// current section writes ([`title_page_run_members`]).
+    flow_run_title_page_members: Vec<TitlePageRunMember>,
     /// Layers containing the previous section's borders must be reset explicitly.
     flow_border_layers: [bool; 2],
     has_flow_line_numbering: bool,
@@ -337,6 +340,7 @@ impl GenCtx {
     fn new() -> Self {
         Self {
             flow_section_index: 0,
+            flow_run_title_page_members: Vec::new(),
             flow_border_layers: [false; 2],
             has_flow_line_numbering: false,
             in_flow_body: false,
@@ -772,6 +776,8 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
         }
         match page {
             Page::Flow(flow) | Page::FlowContinuous(flow) => {
+                ctx.flow_run_title_page_members =
+                    title_page_run_members(&doc.pages, index, ctx.flow_section_index);
                 generate_flow_page(
                     &mut out,
                     flow,
@@ -3112,6 +3118,116 @@ fn section_first_page_expression(section_index: usize) -> String {
     )
 }
 
+/// A continuous section that shows first-page stories (`<w:titlePg/>`) and
+/// shares the page setup an earlier section writes. Typst cannot set a page
+/// up again mid-page, so that setup chooses the section's first stories for
+/// it, on the page its first line opens (issue #2254).
+#[derive(Clone)]
+struct TitlePageRunMember {
+    section_index: usize,
+    header: Option<HeaderFooter>,
+    footer: Option<HeaderFooter>,
+    first_header: Option<HeaderFooter>,
+    first_footer: Option<HeaderFooter>,
+}
+
+/// The continuous title-page sections after `pages[index]` that share the
+/// page setup `pages[index]` writes. `section_index` is that section's flow
+/// index. A section holding a page break sets its page up again there
+/// ([`generate_continuous_flow_blocks`]), so the sections after it join that
+/// setup instead.
+fn title_page_run_members(
+    pages: &[Page],
+    index: usize,
+    section_index: usize,
+) -> Vec<TitlePageRunMember> {
+    let mut members: Vec<TitlePageRunMember> = Vec::new();
+    for (offset, page) in pages.iter().skip(index + 1).enumerate() {
+        let Page::FlowContinuous(flow) = page else {
+            break;
+        };
+        // A section stating a first-page story always carries the label
+        // `generate_flow_page` writes, which the member's branch reads.
+        if flow.first_header.is_some() || flow.first_footer.is_some() {
+            members.push(TitlePageRunMember {
+                section_index: section_index + offset + 1,
+                header: flow.header.clone(),
+                footer: flow.footer.clone(),
+                first_header: flow.first_header.clone(),
+                first_footer: flow.first_footer.clone(),
+            });
+        }
+        if flow
+            .content
+            .iter()
+            .any(|block| matches!(block, Block::PageBreak))
+        {
+            break;
+        }
+    }
+    members
+}
+
+/// Typst condition for "this page is a continuous section's first page".
+/// The section's label is laid out with its first line, because Typst holds
+/// a tag back until the next frame lands. Word gives a page the two sections
+/// share to the earlier one, as its references for docxide-pdf
+/// `cont-first-first-fits` show, so the label also has to sit at the body
+/// top, `body_top_pt`, where a line that opens the page lands once Typst has
+/// trimmed the weak gap above it.
+fn continuous_section_first_page_condition(section_index: usize, body_top_pt: f64) -> String {
+    format!(
+        "{{ let start = locate(<{}>).position(); start.page == here().page() and start.y <= {}pt }}",
+        section_first_page_label(section_index),
+        format_f64(body_top_pt + 0.01)
+    )
+}
+
+/// The first-page stories a page setup chooses between, each with the Typst
+/// condition for the page that shows it: the section's own, then each
+/// member's. A story without flow content shows nothing there.
+fn first_page_story_choices<'a>(
+    (own_first_page, own): (&str, Option<&'a HeaderFooter>),
+    members: &'a [TitlePageRunMember],
+    member_story: fn(&TitlePageRunMember) -> Option<&HeaderFooter>,
+    body_top_pt: f64,
+) -> Vec<(String, Option<&'a HeaderFooter>)> {
+    own.map(|story| (own_first_page.to_string(), story))
+        .into_iter()
+        .chain(members.iter().filter_map(|member| {
+            member_story(member).map(|story| {
+                (
+                    continuous_section_first_page_condition(member.section_index, body_top_pt),
+                    story,
+                )
+            })
+        }))
+        .map(|(condition, story)| {
+            (
+                condition,
+                Some(story).filter(|story| hf_has_flow_content(story)),
+            )
+        })
+        .collect()
+}
+
+/// A page setup value that picks, per page, the first branch whose
+/// condition holds, or `default`. `open` and `close` wrap each choice: `{`/`}`
+/// around code, `[`/`]` around markup.
+fn per_page_story_choice(
+    branches: &[(String, String)],
+    default: &str,
+    open: &str,
+    close: &str,
+) -> String {
+    let mut out = String::from("context { ");
+    for (condition, value) in branches {
+        let _ = write!(out, "if {condition} {open}{value}{close} else ");
+    }
+    let _ = write!(out, "{open}{default}{close} }}");
+    out
+}
+
 /// Build the `#set page(header: …)` value for one header story.
 ///
 /// Split out of the page setup so `<w:titlePg/>`'s two stories are built the
@@ -3666,12 +3782,15 @@ fn write_flow_page_setup(
     ctx.active_page_margins = Some(page.margins);
     // A section may declare only a first-page story — `w:titlePg` with just a
     // `first` reference means pages after the first carry none — so the
-    // shortcut has to ask about those too (issue #846).
+    // shortcut has to ask about those too (issue #846), and about the first
+    // stories of the continuous sections sharing this setup (issue #2254).
+    let members: Vec<TitlePageRunMember> = ctx.flow_run_title_page_members.clone();
     if page.header.is_none()
         && page.footer.is_none()
         && page.first_header.is_none()
         && page.first_footer.is_none()
         && page.page_borders.is_none()
+        && members.is_empty()
     {
         write_page_setup(out, size, &page.margins);
         for (index, layer) in ["background", "foreground"].iter().enumerate() {
@@ -3707,40 +3826,58 @@ fn write_flow_page_setup(
     // (issue #846). Both variants share the band and ascent, which come from
     // the section's own margins, so they are built the same way. The choice
     // follows the declared first story even when it has no text: page one
-    // then shows nothing, not the default story (issue #2224).
+    // then shows nothing, not the default story (issue #2224). A continuous
+    // title-page section sharing this setup adds its own first page to the
+    // choice (issue #2254).
+    // TODO(#2373): its default stories and margins still come from this one.
+    let own_first_page: String = format!(
+        "here().page() == {}",
+        section_first_page_expression(ctx.flow_section_index)
+    );
     let default_header = page
         .header
         .as_ref()
         .filter(|header| hf_has_flow_content(header));
-    let first_header = page
-        .first_header
-        .as_ref()
-        .filter(|header| hf_has_flow_content(header));
-    if first_header.is_some() || default_header.is_some() {
+    let first_headers = first_page_story_choices(
+        (&own_first_page, page.first_header.as_ref()),
+        &members,
+        |member| member.first_header.as_ref(),
+        top_margin_pt,
+    );
+    if default_header.is_some() || first_headers.iter().any(|(_, story)| story.is_some()) {
         let default_value = default_header
             .map(|header| flow_header_value(header, page, size, top_margin_pt, ctx))
             .unwrap_or_default();
-        let first_value = first_header
-            .map(|header| flow_header_value(header, page, size, top_margin_pt, ctx))
-            .unwrap_or_default();
-        // The ascent is a page property, so it is set when either story wants
+        let first_values: Vec<(String, FlowHeaderValue)> = first_headers
+            .iter()
+            .map(|(condition, header)| {
+                let value = header
+                    .map(|header| flow_header_value(header, page, size, top_margin_pt, ctx))
+                    .unwrap_or_default();
+                (condition.clone(), value)
+            })
+            .collect();
+        // The ascent is a page property, so it is set when any story wants
         // it; a story that does not is unaffected by it.
-        if default_value.wants_zero_ascent || first_value.wants_zero_ascent {
+        if default_value.wants_zero_ascent
+            || first_values
+                .iter()
+                .any(|(_, value)| value.wants_zero_ascent)
+        {
             out.push_str(", header-ascent: 0pt");
         }
-        match page.first_header {
-            Some(_) => {
-                let _ = write!(
-                    out,
-                    ", header: context {{ if here().page() == {} {{ {} }} else {{ {} }} }}",
-                    section_first_page_expression(ctx.flow_section_index),
-                    first_value.markup,
-                    default_value.markup
-                );
-            }
-            None => {
-                let _ = write!(out, ", header: {}", default_value.markup);
-            }
+        if first_values.is_empty() {
+            let _ = write!(out, ", header: {}", default_value.markup);
+        } else {
+            let branches: Vec<(String, String)> = first_values
+                .into_iter()
+                .map(|(condition, value)| (condition, value.markup))
+                .collect();
+            let _ = write!(
+                out,
+                ", header: {}",
+                per_page_story_choice(&branches, &default_value.markup, "{ ", " }")
+            );
         }
     }
 
@@ -3749,33 +3886,44 @@ fn write_flow_page_setup(
         .footer
         .as_ref()
         .filter(|footer| hf_has_flow_content(footer));
-    let first_footer = page
-        .first_footer
-        .as_ref()
-        .filter(|footer| hf_has_flow_content(footer));
-    if first_footer.is_some() || default_footer.is_some() {
+    let first_footers = first_page_story_choices(
+        (&own_first_page, page.first_footer.as_ref()),
+        &members,
+        |member| member.first_footer.as_ref(),
+        top_margin_pt,
+    );
+    if default_footer.is_some() || first_footers.iter().any(|(_, story)| story.is_some()) {
         let default_value = default_footer
             .map(|footer| flow_footer_value(footer, page, ctx))
             .unwrap_or_default();
-        let first_value = first_footer
-            .map(|footer| flow_footer_value(footer, page, ctx))
-            .unwrap_or_default();
-        if default_value.wants_zero_descent || first_value.wants_zero_descent {
+        let first_values: Vec<(String, FlowFooterValue)> = first_footers
+            .iter()
+            .map(|(condition, footer)| {
+                let value = footer
+                    .map(|footer| flow_footer_value(footer, page, ctx))
+                    .unwrap_or_default();
+                (condition.clone(), value)
+            })
+            .collect();
+        if default_value.wants_zero_descent
+            || first_values
+                .iter()
+                .any(|(_, value)| value.wants_zero_descent)
+        {
             out.push_str(", footer-descent: 0pt");
         }
-        match page.first_footer {
-            Some(_) => {
-                let _ = write!(
-                    out,
-                    ", footer: context {{ if here().page() == {} {{ {} }} else {{ {} }} }}",
-                    section_first_page_expression(ctx.flow_section_index),
-                    first_value.markup,
-                    default_value.markup
-                );
-            }
-            None => {
-                let _ = write!(out, ", footer: {}", default_value.markup);
-            }
+        if first_values.is_empty() {
+            let _ = write!(out, ", footer: {}", default_value.markup);
+        } else {
+            let branches: Vec<(String, String)> = first_values
+                .into_iter()
+                .map(|(condition, value)| (condition, value.markup))
+                .collect();
+            let _ = write!(
+                out,
+                ", footer: {}",
+                per_page_story_choice(&branches, &default_value.markup, "{ ", " }")
+            );
         }
     }
 
@@ -3797,49 +3945,64 @@ fn write_flow_page_setup(
             behind_text,
             ctx,
         )?;
+        // The continuous title-page sections sharing this setup draw their
+        // first stories' artwork on their own first pages (issue #2254).
         let first_stated: bool = page.first_header.is_some() || page.first_footer.is_some();
-        let mut first_markup: String = match first_stated {
-            true => page_anchored_layer_markup(
-                page.first_header.as_ref().or(page.header.as_ref()),
-                page.first_footer.as_ref().or(page.footer.as_ref()),
-                page,
-                size,
-                behind_text,
-                ctx,
-            )?,
-            false => String::new(),
-        };
+        let mut first_branches: Vec<(String, String)> = Vec::new();
+        if first_stated {
+            first_branches.push((
+                own_first_page.clone(),
+                page_anchored_layer_markup(
+                    page.first_header.as_ref().or(page.header.as_ref()),
+                    page.first_footer.as_ref().or(page.footer.as_ref()),
+                    page,
+                    size,
+                    behind_text,
+                    ctx,
+                )?,
+            ));
+        }
+        for member in &members {
+            first_branches.push((
+                continuous_section_first_page_condition(member.section_index, top_margin_pt),
+                page_anchored_layer_markup(
+                    member.first_header.as_ref().or(member.header.as_ref()),
+                    member.first_footer.as_ref().or(member.footer.as_ref()),
+                    page,
+                    size,
+                    behind_text,
+                    ctx,
+                )?,
+            ));
+        }
         let border_markup =
             page_border_layer_markup(page, size, behind_text, ctx.flow_section_index);
-        if behind_text {
-            // Back borders also sit below page-anchored header/footer artwork.
-            default_markup.insert_str(0, &border_markup);
-            first_markup.insert_str(0, &border_markup);
-        } else {
-            default_markup.push_str(&border_markup);
-            first_markup.push_str(&border_markup);
+        for markup in std::iter::once(&mut default_markup)
+            .chain(first_branches.iter_mut().map(|(_, markup)| markup))
+        {
+            if behind_text {
+                // Back borders also sit below page-anchored header/footer artwork.
+                markup.insert_str(0, &border_markup);
+            } else {
+                markup.push_str(&border_markup);
+            }
         }
         let had_border: bool = ctx.flow_border_layers[layer_index];
         ctx.flow_border_layers[layer_index] = !border_markup.is_empty();
-        if default_markup.is_empty() && first_markup.is_empty() {
+        if default_markup.is_empty() && first_branches.iter().all(|(_, markup)| markup.is_empty()) {
             if had_border {
                 let _ = write!(out, ", {layer}: none");
             }
             continue;
         }
-        match first_stated {
-            true => {
-                let _ = write!(
-                    out,
-                    ", {layer}: context {{ if here().page() == {} [{}] else [{}] }}",
-                    section_first_page_expression(ctx.flow_section_index),
-                    first_markup,
-                    default_markup
-                );
-            }
-            false => {
-                let _ = write!(out, ", {layer}: [{default_markup}]");
-            }
+        if first_branches.is_empty() {
+            let _ = write!(out, ", {layer}: [{default_markup}]");
+        } else {
+            let _ = write!(
+                out,
+                ", {layer}: {}",
+                per_page_story_choice(&first_branches, &default_markup, "[", "]")
+            );
         }
     }
 
