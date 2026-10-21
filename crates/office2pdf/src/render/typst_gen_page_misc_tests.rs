@@ -6016,6 +6016,63 @@ fn an_empty_paragraph_overflowing_a_page_opens_the_next_one() {
     );
 }
 
+/// docxide-pdf `cont-first-text-overflow` and `cont-first-empty-overflow`,
+/// unmodified, against the `cont-first-first-fits` control. Each continuous
+/// second section states `w:titlePg` and links section one's "FIRST HEADER"
+/// and "DEFAULT HEADER". In the first two its opening paragraph, "Continued
+/// text" or an empty line, no longer fits on page one, and Word's page two
+/// shows "FIRST HEADER". In the control it fits, so page one is that
+/// section's first page and Word's page two shows "DEFAULT HEADER". Main
+/// printed "DEFAULT HEADER" on all three (issue #2254).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_continuous_section_opening_the_next_page_shows_its_first_page_header_there() {
+    let page_two_text = |fixture: &[u8]| -> Vec<String> {
+        let (document, _warnings) = crate::parser::Parser::parse(
+            &crate::parser::docx::DocxParser,
+            fixture,
+            &crate::config::ConvertOptions::default(),
+        )
+        .expect("the fixture should parse");
+        let generated = generate_typst(&document).expect("the fixture should generate");
+        crate::render::pdf::compiled_text_runs(&generated.source, 1)
+            .expect("the fixture's page two should compile")
+            .into_iter()
+            .map(|run| run.text)
+            .collect()
+    };
+    for (name, fixture) in [
+        (
+            "continuous_text_overflow",
+            &include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/continuous_text_overflow.docx"
+            )[..],
+        ),
+        (
+            "continuous_empty_paragraph_overflow",
+            &include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/continuous_empty_paragraph_overflow.docx"
+            )[..],
+        ),
+    ] {
+        let page_two: Vec<String> = page_two_text(fixture);
+        assert!(
+            page_two.iter().any(|text| text == "FIRST HEADER")
+                && page_two.iter().any(|text| text == "Continued text")
+                && !page_two.iter().any(|text| text == "DEFAULT HEADER"),
+            "{name}: Word's page two shows the first-page header, got {page_two:?}"
+        );
+    }
+    let control: Vec<String> = page_two_text(include_bytes!(
+        "../../../../tests/fixtures/docx/docxide/continuous_framed_section_mark.docx"
+    ));
+    assert!(
+        control.iter().any(|text| text == "DEFAULT HEADER")
+            && !control.iter().any(|text| text == "FIRST HEADER"),
+        "the control's page two shows the default header, got {control:?}"
+    );
+}
+
 /// docxide-pdf `page-header-ordinary-marker`, unmodified: the first section
 /// is one bare section mark, and a continuous section holds "Following
 /// section". The mark is the first block of its section, so Word lays it out

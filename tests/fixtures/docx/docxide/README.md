@@ -140,6 +140,16 @@ the continuous next section, "Continued text". The empty paragraph's line does
 not fit, so native Word opens page 2 with it and sets the text on a 100.78pt
 baseline, one line low; a compiled-layout regression checks both pages.
 
+`continuous_text_overflow.docx` is the unmodified synthetic
+`cases/cont-first-text-overflow/input.docx` from the same revision and license.
+Forty-two exact 16pt lines end in the empty framed section mark, and the
+continuous next section's "Continued text", 24pt before an exact 16pt line, no
+longer fits on page 1. Both sections state `w:titlePg`; the second links the
+first's "FIRST HEADER" and "DEFAULT HEADER". Native Word's page 2 shows
+"FIRST HEADER", as it does for `continuous_empty_paragraph_overflow.docx`, and
+"DEFAULT HEADER" for `continuous_framed_section_mark.docx`, whose continuation
+fits on page 1. A compiled-text regression checks all three.
+
 `empty_frame_control.docx` is the unmodified synthetic
 `cases/empty-frame-control/input.docx` from the same revision and license: an
 empty `w:framePr` paragraph, then "Following paragraph". Native Word sets the

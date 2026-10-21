@@ -39,3 +39,6 @@ Markup-based typesetting system. Compiles `.typ` source to PDF/PNG/SVG/HTML. Emb
   moves whole; where `may_progress()` is false, as in a fresh page or a fixed
   box, it overflows in place. An empty paragraph's blocks are unbreakable for
   that reason (#2253).
+- A tag, such as `#metadata(none) <label>`, waits in `work.tags` until the next
+  frame or placed item lands, so a section label written before a block that
+  moves to the next region lands there with it, at the body top (#2254).
