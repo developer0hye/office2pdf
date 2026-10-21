@@ -4375,8 +4375,9 @@ fn generate_runs_with_tabs_and_metrics_in_context(
             .end_pt
             .map(|end_pt| (lines.continuation_origin_pt, end_pt))
     });
+    let tab_styles: Vec<&TextStyle> = tab_run_styles(runs);
     let struts: Vec<Run> = if wrap.is_some() {
-        tab_strut_runs(runs)
+        tab_strut_runs(&tab_styles)
     } else {
         Vec::new()
     };
@@ -4431,6 +4432,12 @@ fn generate_runs_with_tabs_and_metrics_in_context(
             }
             None => None,
         };
+        let mut leaders: Vec<(TabLeader, String)> = Vec::new();
+        for (leader, run) in tab_leader_runs(tab_stops, tab_styles.get(index - 1).copied()) {
+            let mut markup = String::new();
+            write_runs(&mut markup, std::slice::from_ref(&run))?;
+            leaders.push((leader, markup));
+        }
         write_tab_segment_bindings(
             out,
             index,
@@ -4439,6 +4446,7 @@ fn generate_runs_with_tabs_and_metrics_in_context(
             default_tab_width_pt,
             tab_origin,
             line_wrap,
+            &leaders,
         );
     }
 
@@ -4447,23 +4455,78 @@ fn generate_runs_with_tabs_and_metrics_in_context(
     Ok(())
 }
 
+/// The style of the run holding each tab of `runs`, in order, so tab
+/// `index - 1` is the one before segment `index` of [`split_runs_on_tabs`].
+/// A run carrying an object is not split there, so its text adds no tab.
+fn tab_run_styles(runs: &[Run]) -> Vec<&TextStyle> {
+    runs.iter()
+        .filter(|run| run.footnote.is_none() && run.inline_box.is_none())
+        .flat_map(|run| run.text.matches('\t').map(move |_| &run.style))
+        .collect()
+}
+
 /// One zero-width run per tab, in the tab's own run style. A tab is a
 /// character of its run, so a line that holds only tabs is as tall as their
 /// runs (issue #2226). U+2060 WORD JOINER paints nothing and adds no break
 /// opportunity.
-fn tab_strut_runs(runs: &[Run]) -> Vec<Run> {
-    runs.iter()
-        .filter(|run| run.footnote.is_none() && run.inline_box.is_none())
-        .flat_map(|run| {
-            run.text.matches('\t').map(|_| Run {
-                text: "\u{2060}".to_string(),
-                style: run.style.clone(),
-                href: None,
-                footnote: None,
-                inline_box: None,
-            })
+fn tab_strut_runs(tab_styles: &[&TextStyle]) -> Vec<Run> {
+    tab_styles
+        .iter()
+        .map(|style| Run {
+            text: "\u{2060}".to_string(),
+            style: (*style).clone(),
+            href: None,
+            footnote: None,
+            inline_box: None,
         })
         .collect()
+}
+
+/// The run that draws each leader `tab_stops` name, once per leader, for a
+/// tab in `tab_style`.
+///
+/// A leader is the tab character's own ink, so Word sets it in the face,
+/// size and colour of the run holding the tab rather than the engine's
+/// default face (issue #2244). The run's underline, strike and highlight are
+/// left off: they mark the tab's whole span, not each repeated leader mark.
+fn tab_leader_runs(
+    tab_stops: Option<&[TabStop]>,
+    tab_style: Option<&TextStyle>,
+) -> Vec<(TabLeader, Run)> {
+    let style = TextStyle {
+        underline: None,
+        strikethrough: None,
+        highlight: None,
+        ..tab_style.cloned().unwrap_or_default()
+    };
+    let mut leaders: Vec<(TabLeader, Run)> = Vec::new();
+    for stop in tab_stops.unwrap_or_default() {
+        let Some(text) = tab_leader_text(stop.leader) else {
+            continue;
+        };
+        if leaders.iter().all(|(leader, _)| *leader != stop.leader) {
+            leaders.push((
+                stop.leader,
+                Run {
+                    text: text.to_string(),
+                    style: style.clone(),
+                    href: None,
+                    footnote: None,
+                    inline_box: None,
+                },
+            ));
+        }
+    }
+    leaders
+}
+
+fn tab_leader_text(leader: TabLeader) -> Option<&'static str> {
+    match leader {
+        TabLeader::None => None,
+        TabLeader::Dot => Some("."),
+        TabLeader::Hyphen => Some("-"),
+        TabLeader::Underscore => Some("_"),
+    }
 }
 
 /// A tab segment's runs up to its first break opportunity: the word Word
@@ -4644,10 +4707,19 @@ fn generate_runs_with_tabs_and_metrics(
     write_measured_tab_segments(
         out,
         &segments,
+        &tab_run_styles(runs),
         tab_stops,
         default_tab_width_pt,
         |out, index| {
             generate_runs_with_metrics(out, &segments[index], eojeol_wrap, run_line_metrics)
+        },
+        |out, run| {
+            generate_runs_with_metrics(
+                out,
+                std::slice::from_ref(run),
+                eojeol_wrap,
+                run_line_metrics,
+            )
         },
     );
 }
@@ -4658,18 +4730,23 @@ fn generate_runs_with_tabs_and_metrics(
 /// stop when none is left.
 ///
 /// `segment_runs[index]` is segment `index`'s text, read for its decimal
-/// anchor; `write_segment` emits its content. Header and footer paragraphs
-/// come through here as well as body copy, so a tab lands in the same place in
-/// both. Their segments used to be matched against two running-head shapes
-/// instead, which sent a lone tab to the right margin whenever the last stop
-/// was a right stop, so a header centred on the Header style's centre stop
-/// printed right-aligned (issue #1821).
+/// anchor; `write_segment` emits its content. `tab_styles[index - 1]` is the
+/// style of the tab before that segment, whose leader `write_run` emits as a
+/// run of that style.
+///
+/// Header and footer paragraphs come through here as well as body copy, so a
+/// tab lands in the same place in both. Their segments used to be matched
+/// against two running-head shapes instead, which sent a lone tab to the right
+/// margin whenever the last stop was a right stop, so a header centred on the
+/// Header style's centre stop printed right-aligned (issue #1821).
 pub(super) fn write_measured_tab_segments(
     out: &mut String,
     segment_runs: &[Vec<Run>],
+    tab_styles: &[&TextStyle],
     tab_stops: Option<&[TabStop]>,
     default_tab_width_pt: f64,
     mut write_segment: impl FnMut(&mut String, usize),
+    mut write_run: impl FnMut(&mut String, &Run),
 ) {
     out.push_str("#context {\n");
 
@@ -4683,6 +4760,15 @@ pub(super) fn write_measured_tab_segments(
             continue;
         }
 
+        let leaders: Vec<(TabLeader, String)> =
+            tab_leader_runs(tab_stops, tab_styles.get(index - 1).copied())
+                .into_iter()
+                .map(|(leader, run)| {
+                    let mut markup = String::new();
+                    write_run(&mut markup, &run);
+                    (leader, markup)
+                })
+                .collect();
         write_tab_segment_bindings(
             out,
             index,
@@ -4691,6 +4777,7 @@ pub(super) fn write_measured_tab_segments(
             default_tab_width_pt,
             None,
             None,
+            &leaders,
         );
     }
 
@@ -4738,6 +4825,9 @@ pub(super) fn generate_runs_with_tabs_no_wrap(
 /// with their `tab_strut_*` runs and keeps their height. A pen already past
 /// the end belongs to a segment that wrapped by itself, whose line position
 /// the unwrapped measure does not know, so it never breaks.
+///
+/// `leaders` holds the markup of each leader the tab draws, from
+/// [`tab_leader_runs`].
 #[allow(clippy::too_many_arguments)]
 fn write_tab_segment_bindings(
     out: &mut String,
@@ -4747,6 +4837,7 @@ fn write_tab_segment_bindings(
     default_tab_width_pt: f64,
     tab_origin: Option<&str>,
     wrap: Option<TabLineWrap>,
+    leaders: &[(TabLeader, String)],
 ) {
     let previous = index - 1;
     let pen_var: String = match wrap {
@@ -4847,7 +4938,7 @@ fn write_tab_segment_bindings(
     let _ = writeln!(
         out,
         "  let tab_fill_{index} = {}",
-        build_tab_fill_expr(index, tab_stops)
+        build_tab_fill_expr(index, tab_stops, leaders)
     );
     let tail = format!("#tab_fill_{index}#tab_segment_{index}");
     match wrap {
@@ -5862,7 +5953,11 @@ fn build_tab_break_expr(
     expr
 }
 
-fn build_tab_fill_expr(index: usize, tab_stops: Option<&[TabStop]>) -> String {
+fn build_tab_fill_expr(
+    index: usize,
+    tab_stops: Option<&[TabStop]>,
+    leaders: &[(TabLeader, String)],
+) -> String {
     let Some(tab_stops) = tab_stops else {
         return format!("h(tab_advance_{index})");
     };
@@ -5874,7 +5969,7 @@ fn build_tab_fill_expr(index: usize, tab_stops: Option<&[TabStop]>) -> String {
     let prefix_width_var = format!("tab_prefix_width_{index}");
     let mut expr = String::new();
     for (stop_index, stop) in tab_stops.iter().enumerate() {
-        let branch = tab_fill_content_expr(index, stop.leader);
+        let branch = tab_fill_content_expr(index, stop.leader, leaders);
 
         if stop_index == 0 {
             let _ = write!(
@@ -5895,13 +5990,22 @@ fn build_tab_fill_expr(index: usize, tab_stops: Option<&[TabStop]>) -> String {
     expr
 }
 
-fn tab_fill_content_expr(index: usize, leader: TabLeader) -> String {
-    let leader_markup = match leader {
-        TabLeader::None => return format!("h(tab_advance_{index})"),
-        TabLeader::Dot => ".",
-        TabLeader::Hyphen => "-",
-        TabLeader::Underscore => "\\_",
+/// The fill a tab to a stop with `leader` draws: `leaders`' markup for that
+/// leader repeated across the advance, or the bare mark when `leaders` has
+/// none for it.
+fn tab_fill_content_expr(
+    index: usize,
+    leader: TabLeader,
+    leaders: &[(TabLeader, String)],
+) -> String {
+    let Some(text) = tab_leader_text(leader) else {
+        return format!("h(tab_advance_{index})");
     };
+    let leader_markup: String = leaders
+        .iter()
+        .find(|(drawn, _)| *drawn == leader)
+        .map(|(_, markup)| markup.clone())
+        .unwrap_or_else(|| escape_typst(text));
 
     format!("box(width: tab_advance_{index}, repeat[{leader_markup}])")
 }

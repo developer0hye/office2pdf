@@ -1,6 +1,7 @@
-//! Tabs in a Word body paragraph: stops count from the margin, and a tab
-//! that runs past the line moves to the next line with the word after it
-//! (issue #2226).
+//! Tabs in a Word body paragraph: stops count from the margin, a tab that
+//! runs past the line moves to the next line with the word after it (issue
+//! #2226), and a leader is drawn in the tab's own run formatting (issue
+//! #2244).
 
 use super::*;
 
@@ -324,4 +325,123 @@ fn word_paragraph_tabs_past_the_line_move_to_the_next_line() {
     assert_text_on_line_below(&probe(ISSUE_RIGHT_STOPS, "", &[20, 28]), &[], |width| {
         MARGIN_PT + 431.25 - width
     });
+}
+
+/// A run in `font` at `half_points`, painted `color` (hex RRGGBB).
+#[cfg(not(target_arch = "wasm32"))]
+fn styled_run(font: &str, half_points: u32, color: &str, content: &str) -> String {
+    format!(
+        r#"<w:r><w:rPr><w:rFonts w:ascii="{font}" w:hAnsi="{font}"/><w:color w:val="{color}"/><w:sz w:val="{half_points}"/></w:rPr>{content}</w:r>"#
+    )
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn rgba(hex: &str) -> [u8; 4] {
+    let channel = |at: usize| u8::from_str_radix(&hex[at..at + 2], 16).unwrap();
+    [channel(0), channel(2), channel(4), 255]
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_tab_leader_takes_the_face_size_and_colour_of_the_tab_run() {
+    // Word draws a leader as the tab character's own ink, so it takes the
+    // formatting of the run that holds the `w:tab`, whatever the text around
+    // it states. The leader used to take the engine's default face and size:
+    // docxide-pdf's case10 rows painted 11pt Libertinus periods where Word
+    // paints the tab run's 12pt Aptos (issue #2244).
+    for (leader, glyph) in [("dot", '.'), ("hyphen", '-'), ("underscore", '_')] {
+        // The tab run against text in the other face, size and colour.
+        for (tab_font, tab_half_points, tab_color, text_font) in [
+            ("Times New Roman", 28, "C00000", "Arial"),
+            ("Arial", 18, "1F4E79", "Times New Roman"),
+        ] {
+            let text = |content: &str| {
+                styled_run(text_font, 20, "000000", &format!("<w:t>{content}</w:t>"))
+            };
+            let row = paragraph(
+                &format!(
+                    r#"<w:tabs><w:tab w:val="right" w:leader="{leader}" w:pos="7920"/></w:tabs>"#
+                ),
+                &(text("Contents")
+                    + &styled_run(tab_font, tab_half_points, tab_color, "<w:tab/>")
+                    + &text("7")),
+            );
+            // Text in the tab run's face shows which family that face
+            // resolves to on this host.
+            let face = paragraph(
+                "",
+                &styled_run(tab_font, 20, "000000", "<w:t>Reference</w:t>"),
+            );
+            let runs = placed(&tab_docx(&[row, face]));
+            let case = format!("{leader} leader on a {tab_font} tab");
+            let family: &str = &find(&runs, "Reference").0.family;
+            let contents = &find(&runs, "Contents").0;
+            assert_ne!(
+                family, contents.family,
+                "{case}: the two faces must resolve apart to tell them apart"
+            );
+
+            let leaders: Vec<&crate::render::pdf::PlacedTextRun> = runs
+                .iter()
+                .map(|(run, _)| run)
+                .filter(|run| run.text.chars().all(|ch| ch == glyph))
+                .collect();
+            assert!(
+                leaders.len() > 10,
+                "{case}: expected a row of leader marks, got {runs:?}"
+            );
+            for mark in leaders {
+                assert_eq!(mark.family, family, "{case}: leader face");
+                assert_close(
+                    mark.font_size_pt,
+                    f64::from(tab_half_points) / 2.0,
+                    &format!("{case}: leader size"),
+                );
+                assert_eq!(
+                    mark.fill_rgba,
+                    Some(rgba(tab_color)),
+                    "{case}: leader colour"
+                );
+            }
+            // The text either side keeps its own run's formatting.
+            assert_close(contents.font_size_pt, 10.0, &format!("{case}: text size"));
+            assert_eq!(
+                find(&runs, "7").0.fill_rgba,
+                Some(rgba("000000")),
+                "{case}: text colour"
+            );
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn the_tab_leaders_fixture_draws_each_rows_dots_in_its_runs_face_and_size() {
+    // docxide-pdf's case10: each row is one unformatted run that resolves
+    // `Normal`'s Aptos 12pt, and Word's export draws its dots in that face
+    // and size (issue #2244).
+    let data: &[u8] = include_bytes!("../../../../tests/fixtures/docx/docxide/tab_leaders.docx");
+    let runs = placed(data);
+    for label in [
+        "Introduction",
+        "Background",
+        "Methods",
+        "Results",
+        "Conclusion",
+    ] {
+        let row = &find(&runs, label).0;
+        let dots: Vec<&crate::render::pdf::PlacedTextRun> = runs
+            .iter()
+            .map(|(run, _)| run)
+            .filter(|run| run.text == "." && (run.baseline_pt - row.baseline_pt).abs() < 0.01)
+            .collect();
+        assert!(
+            dots.len() > 50,
+            "{label}: expected a row of dots, got {dots:?}"
+        );
+        for dot in dots {
+            assert_eq!(dot.family, row.family, "{label}: leader face");
+            assert_close(dot.font_size_pt, 12.0, &format!("{label}: leader size"));
+        }
+    }
 }

@@ -656,6 +656,8 @@ pub(crate) struct PlacedTextRun {
     pub text: String,
     /// Per-glyph horizontal offsets from the run origin, in run-local points.
     pub glyph_x_offsets_pt: Vec<f64>,
+    /// The run's solid paint as 8-bit RGBA; `None` for a gradient or tiling.
+    pub fill_rgba: Option<[u8; 4]>,
 }
 
 /// Every text run the compiled document places on `page_index`, in layout order.
@@ -749,6 +751,10 @@ fn compiled_text_runs_with_line_seating(
                         .iter()
                         .map(|glyph| glyph.x_offset.at(text.size).to_pt())
                         .collect(),
+                    fill_rgba: match &text.fill {
+                        typst::visualize::Paint::Solid(color) => Some(color.to_vec4_u8()),
+                        _ => None,
+                    },
                 }),
                 _ => {}
             }

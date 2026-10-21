@@ -5242,14 +5242,24 @@ fn generate_hf_paragraph(
                     .collect()
             })
             .collect();
+        let tab_styles: Vec<&TextStyle> = paragraph
+            .elements
+            .iter()
+            .filter_map(|element| match element {
+                HFInline::Run(run) if is_hf_tab(element) => Some(&run.style),
+                _ => None,
+            })
+            .collect();
         let default_tab_width_pt: f64 =
             paragraph_default_tab_width_pt(&paragraph.style, ctx.default_tab_width_pt);
         write_measured_tab_segments(
             out,
             &segment_runs,
+            &tab_styles,
             paragraph.style.tab_stops.as_deref(),
             default_tab_width_pt,
             |out, index| generate_hf_elements(out, segments[index], ctx),
+            text::generate_run,
         );
     } else {
         generate_hf_elements(out, &paragraph.elements, ctx);

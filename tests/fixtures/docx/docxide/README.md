@@ -253,3 +253,10 @@ Apache-2.0: one numbered Times New Roman 14pt paragraph, "Test marker", with
 draws "1." at 66.775pt, 0.025pt from the 72pt − 5pt − 0.25pt origin, and tabs
 the body to 80.525pt, by the 8.55pt stop; a compiled-layout regression checks
 both within 0.25pt.
+
+`tab_leaders.docx` is the unmodified synthetic `cases/case10/input.docx` from
+[docxide-pdf at fe7b8bea](https://github.com/sverrejb/docxide-pdf/tree/fe7b8beafa7612cc89ad62a7d27b2c6141c4d6ed/tests/fixtures/cases/case10),
+Apache-2.0. Under its page 1 "Tab Leaders" heading, five rows tab to a right
+stop at 7920 twips with `w:leader="dot"`; their runs state nothing and resolve
+`Normal`'s Aptos 12pt. Native Word draws each row's dots in that face and
+size; a compiled-layout regression checks that the leader takes them.
