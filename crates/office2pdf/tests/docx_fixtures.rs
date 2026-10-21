@@ -691,6 +691,46 @@ fn drawing_rule_only_paragraphs_carry_their_horizontal_rules() {
     );
 }
 
+/// POI's `bug57031.docx` holds three 2.25pt rules. Two stand alone in their
+/// paragraphs; the third follows a page break in its own paragraph, which
+/// dropped it with the break's carrier. It is now the line that paragraph
+/// resumes on, right after the break (issue #2251).
+#[test]
+fn bug57031_rule_after_a_page_break_rides_the_resumed_line() {
+    let pages = flow_pages("poi/bug57031.docx");
+    let blocks: Vec<&Block> = pages.iter().flat_map(|page| &page.content).collect();
+    let rule = HorizontalRule {
+        width: HorizontalRuleWidth::Fraction(1.0),
+        height: 2.25,
+        alignment: Alignment::Center,
+        paint: HorizontalRulePaint::Shaded,
+    };
+    let rules: Vec<(usize, HorizontalRule)> = blocks
+        .iter()
+        .enumerate()
+        .filter_map(|(index, block)| match block {
+            Block::Paragraph(paragraph) => paragraph
+                .style
+                .horizontal_rule
+                .as_deref()
+                .map(|rule| (index, *rule)),
+            _ => None,
+        })
+        .collect();
+
+    assert_eq!(
+        rules.iter().map(|(_, rule)| *rule).collect::<Vec<_>>(),
+        [rule; 3],
+        "every rule is carried"
+    );
+    assert!(
+        rules.iter().any(|(index, _)| index
+            .checked_sub(1)
+            .is_some_and(|previous| matches!(blocks[previous], Block::PageBreak))),
+        "one rule resumes its paragraph after the page break"
+    );
+}
+
 // ---------------------------------------------------------------------------
 // numberings.docx
 // ---------------------------------------------------------------------------

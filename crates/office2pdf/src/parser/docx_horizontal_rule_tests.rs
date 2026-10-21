@@ -175,6 +175,97 @@ fn a_rule_beside_text_leaves_the_paragraph_its_text() {
     assert_eq!(rule_of(paragraphs[0]), None);
 }
 
+/// The body's blocks as text and rule per paragraph, with each page and
+/// column break in its place.
+fn outline(blocks: &[Block]) -> Vec<(String, Option<HorizontalRule>)> {
+    blocks
+        .iter()
+        .filter_map(|block| match block {
+            Block::Paragraph(paragraph) => Some((text_of(paragraph), rule_of(paragraph))),
+            Block::PageBreak => Some(("<page>".to_string(), None)),
+            Block::ColumnBreak => Some(("<column>".to_string(), None)),
+            _ => None,
+        })
+        .collect()
+}
+
+/// A page or column break splits its paragraph into the lines before and
+/// after it. A rule alone on its side of the break is that stretch's line, as
+/// a rule-only paragraph is, so it is drawn on the page it ends or the page it
+/// resumes on. A paragraph opening with a page break before a rule dropped the
+/// rule as a mere break carrier (a POI fixture, `bug57031.docx`).
+#[test]
+fn a_break_gives_a_rule_alone_on_its_side_the_line_there() {
+    let full = HorizontalRule {
+        width: HorizontalRuleWidth::Fraction(1.0),
+        height: 1.5,
+        alignment: Alignment::Center,
+        paint: HorizontalRulePaint::Shaded,
+    };
+    let full_rule = rule_run(r#"style="width:0;height:1.5pt" o:hralign="center" o:hr="t""#);
+    let half_rule = rule_run(r#"style="width:0;height:1.5pt" o:hrpct="500" o:hr="t""#);
+    let page_break = r#"<w:r><w:br w:type="page"/></w:r>"#;
+    let column_break = r#"<w:r><w:br w:type="column"/></w:r>"#;
+    let spacing = r#"<w:pPr><w:spacing w:before="240" w:after="120"/></w:pPr>"#;
+    let blocks = parse_body(&format!(
+        "<w:p>{page_break}{full_rule}</w:p>\
+         <w:p>{half_rule}{column_break}</w:p>\
+         <w:p>{spacing}<w:r><w:t>Before</w:t></w:r>{page_break}{full_rule}</w:p>\
+         <w:p>{spacing}{full_rule}{page_break}<w:r><w:t>After</w:t></w:r></w:p>",
+    ));
+
+    let half = HorizontalRule {
+        width: HorizontalRuleWidth::Fraction(0.5),
+        alignment: Alignment::Left,
+        ..full
+    };
+    assert_eq!(
+        outline(&blocks),
+        [
+            ("<page>".to_string(), None),
+            (String::new(), Some(full)),
+            (String::new(), Some(half)),
+            ("<column>".to_string(), None),
+            ("Before".to_string(), None),
+            ("<page>".to_string(), None),
+            (String::new(), Some(full)),
+            (String::new(), Some(full)),
+            ("<page>".to_string(), None),
+            ("After".to_string(), None),
+        ],
+        "{blocks:#?}"
+    );
+
+    // The rule's line is one of its paragraph's lines: only the paragraph's
+    // first line keeps the space before, and only its last the space after.
+    let spaced = paragraphs(&blocks);
+    let spacing_of =
+        |paragraph: &Paragraph| (paragraph.style.space_before, paragraph.style.space_after);
+    assert_eq!(spacing_of(spaced[2]), (Some(12.0), None), "Before");
+    assert_eq!(spacing_of(spaced[3]), (None, Some(6.0)), "its rule");
+    assert_eq!(spacing_of(spaced[4]), (Some(12.0), None), "the next rule");
+    assert_eq!(spacing_of(spaced[5]), (None, Some(6.0)), "After");
+}
+
+/// A rule shares its side of a break with text, or sits in the same `w:r` as
+/// the break, where the scan cannot tell which side it is on: such a rule is
+/// not drawn, so it never lands on a line of text or on the wrong page.
+#[test]
+fn a_rule_beside_text_or_its_break_run_draws_nothing() {
+    let rule_attributes = r#"style="width:0;height:1.5pt" o:hr="t""#;
+    let blocks = parse_body(&format!(
+        r#"<w:p><w:r><w:br w:type="page"/></w:r>{}<w:r><w:t>Beside</w:t></w:r></w:p>
+           <w:p><w:r><w:br w:type="page"/><w:pict><v:rect {rule_attributes}/></w:pict></w:r></w:p>
+           <w:p><w:r><w:pict><v:rect {rule_attributes}/></w:pict><w:br w:type="page"/></w:r></w:p>"#,
+        rule_run(rule_attributes),
+    ));
+
+    assert!(
+        outline(&blocks).iter().all(|(_, rule)| rule.is_none()),
+        "{blocks:#?}"
+    );
+}
+
 const VML_NAMESPACES: &str = r#"xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
     xmlns:v="urn:schemas-microsoft-com:vml"
     xmlns:o="urn:schemas-microsoft-com:office:office""#;
