@@ -144,6 +144,11 @@ pub struct ParagraphStyle {
     /// section after it. Word adds only the part of `space_before` beyond it
     /// to the previous paragraph's whole after-gap (issue #2232).
     pub section_mark_after: Option<f64>,
+    /// The paragraph opens a continuous section, and keeps its `space_before`
+    /// at the top of the next page when it does not fit on the current one,
+    /// as Word's export of docxide-pdf's `cont-first-text-overflow` shows
+    /// (issue #2255). The renderer sets it.
+    pub keeps_space_before_at_page_top: bool,
     /// Decoration-only portion of before-spacing suppressed at a later page top.
     pub decoration_before_spacing: Option<f64>,
     /// DrawingML paragraph spacing stated as a fraction of the paragraph's

@@ -263,6 +263,15 @@ struct GenCtx {
     /// change its body frame without changing the page that already began.
     active_page_size: Option<PageSize>,
     active_page_margins: Option<Margins>,
+    /// The top margin the active page setup writes, where a line that opens
+    /// a page lands. A header taller than the section's margin grows it.
+    active_body_top_pt: Option<f64>,
+    /// Whether the flow section before the one being written ends at a page
+    /// or column break, so the new section opens at a page or column top.
+    previous_flow_ends_at_layout_break: bool,
+    /// How many paragraphs have had a page-top gap label written, which
+    /// keeps each label unique.
+    next_page_top_gap_id: usize,
     /// The spreadsheet cell box the current paragraph is laid out in, so a
     /// centred line can be seated on Excel's whole-point grid (issue #1600).
     /// `None` outside a sheet table cell.
@@ -386,6 +395,9 @@ impl GenCtx {
             available_measure_pt: None,
             active_page_size: None,
             active_page_margins: None,
+            active_body_top_pt: None,
+            previous_flow_ends_at_layout_break: false,
+            next_page_top_gap_id: 0,
             sheet_cell_box: None,
             body_floats: Vec::new(),
             next_body_float_id: 0,
@@ -778,6 +790,15 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
             Page::Flow(flow) | Page::FlowContinuous(flow) => {
                 ctx.flow_run_title_page_members =
                     title_page_run_members(&doc.pages, index, ctx.flow_section_index);
+                ctx.previous_flow_ends_at_layout_break = index
+                    .checked_sub(1)
+                    .and_then(|previous| doc.pages.get(previous))
+                    .is_some_and(|previous| match previous {
+                        Page::Flow(previous) | Page::FlowContinuous(previous) => {
+                            previous.content.last().is_some_and(is_layout_break)
+                        }
+                        _ => false,
+                    });
                 generate_flow_page(
                     &mut out,
                     flow,
@@ -847,6 +868,9 @@ fn generate_flow_page(
     if begins_continuously {
         suppress_typst_spacing_at_continuous_section_start(&mut section_content);
         section_mark_space = take_section_mark_space(&mut section_content);
+        if page.columns.is_none() && !ctx.previous_flow_ends_at_layout_break {
+            keep_opening_space_before_at_page_top(&mut section_content);
+        }
     }
     if !begins_continuously {
         write_flow_page_setup(out, page, &size, false, ctx)?;
@@ -1069,6 +1093,34 @@ fn suppress_typst_spacing_at_continuous_section_start(content: &mut [Block]) {
     if !style.space_before.is_some_and(|gap| gap > 0.0) {
         style.space_before = Some(0.0);
     }
+}
+
+/// Mark a continuous section's first block, a paragraph with text, to keep
+/// its stated `w:before` at the top of the next page should it not fit on
+/// this one: Word's export of docxide-pdf's `cont-first-text-overflow` keeps
+/// the gap there (issue #2255), where Typst drops a block's `above` at a page
+/// top. Run after [`take_section_mark_space`], which writes its gap as fixed
+/// space and zeroes the paragraph's own. The caller skips a section that
+/// opens after a page or column break, where Word suppresses the spacing of a
+/// paragraph that follows a break.
+///
+/// TODO(unprobed page-top gaps): a multi-column section's opener, the
+/// section-mark gap and a paragraph after the section's first block lose
+/// their gap at a page top as well; no Word reference shows what they keep.
+fn keep_opening_space_before_at_page_top(content: &mut [Block]) {
+    let Some(first) = content
+        .first_mut()
+        .filter(|block| block_has_paragraph_content(block))
+    else {
+        return;
+    };
+    let style: &mut ParagraphStyle = match first {
+        Block::Paragraph(paragraph) => &mut paragraph.style,
+        Block::Caption(caption) => &mut caption.paragraph.style,
+        _ => return,
+    };
+    style.keeps_space_before_at_page_top =
+        !style.starts_after_layout_break && style.space_before.is_some_and(|gap| gap > 0.0);
 }
 
 /// The style of a block's first paragraph; a list's is its first item's.
@@ -3793,6 +3845,7 @@ fn write_flow_page_setup(
         && members.is_empty()
     {
         write_page_setup(out, size, &page.margins);
+        ctx.active_body_top_pt = Some(page.margins.top);
         for (index, layer) in ["background", "foreground"].iter().enumerate() {
             if ctx.flow_border_layers[index] {
                 let _ = writeln!(out, "#set page({layer}: none)");
@@ -3810,6 +3863,7 @@ fn write_flow_page_setup(
         ctx.document_default_text.as_ref(),
         continuation_page,
     );
+    ctx.active_body_top_pt = Some(top_margin_pt);
     let _ = write!(
         out,
         "#set page(width: {}pt, height: {}pt, margin: (top: {}pt, bottom: {}pt, left: {}pt, right: {}pt)",

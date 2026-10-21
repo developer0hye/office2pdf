@@ -937,6 +937,7 @@ pub(super) fn merge_paragraph_style(
             .space_after
             .or(style_paragraph.and_then(|style| style.space_after)),
         section_mark_after: None,
+        keeps_space_before_at_page_top: false,
         decoration_before_spacing: None,
         // Percentage paragraph gaps are a DrawingML intermediate. Word's
         // spacing reaches the IR as absolute points.

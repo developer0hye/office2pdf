@@ -360,7 +360,13 @@ pub(super) fn generate_paragraph(
     } else {
         indent
     };
-    let has_outer_spacing_block: bool = outer_indent.is_some();
+    let page_top_gap: Option<(f64, f64)> = style
+        .space_before
+        .filter(|gap| style.keeps_space_before_at_page_top && *gap > 0.0)
+        .zip(ctx.active_body_top_pt);
+    // The page-top gap goes inside the outermost block, so that block is
+    // written even without an indent.
+    let has_outer_spacing_block: bool = outer_indent.is_some() || page_top_gap.is_some();
     // Each part of a paragraph split at a clearing break wraps on its own, so
     // the one after the break can start below the tables it clears. A heading
     // stays whole: it is one outline entry.
@@ -426,6 +432,13 @@ pub(super) fn generate_paragraph(
     let wraps_in_style_block: bool =
         !has_outer_spacing_block && has_para_style && float_wrap.is_some();
     if has_outer_spacing_block {
+        let page_top_gap_label: Option<String> = page_top_gap.map(|_| {
+            let id: usize = ctx.next_page_top_gap_id;
+            ctx.next_page_top_gap_id += 1;
+            let label: String = format!("o2p-page-top-gap-{id}");
+            let _ = writeln!(out, "#metadata(none) <{label}>");
+            label
+        });
         out.push_str("#block(width: 100%");
         write_block_spacing_params(out, style, true, empty_paragraph_bottom_border_extent_pt);
         if outer_indent.is_some() {
@@ -433,6 +446,9 @@ pub(super) fn generate_paragraph(
         }
         write_empty_paragraph_unbreakable(out, is_empty_paragraph);
         out.push_str(")[\n");
+        if let Some((label, (gap, body_top_pt))) = page_top_gap_label.zip(page_top_gap) {
+            write_page_top_gap(out, &label, gap, body_top_pt);
+        }
         if let Some(open) = float_wrap.as_deref().filter(|_| wraps_in_outer_block) {
             out.push_str(open);
         }
@@ -3260,6 +3276,22 @@ fn write_block_spacing_params(
         let below: f64 = style.space_after.unwrap_or(0.0) + after_spacing_adjustment_pt;
         let _ = write!(out, ", below: {}pt", format_f64(below));
     }
+}
+
+/// Re-add a paragraph's before-gap where its block opens a page
+/// ([`ParagraphStyle::keeps_space_before_at_page_top`]). Typst drops a
+/// block's `above` there, so the gap becomes fixed space at the top of the
+/// block, written only when the block's label, written just before it, sits
+/// at the body top. Typst lays a tag out with the next frame, so the label
+/// lands at the block's top whether or not the space is there, and the
+/// layout settles. Elsewhere on a page the block's own `above` stands.
+fn write_page_top_gap(out: &mut String, label: &str, gap: f64, body_top_pt: f64) {
+    let _ = writeln!(
+        out,
+        "#context if locate(<{label}>).position().y <= {}pt {{ v({}pt) }}",
+        format_f64(body_top_pt + 0.01),
+        format_f64(gap)
+    );
 }
 
 /// Keeps an empty paragraph's line whole at a page or column break.

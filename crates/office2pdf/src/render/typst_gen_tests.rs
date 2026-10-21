@@ -666,6 +666,78 @@ fn continuous_section_start_keeps_a_stated_space_before() {
     }
 }
 
+/// A continuous section's first paragraph that no longer fits on the page
+/// opens the next one with its stated `w:before` still above it. Word's
+/// export of docxide-pdf's `cont-first-text-overflow` sets that page's
+/// "Continued text" its 24pt before below the first baseline, where Typst
+/// drops a block's gap at a page top (issue #2255). Sixteen exact 16pt lines
+/// leave 4pt of the 260pt text column, so every variant opens page two.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn continuous_section_start_keeps_its_space_before_at_the_next_page_top() {
+    let opening_baseline = |space_before: Option<f64>, indent_left: Option<f64>| -> f64 {
+        let exact_line = |text: &str| -> Paragraph {
+            let Block::Paragraph(mut paragraph) = make_paragraph(text) else {
+                unreachable!();
+            };
+            // A declared face keeps the exact line box on hosts without
+            // Word's fonts.
+            paragraph.runs[0].style.font_family = Some("Times New Roman".to_string());
+            paragraph.runs[0].style.font_size = Some(14.0);
+            paragraph.style.line_spacing = Some(LineSpacing::Exact(16.0));
+            paragraph.style.space_after = Some(0.0);
+            paragraph
+        };
+        let section = |content: Vec<Block>| -> FlowPage {
+            let Page::Flow(mut page) = make_flow_page(content) else {
+                unreachable!();
+            };
+            page.size = PageSize {
+                width: 300.0,
+                height: 300.0,
+            };
+            page.margins = Margins {
+                top: 20.0,
+                bottom: 20.0,
+                left: 20.0,
+                right: 20.0,
+            };
+            page
+        };
+        let fillers: Vec<Block> = (1..=16)
+            .map(|line| Block::Paragraph(exact_line(&format!("Line {line}"))))
+            .collect();
+        let mut opening: Paragraph = exact_line("Continued");
+        opening.style.space_before = space_before;
+        opening.style.indent_left = indent_left;
+        let document: Document = make_doc(vec![
+            Page::Flow(section(fillers)),
+            Page::FlowContinuous(section(vec![Block::Paragraph(opening)])),
+        ]);
+        let output: TypstOutput = generate_typst(&document).expect("Typst should generate");
+        let placed = crate::render::pdf::compiled_text_runs(&output.source, 1)
+            .unwrap_or_else(|error| panic!("compile failed: {error}\n{}", output.source));
+        placed
+            .iter()
+            .find(|run| run.text == "Continued")
+            .unwrap_or_else(|| panic!("page two should open with the section: {placed:?}"))
+            .baseline_pt
+    };
+
+    for indent_left in [None, Some(18.0)] {
+        let unspaced: f64 = opening_baseline(None, indent_left);
+        for space_before in [24.0, 12.0] {
+            let spaced: f64 = opening_baseline(Some(space_before), indent_left);
+            assert!(
+                (spaced - unspaced - space_before).abs() < 0.01,
+                "a {space_before}pt w:before (indent {indent_left:?}) must stay above the \
+                 section's first line at the next page top, moved it {}pt",
+                spaced - unspaced
+            );
+        }
+    }
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn continuous_section_columns_start_without_typst_block_spacing() {
