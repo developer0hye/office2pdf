@@ -2078,3 +2078,129 @@ fn ordered_list_literal_counting_symbols_print_as_text() {
         );
     }
 }
+
+/// One flow list whose items each declare `(level, w:ind w:left,
+/// w:hanging)` in twips, as Word stores them, with a tab after each marker.
+#[cfg(not(target_arch = "wasm32"))]
+fn twip_indented_list(
+    kind: ListKind,
+    pattern: Option<&str>,
+    items: &[(u32, i32, i32, &str)],
+) -> crate::ir::List {
+    let twips = |value: i32| f64::from(value) / 20.0;
+    let level_style = |level: u32| {
+        (
+            level,
+            ListLevelStyle {
+                kind,
+                numbering_pattern: pattern.map(NumberingPattern::parse),
+                full_numbering: false,
+                marker_text: None,
+                marker_style: None,
+            },
+        )
+    };
+    crate::ir::List {
+        kind,
+        items: items
+            .iter()
+            .enumerate()
+            .map(|(index, (level, left, hanging, body))| ListItem {
+                content: vec![Paragraph {
+                    style: ParagraphStyle {
+                        indent_left: Some(twips(*left)),
+                        indent_first_line: Some(-twips(*hanging)),
+                        numbering_suffix: Some(crate::ir::ListMarkerSuffix::Tab),
+                        ..ParagraphStyle::default()
+                    },
+                    runs: vec![Run {
+                        text: body.to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                        inline_box: None,
+                    }],
+                }],
+                level: *level,
+                start_at: (index == 0 && kind == ListKind::Ordered).then_some(1),
+            })
+            .collect(),
+        level_styles: items
+            .iter()
+            .map(|(level, ..)| level_style(*level))
+            .collect(),
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn list_items_whose_indents_differ_by_a_few_twips_keep_their_word_columns() {
+    // Word stores indents in twips, and one level's items often disagree by
+    // a rounding step: 992 vs 993 twips, or 357 (0.63cm) vs 360 (0.25in).
+    // Requiring an exact match dropped the level's geometry, so the markers
+    // sat on the margin and the bodies at Typst's default indent (issue
+    // #2332). Each marker and body must stay where its own w:ind puts it.
+    let cases = [
+        (
+            ListKind::Ordered,
+            Some("a 1.)"),
+            vec![(0, 993, 567, "Alpha"), (0, 992, 567, "Bravo")],
+        ),
+        (
+            ListKind::Ordered,
+            Some("1."),
+            vec![
+                (0, 357, 357, "Alpha"),
+                (0, 360, 360, "Bravo"),
+                (0, 360, 360, "Charlie"),
+            ],
+        ),
+        (
+            ListKind::Unordered,
+            None,
+            vec![(0, 1440, 360, "Alpha"), (0, 1437, 357, "Bravo")],
+        ),
+        (
+            ListKind::Ordered,
+            Some("1."),
+            vec![
+                (0, 360, 360, "Alpha"),
+                (1, 1080, 360, "Bravo"),
+                (1, 1079, 359, "Charlie"),
+            ],
+        ),
+    ];
+    for (kind, pattern, items) in cases {
+        let list = twip_indented_list(kind, pattern, &items);
+        let output =
+            generate_typst(&make_doc(vec![make_flow_page(vec![Block::List(list)])])).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs(&output.source, 0).unwrap();
+        for (_, left, hanging, body) in &items {
+            let body_run = runs
+                .iter()
+                .find(|run| run.text.contains(body))
+                .unwrap_or_else(|| panic!("{body:?} is not painted: {runs:?}"));
+            let marker_left = runs
+                .iter()
+                .filter(|run| {
+                    (run.baseline_pt - body_run.baseline_pt).abs() < 0.5
+                        && run.left_pt < body_run.left_pt
+                })
+                .map(|run| run.left_pt)
+                .min_by(f64::total_cmp)
+                .unwrap_or_else(|| panic!("{body:?} has no marker: {runs:?}"));
+            let margin = crate::defaults::DEFAULT_MARGIN_PT;
+            let expected_body = margin + f64::from(*left) / 20.0;
+            let expected_marker = margin + f64::from(left - hanging) / 20.0;
+            assert!(
+                (body_run.left_pt - expected_body).abs() < 0.25,
+                "{kind:?} {body:?} body at {}pt, w:ind puts it at {expected_body}pt",
+                body_run.left_pt
+            );
+            assert!(
+                (marker_left - expected_marker).abs() < 0.25,
+                "{kind:?} {body:?} marker at {marker_left}pt, w:ind puts it at {expected_marker}pt",
+            );
+        }
+    }
+}

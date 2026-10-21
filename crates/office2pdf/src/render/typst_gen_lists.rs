@@ -315,6 +315,20 @@ fn paragraph_list_indent(
     })
 }
 
+/// How far a level's items may stray from its first item's marker origin and
+/// hanging span and still share that geometry.
+///
+/// Word stores indents in twips, and one level's items often disagree by a
+/// rounding step: 992 vs 993 twips, or 357 (0.63cm) vs 360 (0.25in). Requiring
+/// an exact match dropped the whole level to Typst's default indents, putting
+/// the markers on the margin (issue #2332). In the docxide and bulk corpora
+/// such spreads stay within 15 twips (0.75pt), well under what a reader sees,
+/// while the next smallest is 3.8pt.
+const LIST_LEVEL_INDENT_TOLERANCE_PT: f64 = 1.0;
+
+/// The marker origin and hanging span one level's items share, taken from its
+/// first item, or `None` if any item lacks one or strays further than
+/// [`LIST_LEVEL_INDENT_TOLERANCE_PT`] from it.
 fn common_list_level_indent(
     items: &[crate::ir::ListItem],
     level: u32,
@@ -326,12 +340,14 @@ fn common_list_level_indent(
         .filter_map(|item| item.content.first())
         .map(|paragraph| paragraph_list_indent(&paragraph.style, hangs_into_margin));
     let first = geometries.next()??;
+    let within_tolerance =
+        |left: f64, right: f64| (left - right).abs() <= LIST_LEVEL_INDENT_TOLERANCE_PT;
 
     geometries
         .all(|geometry| {
             geometry.is_some_and(|geometry| {
-                f64_approx_eq(geometry.marker_origin_pt, first.marker_origin_pt)
-                    && f64_approx_eq(geometry.marker_width_pt, first.marker_width_pt)
+                within_tolerance(geometry.marker_origin_pt, first.marker_origin_pt)
+                    && within_tolerance(geometry.marker_width_pt, first.marker_width_pt)
             })
         })
         .then_some(first)
