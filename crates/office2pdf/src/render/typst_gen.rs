@@ -4514,6 +4514,11 @@ fn generate_flow_hf_content(
             out.push_str("#set block(breakable: false)\n");
             // Where a paragraph's face metrics are unknown, it keeps the
             // first paragraph's leading and the spacing on either side of it.
+            // Where the first paragraph's are unknown, every gap keeps the
+            // 0.65em spacing: Typst resolves it at each paragraph's own text
+            // size, which a `#v` in points cannot net out. A
+            // `#v(gap - 0.65em)` advanced the 12pt lines of a docxide header
+            // under a picture 0.65pt further than the gap it stated.
             let differs = |left: f64, right: f64| (left - right).abs() > 1e-6;
             let mut current_leading: Option<f64> = leading;
             let mut upper_runs: Option<&[Run]> = None;
@@ -4522,14 +4527,10 @@ fn generate_flow_hf_content(
                     out.push_str("\n#parbreak()\n");
                     let gap: Option<f64> =
                         text::word_hf_paragraph_gap_pt(upper_runs, runs, bottom_edge_em);
-                    match (gap, leading) {
-                        (Some(gap), Some(leading)) if differs(gap, leading) => {
-                            let _ = writeln!(out, "#v({}pt)", format_f64(gap - leading));
-                        }
-                        (Some(gap), None) => {
-                            let _ = writeln!(out, "#v({}pt - {spacing})", format_f64(gap));
-                        }
-                        _ => {}
+                    if let (Some(gap), Some(leading)) = (gap, leading)
+                        && differs(gap, leading)
+                    {
+                        let _ = writeln!(out, "#v({}pt)", format_f64(gap - leading));
                     }
                     let own_leading: Option<f64> =
                         text::word_hf_line_leading_pt(runs, bottom_edge_em).or(leading);
