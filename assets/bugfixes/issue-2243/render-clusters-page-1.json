@@ -1,0 +1,159 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 19757.0304,
+      "bbox_pt": {
+        "height": 147.84,
+        "width": 216.0,
+        "x": 72.0,
+        "y": 85.44
+      },
+      "disposition": {
+        "issues": [
+          "#2245",
+          "#2394",
+          "#2395",
+          "#2145",
+          "#2238"
+        ],
+        "kind": "issue",
+        "note": "The whole outer table. The cell fills, the vertical merge of the nested USA cell, the cell vertical centring and the narrower point-sized column widths are lost with each universal-measure w:tcW (#2245). The table sits 10pt high because the 8pt after and 12.95pt line of w:pPrDefault are dropped (#2394). The outer left and right rules are black because w:start and w:end in w:tblBorders are ignored (#2395); they also lose their middle segments beside the tall second row (#2145), and the empty paragraph closing the outer cell adds a line under the nested table (#2238). Face and size match the reference after this fix."
+      },
+      "id": "p1-271b5780bf76",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 120.4992,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 71.52,
+        "x": 72.48,
+        "y": 160.8
+      },
+      "disposition": {
+        "issues": [
+          "#2245",
+          "#2394"
+        ],
+        "kind": "issue",
+        "note": "Reference-only glyphs of All Projects / Pending, which the reference centres in the tall second row. Ours sits at the top of the cell because the cell's w:vAlign is lost with its universal-measure w:tcW (#2245), and starts from a table placed 10pt high (#2394). The glyph shapes match: same Carlito face at 11pt."
+      },
+      "id": "p1-d4ef6c99e6ea",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.3392,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.8,
+        "x": 121.44,
+        "y": 175.68
+      },
+      "disposition": {
+        "issues": [
+          "#2245",
+          "#2394"
+        ],
+        "kind": "issue",
+        "note": "Reference-only glyphs of All Projects / Pending, which the reference centres in the tall second row. Ours sits at the top of the cell because the cell's w:vAlign is lost with its universal-measure w:tcW (#2245), and starts from a table placed 10pt high (#2394). The glyph shapes match: same Carlito face at 11pt."
+      },
+      "id": "p1-2f3cb483ad8f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 97.44,
+        "y": 160.8
+      },
+      "disposition": {
+        "issues": [
+          "#2245",
+          "#2394"
+        ],
+        "kind": "issue",
+        "note": "Reference-only glyphs of All Projects / Pending, which the reference centres in the tall second row. Ours sits at the top of the cell because the cell's w:vAlign is lost with its universal-measure w:tcW (#2245), and starts from a table placed 10pt high (#2394). The glyph shapes match: same Carlito face at 11pt."
+      },
+      "id": "p1-0cc8530014c7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 90.72,
+        "y": 174.24
+      },
+      "disposition": {
+        "issues": [
+          "#2245",
+          "#2394"
+        ],
+        "kind": "issue",
+        "note": "Reference-only glyphs of All Projects / Pending, which the reference centres in the tall second row. Ours sits at the top of the cell because the cell's w:vAlign is lost with its universal-measure w:tcW (#2245), and starts from a table placed 10pt high (#2394). The glyph shapes match: same Carlito face at 11pt."
+      },
+      "id": "p1-cdc526a4cde2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 83.04,
+        "y": 160.8
+      },
+      "disposition": {
+        "issues": [
+          "#2245",
+          "#2394"
+        ],
+        "kind": "issue",
+        "note": "Reference-only glyphs of All Projects / Pending, which the reference centres in the tall second row. Ours sits at the top of the cell because the cell's w:vAlign is lost with its universal-measure w:tcW (#2245), and starts from a table placed 10pt high (#2394). The glyph shapes match: same Carlito face at 11pt."
+      },
+      "id": "p1-35ea665a3b4d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 107.04,
+        "y": 173.76
+      },
+      "disposition": {
+        "issues": [
+          "#2245",
+          "#2394"
+        ],
+        "kind": "issue",
+        "note": "Reference-only glyphs of All Projects / Pending, which the reference centres in the tall second row. Ours sits at the top of the cell because the cell's w:vAlign is lost with its universal-measure w:tcW (#2245), and starts from a table placed 10pt high (#2394). The glyph shapes match: same Carlito face at 11pt."
+      },
+      "id": "p1-e01d5f6fb881",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 7,
+    "duplicate": 0,
+    "total": 7,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

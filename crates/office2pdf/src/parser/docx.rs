@@ -450,7 +450,8 @@ impl Parser for DocxParser {
         data: &[u8],
         _options: &ConvertOptions,
     ) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
-        let (expanded, mut warnings) = super::docx_alt_chunk::expand(data)?;
+        let normalized = super::docx_strict_relationships::normalize(data);
+        let (expanded, mut warnings) = super::docx_alt_chunk::expand(normalized.as_ref())?;
         let data = expanded.as_ref();
         let default_tab_stop_pt: Option<f64> = extract_default_tab_stop_pt(data);
         let word_compatibility_mode: WordCompatibilityMode = extract_compatibility_mode(data);
