@@ -11,13 +11,17 @@ pub struct HeaderFooter {
     /// Fit-to-page scale of a worksheet header/footer's horizontal coordinate
     /// box. `None` for flow-page stories and sheets whose story is not scaled.
     pub sheet_print_scale: Option<f64>,
-    /// Drawing shapes and floating tables placed in the page overlay. Shapes
-    /// may be page-relative or anchored to a header/footer paragraph; a
-    /// decorative header banner carries no text (issue #961).
+    /// Drawing shapes and tables placed in the page overlay. Shapes may be
+    /// page-relative or anchored to a header/footer paragraph; a decorative
+    /// header banner carries no text (issue #961). A table with
+    /// [`HeaderFooterShape::flows_in_story`] is drawn there too, but counts
+    /// toward the story's height (issue #2250).
     pub shapes: Vec<HeaderFooterShape>,
 }
 
-/// An element a header or footer story places outside its text flow.
+/// An element a header or footer story draws in the page overlay: a drawing
+/// or a table, which may still sit in the story's flow
+/// ([`Self::flows_in_story`]).
 #[derive(Debug, Clone)]
 pub struct HeaderFooterShape {
     pub content: HeaderFooterShapeContent,
@@ -32,6 +36,11 @@ pub struct HeaderFooterShape {
     /// Drawing-shape z-order from `<wp:anchor behindDoc="1">`. Header/footer
     /// tables are placed behind the main story to match Word's paint order.
     pub behind_text: bool,
+    /// Whether this is a table in the story's text flow — a top-level `w:tbl`
+    /// that no `w:tblpPr` positions — whose rows Word stacks with the story's
+    /// paragraphs, so they count toward the story's height (issue #2250).
+    /// False for drawings and positioned tables.
+    pub flows_in_story: bool,
 }
 
 /// Content drawn in a header/footer's page overlay.

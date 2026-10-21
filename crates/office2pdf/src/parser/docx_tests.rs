@@ -2641,6 +2641,7 @@ fn test_docx_page_borders_back_layer_stays_behind_header_artwork() {
             width: 80.0,
             height: 80.0,
             behind_text: true,
+            flows_in_story: false,
         }],
     });
     let output = crate::render::typst_gen::generate_typst(&document).unwrap();
