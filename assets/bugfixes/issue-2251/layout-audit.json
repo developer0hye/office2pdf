@@ -1,0 +1,621 @@
+{
+ "pages": [
+  {
+   "lines": {
+    "gt": 7,
+    "out": 11,
+    "matched": 6,
+    "missing": 1,
+    "extra": 5,
+    "deviant": 6,
+    "missing_text": [
+     "moslava\u010dkoj\u017eupaniji\u201c"
+    ],
+    "extra_text": [
+     "-moslava\u010dkoj\u017eupaniji\u201c",
+     "Strate\u0161kiizakonodavniokvir..................................",
+     "Odgovornostizaupravljanje...................................",
+     "PredmetisvrhaPoziva.........................................",
+     "PokazateljiPoziva..........................................."
+    ]
+   },
+   "baseline": {
+    "mean_abs_dy": 81.81984,
+    "worst_dy": 94.18901000000005,
+    "worst_dy_signed": -94.18901000000005,
+    "worst_line": "UPUTEZAPRIJAVITELJE"
+   },
+   "dx0": {
+    "mean_abs": 0.14353616666666133,
+    "worst": 0.19061999999999557
+   },
+   "width": {
+    "mean_abs_pct": 0.11232098747838376,
+    "worst_pct": 0.4718651685392656
+   },
+   "instances": {
+    "compared": 6,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 6,
+    "large_shifts": [
+     {
+      "label": "UPUTEZAPRIJAVITELJE",
+      "gt_x": 144.05,
+      "gt_y": 227.83000000000004,
+      "out_x": 144.21543,
+      "out_y": 133.64099,
+      "dx": 0.16542999999998642,
+      "dy": -94.18901000000005,
+      "width_pct": 0.14686075550437605
+     },
+     {
+      "label": "Pozivnadostavuprojektnihprijedlogauograni\u010denom",
+      "gt_x": 102.05,
+      "gt_y": 329.1,
+      "out_x": 102.194438,
+      "out_y": 234.92566,
+      "dx": 0.14443800000000806,
+      "dy": -94.17434000000003,
+      "width_pct": 1.453955861981621e-14
+     },
+     {
+      "label": "postupkudodjelebespovratnihsredstavatrajnogmodaliteta",
+      "gt_x": 83.275,
+      "gt_y": 352.85,
+      "out_x": 83.45176,
+      "out_y": 258.72865,
+      "dx": 0.17675999999998737,
+      "dy": -94.12135,
+      "width_pct": -9.335950245410385e-06
+     },
+     {
+      "label": "\u201eRazvojnovihpoduzetni\u010dkihinkubatorauSisa\u010dko-",
+      "gt_x": 98.8,
+      "gt_y": 438.37,
+      "out_x": 98.858989,
+      "out_y": 344.26896,
+      "dx": 0.05898899999999685,
+      "dy": -94.10104000000001,
+      "width_pct": -0.016307797201476407
+     },
+     {
+      "label": "(referentnibroj:IP.4.1.06)",
+      "gt_x": 206.6,
+      "gt_y": 595.17,
+      "out_x": 206.79062,
+      "out_y": 507.9877,
+      "dx": 0.19061999999999557,
+      "dy": -87.18229999999994,
+      "width_pct": 0.03888286767492453
+     },
+     {
+      "label": "Stranica1",
+      "gt_x": 275.38,
+      "gt_y": 766.975,
+      "out_x": 275.50498,
+      "out_y": 794.126,
+      "dx": 0.12497999999999365,
+      "dy": 27.150999999999954,
+      "width_pct": -0.4718651685392656
+     }
+    ],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 6,
+    "fine_shifts": [
+     {
+      "label": "UPUTEZAPRIJAVITELJE",
+      "gt_x": 144.05,
+      "gt_y": 227.83000000000004,
+      "out_x": 144.21543,
+      "out_y": 133.64099,
+      "dx": 0.16542999999998642,
+      "dy": -94.18901000000005,
+      "width_pct": 0.14686075550437605
+     },
+     {
+      "label": "Pozivnadostavuprojektnihprijedlogauograni\u010denom",
+      "gt_x": 102.05,
+      "gt_y": 329.1,
+      "out_x": 102.194438,
+      "out_y": 234.92566,
+      "dx": 0.14443800000000806,
+      "dy": -94.17434000000003,
+      "width_pct": 1.453955861981621e-14
+     },
+     {
+      "label": "postupkudodjelebespovratnihsredstavatrajnogmodaliteta",
+      "gt_x": 83.275,
+      "gt_y": 352.85,
+      "out_x": 83.45176,
+      "out_y": 258.72865,
+      "dx": 0.17675999999998737,
+      "dy": -94.12135,
+      "width_pct": -9.335950245410385e-06
+     },
+     {
+      "label": "\u201eRazvojnovihpoduzetni\u010dkihinkubatorauSisa\u010dko-",
+      "gt_x": 98.8,
+      "gt_y": 438.37,
+      "out_x": 98.858989,
+      "out_y": 344.26896,
+      "dx": 0.05898899999999685,
+      "dy": -94.10104000000001,
+      "width_pct": -0.016307797201476407
+     },
+     {
+      "label": "(referentnibroj:IP.4.1.06)",
+      "gt_x": 206.6,
+      "gt_y": 595.17,
+      "out_x": 206.79062,
+      "out_y": 507.9877,
+      "dx": 0.19061999999999557,
+      "dy": -87.18229999999994,
+      "width_pct": 0.03888286767492453
+     },
+     {
+      "label": "Stranica1",
+      "gt_x": 275.38,
+      "gt_y": 766.975,
+      "out_x": 275.50498,
+      "out_y": 794.126,
+      "dx": 0.12497999999999365,
+      "dy": 27.150999999999954,
+      "width_pct": -0.4718651685392656
+     }
+    ]
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 5,
+    "worst_delta": 114.3332999999999
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 2,
+    "out_count": 2,
+    "canonical_gt_count": 2,
+    "canonical_out_count": 2,
+    "matched": 2,
+    "unmatched_gt": 0,
+    "unmatched_out": 0,
+    "mean_center_delta": 90.40651999999999,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 2,
+    "raw_geometry_mismatch_samples": [
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       0
+      ],
+      "out_indices": [
+       0
+      ],
+      "gt_bbox": [
+       69.275,
+       234.33000000000004,
+       525.97506,
+       234.83000000000004
+      ],
+      "out_bbox": [
+       69.41,
+       140.26501,
+       525.89,
+       140.76501
+      ],
+      "dx": 0.1349999999999909,
+      "dy": -94.06499000000005,
+      "dwidth": -0.2200599999999895,
+      "dheight": 0.0,
+      "edges": {
+       "left": 0.1349999999999909,
+       "top": -94.06499000000005,
+       "right": -0.08505999999999858,
+       "bottom": -94.06499000000005
+      },
+      "center_dx": 0.024969999999996162,
+      "center_dy": -94.06499000000005,
+      "max_abs_delta": 94.06499000000005,
+      "visible_coverage": {
+       "status": "different",
+       "mismatch_area_pt2": 456.59003,
+       "unmodeled_area_pt2": 11049.996962641197,
+       "unmodeled_samples": [
+        [
+         70.85,
+         144.48401,
+         268.14946,
+         200.49023
+        ]
+       ],
+       "mismatch_samples": [
+        [
+         69.275,
+         234.33000000000004,
+         69.41,
+         234.83000000000004
+        ],
+        [
+         69.41,
+         140.26501,
+         70.85,
+         140.76501
+        ],
+        [
+         69.41,
+         234.33000000000004,
+         70.85,
+         234.83000000000004
+        ],
+        [
+         70.85,
+         140.26501,
+         268.14946,
+         140.76501
+        ],
+        [
+         70.85,
+         234.33000000000004,
+         268.14946,
+         234.83000000000004
+        ]
+       ],
+       "raw_edge_coverage": {
+        "left": "different",
+        "right": "different",
+        "top": "different",
+        "bottom": "different"
+       }
+      }
+     },
+     {
+      "kind": "stroke",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       1
+      ],
+      "out_indices": [
+       1
+      ],
+      "gt_bbox": [
+       71.6,
+       557.8,
+       525.2,
+       558.9
+      ],
+      "out_bbox": [
+       70.85,
+       471.05195,
+       524.45,
+       472.15195
+      ],
+      "dx": -0.75,
+      "dy": -86.74804999999998,
+      "dwidth": 0.0,
+      "dheight": 0.0,
+      "edges": {
+       "left": -0.75,
+       "top": -86.74804999999998,
+       "right": -0.75,
+       "bottom": -86.74804999999998
+      },
+      "center_dx": -0.75,
+      "center_dy": -86.74804999999992,
+      "max_abs_delta": 86.74804999999998
+     }
+    ],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 1,
+    "geometry_mismatch_count": 2,
+    "geometry_mismatch_samples": [
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       0
+      ],
+      "out_indices": [
+       0
+      ],
+      "gt_bbox": [
+       69.275,
+       234.33000000000004,
+       525.97506,
+       234.83000000000004
+      ],
+      "out_bbox": [
+       69.41,
+       140.26501,
+       525.89,
+       140.76501
+      ],
+      "dx": 0.1349999999999909,
+      "dy": -94.06499000000005,
+      "dwidth": -0.2200599999999895,
+      "dheight": 0.0,
+      "edges": {
+       "left": 0.1349999999999909,
+       "top": -94.06499000000005,
+       "right": -0.08505999999999858,
+       "bottom": -94.06499000000005
+      },
+      "center_dx": 0.024969999999996162,
+      "center_dy": -94.06499000000005,
+      "max_abs_delta": 94.06499000000005,
+      "visible_coverage": {
+       "status": "different",
+       "mismatch_area_pt2": 456.59003,
+       "unmodeled_area_pt2": 11049.996962641197,
+       "unmodeled_samples": [
+        [
+         70.85,
+         144.48401,
+         268.14946,
+         200.49023
+        ]
+       ],
+       "mismatch_samples": [
+        [
+         69.275,
+         234.33000000000004,
+         69.41,
+         234.83000000000004
+        ],
+        [
+         69.41,
+         140.26501,
+         70.85,
+         140.76501
+        ],
+        [
+         69.41,
+         234.33000000000004,
+         70.85,
+         234.83000000000004
+        ],
+        [
+         70.85,
+         140.26501,
+         268.14946,
+         140.76501
+        ],
+        [
+         70.85,
+         234.33000000000004,
+         268.14946,
+         234.83000000000004
+        ]
+       ],
+       "raw_edge_coverage": {
+        "left": "different",
+        "right": "different",
+        "top": "different",
+        "bottom": "different"
+       }
+      }
+     },
+     {
+      "kind": "stroke",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       1
+      ],
+      "out_indices": [
+       1
+      ],
+      "gt_bbox": [
+       71.6,
+       557.8,
+       525.2,
+       558.9
+      ],
+      "out_bbox": [
+       70.85,
+       471.05195,
+       524.45,
+       472.15195
+      ],
+      "dx": -0.75,
+      "dy": -86.74804999999998,
+      "dwidth": 0.0,
+      "dheight": 0.0,
+      "edges": {
+       "left": -0.75,
+       "top": -86.74804999999998,
+       "right": -0.75,
+       "bottom": -86.74804999999998
+      },
+      "center_dx": -0.75,
+      "center_dy": -86.74804999999992,
+      "max_abs_delta": 86.74804999999998
+     }
+    ],
+    "samples": [
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       0
+      ],
+      "out_indices": [
+       0
+      ],
+      "gt_bbox": [
+       69.275,
+       234.33000000000004,
+       525.97506,
+       234.83000000000004
+      ],
+      "out_bbox": [
+       69.41,
+       140.26501,
+       525.89,
+       140.76501
+      ],
+      "dx": 0.1349999999999909,
+      "dy": -94.06499000000005,
+      "dwidth": -0.2200599999999895,
+      "dheight": 0.0,
+      "edges": {
+       "left": 0.1349999999999909,
+       "top": -94.06499000000005,
+       "right": -0.08505999999999858,
+       "bottom": -94.06499000000005
+      },
+      "center_dx": 0.024969999999996162,
+      "center_dy": -94.06499000000005,
+      "max_abs_delta": 94.06499000000005,
+      "visible_coverage": {
+       "status": "different",
+       "mismatch_area_pt2": 456.59003,
+       "unmodeled_area_pt2": 11049.996962641197,
+       "unmodeled_samples": [
+        [
+         70.85,
+         144.48401,
+         268.14946,
+         200.49023
+        ]
+       ],
+       "mismatch_samples": [
+        [
+         69.275,
+         234.33000000000004,
+         69.41,
+         234.83000000000004
+        ],
+        [
+         69.41,
+         140.26501,
+         70.85,
+         140.76501
+        ],
+        [
+         69.41,
+         234.33000000000004,
+         70.85,
+         234.83000000000004
+        ],
+        [
+         70.85,
+         140.26501,
+         268.14946,
+         140.76501
+        ],
+        [
+         70.85,
+         234.33000000000004,
+         268.14946,
+         234.83000000000004
+        ]
+       ],
+       "raw_edge_coverage": {
+        "left": "different",
+        "right": "different",
+        "top": "different",
+        "bottom": "different"
+       }
+      }
+     },
+     {
+      "kind": "stroke",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       1
+      ],
+      "out_indices": [
+       1
+      ],
+      "gt_bbox": [
+       71.6,
+       557.8,
+       525.2,
+       558.9
+      ],
+      "out_bbox": [
+       70.85,
+       471.05195,
+       524.45,
+       472.15195
+      ],
+      "dx": -0.75,
+      "dy": -86.74804999999998,
+      "dwidth": 0.0,
+      "dheight": 0.0,
+      "edges": {
+       "left": -0.75,
+       "top": -86.74804999999998,
+       "right": -0.75,
+       "bottom": -86.74804999999998
+      },
+      "center_dx": -0.75,
+      "center_dy": -86.74804999999992,
+      "max_abs_delta": 86.74804999999998
+     }
+    ],
+    "x": {
+     "mean_abs": 0.44249999999999545,
+     "worst": -0.75
+    },
+    "y": {
+     "mean_abs": 90.40652000000001,
+     "worst": -94.06499000000005
+    },
+    "width": {
+     "mean_abs": 0.11002999999999474,
+     "worst": -0.2200599999999895
+    },
+    "height": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.44249999999999545,
+      "worst": -0.75
+     },
+     "top": {
+      "mean_abs": 90.40652000000001,
+      "worst": -94.06499000000005
+     },
+     "right": {
+      "mean_abs": 0.4175299999999993,
+      "worst": -0.75
+     },
+     "bottom": {
+      "mean_abs": 90.40652000000001,
+      "worst": -94.06499000000005
+     }
+    }
+   },
+   "noise_floor": 0.12
+  }
+ ],
+ "gt_pages": 1,
+ "out_pages": 1
+}
