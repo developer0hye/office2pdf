@@ -139,8 +139,10 @@ pub(super) fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> Para
         background: None,
         border,
         border_space,
-        // Read from the paragraph's runs once they are converted (issue #2251).
+        // Read from the paragraph's runs once they are converted (issues #2251
+        // and #2327).
         horizontal_rule: None,
+        holds_anchored_drawing: false,
         // Word does not share a fixed line box across a
         // paragraph's fonts, so its paragraph mark carries no line-box role.
         paragraph_mark_font_family: None,

@@ -296,19 +296,32 @@ fn hidden_floating_drawings_in_a_header_are_dropped() {
         .as_ref()
         .expect("default header");
 
-    let pictures: Vec<(Option<f64>, Option<f64>)> = header
-        .paragraphs
+    // Page-anchored pictures are drawn at their anchors (issue #2327).
+    let pictures: Vec<(f64, f64, WrapMode)> = header
+        .shapes
         .iter()
-        .flat_map(|paragraph| &paragraph.elements)
-        .filter_map(|element| match element {
-            HFInline::Image(image) => Some((image.width, image.height)),
+        .filter_map(|shape| match &shape.content {
+            HeaderFooterShapeContent::Picture(picture) => {
+                Some((shape.width, shape.height, picture.wrap_mode))
+            }
             _ => None,
         })
         .collect();
     assert_eq!(
         pictures,
-        vec![(Some(200.0), Some(100.0)), (Some(50.0), Some(50.0))],
-        "only the shown header pictures are drawn"
+        vec![
+            (200.0, 100.0, WrapMode::TopAndBottom),
+            (50.0, 50.0, WrapMode::Tight)
+        ],
+        "only the shown header pictures are drawn, each with its own wrap"
+    );
+    assert!(
+        header
+            .paragraphs
+            .iter()
+            .flat_map(|paragraph| &paragraph.elements)
+            .all(|element| !matches!(element, HFInline::Image(_))),
+        "no header picture is laid out in the story's lines"
     );
 
     let outlines: Vec<(f64, f64)> = header

@@ -59,7 +59,9 @@ pub(super) use page_numbers::scan_page_numbering;
 pub(super) use paragraph_cursor::is_skipped_subtree;
 pub(super) use paragraph_mark::ParagraphMarkContext;
 pub(super) use paragraph_shading::{ParagraphShadingContext, scan_style_paragraph_shading};
-pub(super) use picture::{PictureCropContext, doc_pr_states_hidden};
+pub(super) use picture::{
+    AnchorAxisPlacement, AnchorPlacement, PictureCropContext, doc_pr_states_hidden,
+};
 pub(super) use run_scan::{ParagraphRunScan, RunScan, RunScanContext};
 pub(super) use small_caps::SmallCapsContext;
 pub(super) use table_header::TableHeaderContext;

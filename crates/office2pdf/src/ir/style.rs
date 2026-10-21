@@ -186,6 +186,10 @@ pub struct ParagraphStyle {
     /// bottom of its line outside table cells (issue #2251). Boxed for the
     /// same reason `border` is.
     pub horizontal_rule: Option<Box<HorizontalRule>>,
+    /// A header or footer paragraph whose only content was drawings Word
+    /// places against the page or its margins, which the story draws at
+    /// their anchors: the paragraph is still a line of its mark (issue #2327).
+    pub holds_anchored_drawing: bool,
     /// The font family of the paragraph mark — the empty run PowerPoint keeps
     /// after the last character, written as `<a:endParaRPr>`.
     ///

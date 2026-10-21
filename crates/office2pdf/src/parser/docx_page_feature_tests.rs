@@ -1053,7 +1053,8 @@ fn paragraph_anchored_header_picture_tracks_paragraph_spacing() {
         .iter_mut()
         .find_map(|shape| match &mut shape.content {
             crate::ir::HeaderFooterShapeContent::Table(table) => Some(table),
-            crate::ir::HeaderFooterShapeContent::Shape(_) => None,
+            crate::ir::HeaderFooterShapeContent::Shape(_)
+            | crate::ir::HeaderFooterShapeContent::Picture(_) => None,
         })
         .unwrap();
     let title_paragraph = header_table
