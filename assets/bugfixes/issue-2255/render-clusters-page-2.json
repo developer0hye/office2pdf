@@ -1,0 +1,199 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 59.4432,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 13.44,
+        "x": 117.12,
+        "y": 98.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of FIRST HEADER and Continued text, each in Word's place (Continued text 0.19pt from Word's baseline); Times New Roman in Word's export, Liberation Serif here. Nothing is doubled or missing."
+      },
+      "id": "p2-e70f530de9ea",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 48.8448,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 11.04,
+        "x": 144.0,
+        "y": 99.84
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of FIRST HEADER and Continued text, each in Word's place (Continued text 0.19pt from Word's baseline); Times New Roman in Word's export, Liberation Serif here. Nothing is doubled or missing."
+      },
+      "id": "p2-d8f2c1ca856c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 41.2416,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 13.92,
+        "x": 95.04,
+        "y": 99.84
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of FIRST HEADER and Continued text, each in Word's place (Continued text 0.19pt from Word's baseline); Times New Roman in Word's export, Liberation Serif here. Nothing is doubled or missing."
+      },
+      "id": "p2-2de66254fa5f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 36.864,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 137.76,
+        "y": 101.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of FIRST HEADER and Continued text, each in Word's place (Continued text 0.19pt from Word's baseline); Times New Roman in Word's export, Liberation Serif here. Nothing is doubled or missing."
+      },
+      "id": "p2-dcbd88900c59",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 12.48,
+        "x": 80.16,
+        "y": 31.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of FIRST HEADER and Continued text, each in Word's place (Continued text 0.19pt from Word's baseline); Times New Roman in Word's export, Liberation Serif here. Nothing is doubled or missing."
+      },
+      "id": "p2-ce6dccec170f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.64,
+        "x": 160.8,
+        "y": 31.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of FIRST HEADER and Continued text, each in Word's place (Continued text 0.19pt from Word's baseline); Times New Roman in Word's export, Liberation Serif here. Nothing is doubled or missing."
+      },
+      "id": "p2-9406f3f3b043",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.2,
+        "x": 109.92,
+        "y": 102.24
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of FIRST HEADER and Continued text, each in Word's place (Continued text 0.19pt from Word's baseline); Times New Roman in Word's export, Liberation Serif here. Nothing is doubled or missing."
+      },
+      "id": "p2-9a20e78e0ab8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 10.08,
+        "x": 142.08,
+        "y": 31.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of FIRST HEADER and Continued text, each in Word's place (Continued text 0.19pt from Word's baseline); Times New Roman in Word's export, Liberation Serif here. Nothing is doubled or missing."
+      },
+      "id": "p2-2d34f788b9d7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.16,
+        "x": 123.84,
+        "y": 31.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of FIRST HEADER and Continued text, each in Word's place (Continued text 0.19pt from Word's baseline); Times New Roman in Word's export, Liberation Serif here. Nothing is doubled or missing."
+      },
+      "id": "p2-e673d83446fc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 133.92,
+        "y": 31.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of FIRST HEADER and Continued text, each in Word's place (Continued text 0.19pt from Word's baseline); Times New Roman in Word's export, Liberation Serif here. Nothing is doubled or missing."
+      },
+      "id": "p2-e19000071e49",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 3.84,
+        "x": 133.92,
+        "y": 99.84
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of FIRST HEADER and Continued text, each in Word's place (Continued text 0.19pt from Word's baseline); Times New Roman in Word's export, Liberation Serif here. Nothing is doubled or missing."
+      },
+      "id": "p2-3a06562f9042",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 11,
+    "duplicate": 0,
+    "total": 11,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

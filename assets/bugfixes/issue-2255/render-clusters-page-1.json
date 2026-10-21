@@ -1,0 +1,1559 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 45.1584,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 108.48,
+        "y": 506.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-05de8a70640d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 44.2368,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 101.28,
+        "y": 186.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-1ef3ea5ad27e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 39.168,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 7.2,
+        "x": 108.0,
+        "y": 602.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-239241b35d49",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 38.2464,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 108.48,
+        "y": 362.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-621bddf1592d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 36.4032,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.72,
+        "x": 101.28,
+        "y": 122.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-fff08aafbbf7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 36.4032,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.72,
+        "x": 101.28,
+        "y": 698.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-adfd13cbd27e",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 35.2512,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 108.48,
+        "y": 347.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-e1461034d20e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.2512,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 108.48,
+        "y": 667.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-bd3cbb62f657",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 34.3296,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 108.48,
+        "y": 266.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-5391d0de97ed",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 77.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-13e27d3e750b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 93.6
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-6c0b103967dd",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 125.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-cdb39fd23313",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 141.6
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-b1d016c3b77c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 173.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-14e8dd195ac7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 189.6
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-a08dfb9286c4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 221.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-f4de563794a5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 269.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-3d3c8b3d8242",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 317.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-081d6d6f0892",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 365.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-faff8a1cda27",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 413.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-e8040f185cd2",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 461.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-c2ac144ff442",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 509.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-824889fbd614",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 557.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-9a4fd16a9bf1",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 605.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-a45e5fea4fbf",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 653.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-1d1afc9f3340",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 91.68,
+        "y": 701.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-711a7e009339",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 12.48,
+        "x": 80.16,
+        "y": 31.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-bb3444192473",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 101.28,
+        "y": 554.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-023ca904236f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 101.28,
+        "y": 602.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-1cbea880d8fc",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 101.28,
+        "y": 650.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-2c90e46db82b",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.64,
+        "x": 160.8,
+        "y": 31.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-d7098c3b4518",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 108.48,
+        "y": 299.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-70a8fcff0599",
+      "region": "left"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 108.48,
+        "y": 619.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-ed5a75995f9d",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.72,
+        "x": 108.0,
+        "y": 410.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-5cbb872fd0fb",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 108.48,
+        "y": 427.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-f30d8da466e5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 108.48,
+        "y": 587.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-18acbbfa6543",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.72,
+        "x": 101.28,
+        "y": 715.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-50d748a7b5d7",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.72,
+        "x": 101.28,
+        "y": 731.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-a93b03964ca8",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 101.28,
+        "y": 90.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-3578636567a5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 101.28,
+        "y": 410.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-8d519957c529",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 101.28,
+        "y": 458.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-32fae28c7b02",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 101.28,
+        "y": 506.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-b8b0e9d9a4c7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.76,
+        "x": 101.76,
+        "y": 138.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-201f2e04debc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.0352,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 108.48,
+        "y": 315.84
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-64583ac631bc",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 10.08,
+        "x": 142.08,
+        "y": 31.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-77a6e8bda93f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 77.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-1ce1e57038e6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 93.6
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-1889073c9658",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 125.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-6ca40319de07",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 141.6
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-e691e4fd7b20",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.24,
+        "x": 101.28,
+        "y": 155.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-976b466cb1fe",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 173.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-1628daa26c5c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 189.6
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-25f0bbd009b1",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 221.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-3001579a7c98",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 269.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-528e2a7665c4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 317.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-3d0be6ab5ed8",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 365.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-f4b633d7bdfb",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 413.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-646d714e19c5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 461.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-c96606e2b925",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 509.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-856f5a93b970",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 557.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-59a04dda733d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 605.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-fec47b3ccde8",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 653.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-e1c35a9bf4ac",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 80.64,
+        "y": 701.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-bbe298a5f930",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.16,
+        "x": 123.84,
+        "y": 31.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-2bfa2d50e867",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 101.76,
+        "y": 107.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-0b1d486ff591",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 101.76,
+        "y": 539.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-86f102f4078d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 101.76,
+        "y": 571.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-1f43250478c6",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 101.76,
+        "y": 587.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-e2cb4894a24a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 101.76,
+        "y": 619.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-d9f8013859a0",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 101.76,
+        "y": 635.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-e7f4c8df69a5",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 101.76,
+        "y": 667.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-cb4983bf2fc9",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 101.76,
+        "y": 683.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-c6d46720bcaa",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 74.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-c086bedf1bfd",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 90.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-46293936e27e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 122.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-69340f1065c7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 138.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-b15ab4bdafbc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 170.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-228793a18e1d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 186.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-cd77b13145ce",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 218.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-c604bf790b0a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 266.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-ec66651605d8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 108.0,
+        "y": 283.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-c35c015ff703",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 314.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-e45f3ed96b29",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 362.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-f21058ea1378",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 410.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-bd4933e9ed0e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 108.0,
+        "y": 443.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-1a015494155d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 458.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-c782fed7e686",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 506.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-1a65085cc99b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 554.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-5db35664c5a4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 108.96,
+        "y": 554.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-ad7c87f671b0",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 602.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-2f54d193f832",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 650.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-c9bd0ec12840",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 72.0,
+        "y": 698.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-18257de33939",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.28,
+        "x": 108.96,
+        "y": 458.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-459edee6493c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 133.92,
+        "y": 31.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-d5005915f8b3",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.24,
+        "x": 108.48,
+        "y": 475.2
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-454eda72a2ed",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.24,
+        "x": 108.48,
+        "y": 635.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Inspected at 150 and 300 DPI: one-pixel glyph outlines of the header and the 42 filler lines; Word embeds Times New Roman and this host paints the metric-compatible Liberation Serif. Positions match; nothing is doubled, missing or rewrapped. Page 1 is pixel-identical to the baseline build."
+      },
+      "id": "p1-b3b7802044ad",
+      "region": "bottom-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 96,
+    "duplicate": 0,
+    "total": 96,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

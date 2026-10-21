@@ -42,3 +42,7 @@ Markup-based typesetting system. Compiles `.typ` source to PDF/PNG/SVG/HTML. Emb
 - A tag, such as `#metadata(none) <label>`, waits in `work.tags` until the next
   frame or placed item lands, so a section label written before a block that
   moves to the next region lands there with it, at the body top (#2254).
+- Weak spacing with no frame before it in the region is dropped, so a block's
+  `above` vanishes where the block opens a page. A strong `v` as the block's
+  first content, from a `context` that reads such a label before the block,
+  puts it back only there, and the layout settles in two passes (#2255).

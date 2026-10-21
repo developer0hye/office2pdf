@@ -6016,6 +6016,30 @@ fn an_empty_paragraph_overflowing_a_page_opens_the_next_one() {
     );
 }
 
+/// docxide-pdf `cont-first-text-overflow`, unmodified: 42 exact 16pt lines,
+/// an empty framed section mark, and a continuous section opening with
+/// "Continued text", 24pt before an exact 16pt line, which no longer fits on
+/// page one. Word opens page two with it 24pt below the first baseline, at
+/// 108.78pt (its page one's "Line 1" sits at 84.78pt); main dropped the gap
+/// at the page top and set it at 84.97pt (issue #2255).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_continuous_section_opening_the_next_page_keeps_its_space_before() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/continuous_text_overflow.docx");
+    let first_line: f64 = docx_fixture_baseline_pt(fixture, 0, "Line 1");
+    let continued: f64 = docx_fixture_baseline_pt(fixture, 1, "Continued text");
+    assert!(
+        (continued - first_line - 24.0).abs() < 0.05,
+        "the continuation must sit its 24pt before below the first baseline, got {}pt",
+        continued - first_line
+    );
+    assert!(
+        (continued - 108.78).abs() < 0.5,
+        "the continuation must sit on Word's 108.78pt baseline, got {continued}pt"
+    );
+}
+
 /// docxide-pdf `cont-first-text-overflow` and `cont-first-empty-overflow`,
 /// unmodified, against the `cont-first-first-fits` control. Each continuous
 /// second section states `w:titlePg` and links section one's "FIRST HEADER"
