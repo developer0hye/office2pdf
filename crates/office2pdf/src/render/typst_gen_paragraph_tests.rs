@@ -1924,6 +1924,93 @@ fn issue_1896_preserves_empty_paragraph_after_spacing_before_a_leading_page_brea
     );
 }
 
+/// Word lays an empty paragraph's line out like any one-line paragraph: when
+/// it does not fit in what is left of a page, it starts the next page whole
+/// and pushes the following text down by its height. Typst cut the empty
+/// paragraph's spacing off at the page's bottom and carried none of it over,
+/// so the text started the next page one line high (issue #2253). The filler
+/// leaves 20pt: a 16pt empty line stays on page 1, and 24pt and 30pt ones,
+/// plain, indented or shaded, open page 2.
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn an_empty_paragraph_that_does_not_fit_starts_the_next_page() {
+    let exact_line = |line_pt: f64| ParagraphStyle {
+        line_spacing: Some(LineSpacing::Exact(line_pt)),
+        space_before: Some(0.0),
+        space_after: Some(0.0),
+        ..ParagraphStyle::default()
+    };
+    let exact_line_paragraph = |text: &str| {
+        let mut paragraph: Block = make_paragraph(text);
+        if let Block::Paragraph(paragraph) = &mut paragraph {
+            paragraph.style = exact_line(20.0);
+            paragraph.runs[0].style.font_family = Some("Arial".into());
+            paragraph.runs[0].style.font_size = Some(12.0);
+        }
+        paragraph
+    };
+    let continuation_baseline = |empty_style: ParagraphStyle| -> f64 {
+        let mut content: Vec<Block> = (1..=14)
+            .map(|line| exact_line_paragraph(&format!("Filler {line}")))
+            .collect();
+        content.push(Block::Paragraph(Paragraph {
+            style: empty_style,
+            runs: Vec::new(),
+        }));
+        content.push(exact_line_paragraph("Continuation"));
+        // 300pt of body height: fourteen 20pt lines leave 20pt below them.
+        let document: Document = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize {
+                width: 300.0,
+                height: 400.0,
+            },
+            margins: Margins {
+                top: 50.0,
+                bottom: 50.0,
+                left: 50.0,
+                right: 50.0,
+            },
+            content,
+            ..match make_flow_page(Vec::new()) {
+                Page::Flow(flow_page) => flow_page,
+                _ => unreachable!(),
+            }
+        })]);
+        let source: String = generate_typst(&document)
+            .expect("the synthetic overflow document should generate")
+            .source;
+        crate::render::pdf::compiled_text_runs(&source, 1)
+            .expect("page 2 should compile")
+            .into_iter()
+            .find(|run| run.text.contains("Continuation"))
+            .expect("the continuation should be on page 2")
+            .baseline_pt
+    };
+
+    // The 16pt empty line fits on page 1, so the continuation opens page 2.
+    let page_top_baseline_pt: f64 = continuation_baseline(exact_line(16.0));
+    let indented = ParagraphStyle {
+        indent_left: Some(36.0),
+        ..exact_line(30.0)
+    };
+    let shaded = ParagraphStyle {
+        background: Some(Color::new(0xD9, 0xE2, 0xF3)),
+        ..exact_line(24.0)
+    };
+    for (label, empty_style, empty_line_pt) in [
+        ("plain", exact_line(24.0), 24.0),
+        ("indented", indented, 30.0),
+        ("shaded", shaded, 24.0),
+    ] {
+        let shift_pt: f64 = continuation_baseline(empty_style) - page_top_baseline_pt;
+        assert!(
+            (shift_pt - empty_line_pt).abs() < 0.01,
+            "a {label} {empty_line_pt}pt empty line that does not fit must open page 2 and push \
+             the continuation down by its height, got {shift_pt:.3}pt"
+        );
+    }
+}
+
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
 fn issue_1896_collapses_empty_paragraph_after_spacing_before_a_leading_page_break() {

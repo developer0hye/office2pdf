@@ -5984,6 +5984,38 @@ fn a_continuous_section_after_an_empty_framed_mark_keeps_its_space_before() {
     );
 }
 
+/// docxide-pdf `cont-first-empty-overflow`, unmodified: 43 exact 16pt lines
+/// end 9.9pt above page 1's bottom margin, followed by an empty framed section
+/// mark, an empty single-spaced Times New Roman 14pt paragraph and, in a
+/// continuous section, "Continued text" on an exact 16pt line. The empty
+/// paragraph's line does not fit, so Word opens page 2 with it and sets the
+/// text one line below the first baseline, at 100.78pt; main lost the line at
+/// page 1's bottom and set the text at about the first baseline, 84.97pt
+/// (issue #2253).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_empty_paragraph_overflowing_a_page_opens_the_next_one() {
+    let fixture: &[u8] = include_bytes!(
+        "../../../../tests/fixtures/docx/docxide/continuous_empty_paragraph_overflow.docx"
+    );
+    let first_line: f64 = docx_fixture_baseline_pt(fixture, 0, "Line 1");
+    let last_filler: f64 = docx_fixture_baseline_pt(fixture, 0, "Line 43");
+    let continued: f64 = docx_fixture_baseline_pt(fixture, 1, "Continued text");
+    assert!(
+        (last_filler - 756.98).abs() < 0.5,
+        "the last filler line must stay on Word's 756.98pt baseline, got {last_filler}pt"
+    );
+    assert!(
+        (continued - first_line - 16.0).abs() < 0.5,
+        "the continuation must sit one empty line, Word's 16pt, below the first baseline, got {}pt",
+        continued - first_line
+    );
+    assert!(
+        (continued - 100.78).abs() < 0.5,
+        "the continuation must sit on Word's 100.78pt baseline, got {continued}pt"
+    );
+}
+
 /// docxide-pdf `page-header-ordinary-marker`, unmodified: the first section
 /// is one bare section mark, and a continuous section holds "Following
 /// section". The mark is the first block of its section, so Word lays it out

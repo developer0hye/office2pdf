@@ -1,0 +1,248 @@
+{
+ "pages": [
+  {
+   "lines": {
+    "gt": 44,
+    "out": 44,
+    "matched": 44,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 20,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 0.09888513636365527,
+    "worst_dy": 0.1916800000000336,
+    "worst_dy_signed": 0.1916800000000336,
+    "worst_line": "Line1"
+   },
+   "dx0": {
+    "mean_abs": 0.025000000000005684,
+    "worst": -0.025000000000005684
+   },
+   "width": {
+    "mean_abs_pct": 0.10113073858766194,
+    "worst_pct": 0.11603135531374029
+   },
+   "instances": {
+    "compared": 44,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 0,
+    "large_shifts": [],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 0,
+    "fine_shifts": []
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 43,
+    "worst_delta": 0.07165400000000943
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 0,
+    "out_count": 0,
+    "canonical_gt_count": 0,
+    "canonical_out_count": 0,
+    "matched": 0,
+    "unmatched_gt": 0,
+    "unmatched_out": 0,
+    "mean_center_delta": 0.0,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 0,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [],
+    "x": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "y": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "width": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "height": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "top": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "right": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "bottom": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     }
+    }
+   },
+   "noise_floor": 0.12
+  },
+  {
+   "lines": {
+    "gt": 2,
+    "out": 2,
+    "matched": 1,
+    "missing": 1,
+    "extra": 1,
+    "deviant": 1,
+    "missing_text": [
+     "FIRSTHEADER"
+    ],
+    "extra_text": [
+     "DEFAULTHEADER"
+    ]
+   },
+   "baseline": {
+    "mean_abs_dy": 0.2903100000000336,
+    "worst_dy": 0.2903100000000336,
+    "worst_dy_signed": 0.2903100000000336,
+    "worst_line": "Continuedtext"
+   },
+   "dx0": {
+    "mean_abs": 0.025000000000005684,
+    "worst": -0.025000000000005684
+   },
+   "width": {
+    "mean_abs_pct": 0.03379044624214524,
+    "worst_pct": 0.03379044624214524
+   },
+   "instances": {
+    "compared": 1,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 0,
+    "large_shifts": [],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 0,
+    "fine_shifts": []
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 0,
+    "worst_delta": 0.0
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 0,
+    "out_count": 0,
+    "canonical_gt_count": 0,
+    "canonical_out_count": 0,
+    "matched": 0,
+    "unmatched_gt": 0,
+    "unmatched_out": 0,
+    "mean_center_delta": 0.0,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 0,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [],
+    "x": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "y": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "width": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "height": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "top": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "right": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "bottom": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     }
+    }
+   },
+   "noise_floor": 0.12
+  }
+ ],
+ "gt_pages": 2,
+ "out_pages": 2
+}
