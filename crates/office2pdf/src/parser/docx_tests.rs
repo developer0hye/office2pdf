@@ -1564,6 +1564,8 @@ mod contextual_spacing_tests;
 mod floating_table_anchor_tests;
 #[path = "docx_floating_table_wrap_tests.rs"]
 mod floating_table_wrap_tests;
+#[path = "docx_horizontal_rule_tests.rs"]
+mod horizontal_rule_tests;
 #[path = "docx_layout_rtl_tests.rs"]
 mod layout_rtl_tests;
 #[path = "docx_math_chart_metadata_tests.rs"]

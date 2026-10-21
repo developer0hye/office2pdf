@@ -11,7 +11,7 @@ const MAX_TABLE_DEPTH: usize = 64;
 use crate::ir::{
     Alignment, Block, BorderLineStyle, BorderSide, Caption, CellBorder, CellVerticalAlign, Color,
     ColumnLayout, Document, DocumentLanguage, FloatingImage, FloatingImageVerticalAnchor,
-    FloatingTable, FloatingTextBox, ImageData, ImageFormat, ImageParagraphIndent,
+    FloatingTable, FloatingTextBox, HorizontalRule, ImageData, ImageFormat, ImageParagraphIndent,
     ImageParagraphSpacing, InlineTextBox, Insets, Ligatures, LineCap, LineJoin, LineSpacing, Page,
     PageNumbering, PairKerning, Paragraph, ParagraphStyle, Run, StyleSheet, TabAlignment,
     TabLeader, TabStop, Table, TableCell, TableOfContents, TableRow, TextDirection, TextFrame,
@@ -1923,6 +1923,8 @@ fn convert_paragraph_blocks(
     // Set by the run carrying a `SEQ` field, so the finished paragraph can be
     // wrapped as the caption a `TOC \a` list collects (issue #576).
     let mut caption_identifier: Option<String> = None;
+    // Word's horizontal lines, which docx-rs drops from the runs (issue #2251).
+    let mut horizontal_rules: Vec<HorizontalRule> = Vec::new();
 
     for child in flatten_tracked_changes(&para.children) {
         match child {
@@ -1932,6 +1934,7 @@ fn convert_paragraph_blocks(
                 // Taken once per docx-rs run, before the run is split, so a
                 // note reference still keeps the paragraph's runs in step.
                 let scanned: RunScan<'_> = run_scan.next_run(run);
+                horizontal_rules.extend_from_slice(scanned.horizontal_rules);
                 // The run's line breaks in order; its split parts keep that
                 // order.
                 let mut line_break_clears = scanned.line_break_clears.iter().copied();
@@ -2232,7 +2235,7 @@ fn convert_paragraph_blocks(
         // Keep paragraph marks for floating drawing anchors. The drawing itself
         // is positioned by offsets, but the source paragraph still contributes
         // to flow spacing between the drawing cluster and following content.
-        let block: Block = build_paragraph_block(
+        let mut block: Block = build_paragraph_block(
             para,
             resolved_style,
             style_map,
@@ -2240,6 +2243,7 @@ fn convert_paragraph_blocks(
             &mut runs,
             caption_identifier.as_deref(),
         );
+        attach_horizontal_rule(&mut block, &horizontal_rules);
         match block {
             // The following paragraph's mark is the one that survives, so it
             // supplies the merged paragraph's style, its numbering and its
@@ -2252,6 +2256,38 @@ fn convert_paragraph_blocks(
     }
 
     normalize_split_paragraph_styles(out, paragraph_block_start);
+}
+
+/// Give a paragraph whose only content is a horizontal rule that rule, which
+/// is drawn on the paragraph's line (issue #2251).
+///
+/// TODO(rule beside text): Word gives a rule a line of its own inside a
+/// paragraph that also holds text or another rule. That line is not laid out,
+/// so such a paragraph draws no rule rather than one over its text.
+///
+/// TODO(#2251 header and text box rules): header and footer stories convert
+/// through their own path, and a VML text box's paragraphs are rebuilt from
+/// the raw XML, so neither reaches this and their rules are not drawn yet.
+fn attach_horizontal_rule(block: &mut Block, horizontal_rules: &[HorizontalRule]) {
+    let [rule] = horizontal_rules else {
+        if !horizontal_rules.is_empty() {
+            tracing::debug!(
+                rules = horizontal_rules.len(),
+                "paragraph holds several horizontal rules; drawing none"
+            );
+        }
+        return;
+    };
+    let paragraph: &mut Paragraph = match block {
+        Block::Paragraph(paragraph) => paragraph,
+        Block::Caption(caption) => &mut caption.paragraph,
+        _ => return,
+    };
+    if paragraph.runs.is_empty() {
+        paragraph.style.horizontal_rule = Some(Box::new(*rule));
+    } else {
+        tracing::debug!("horizontal rule shares its paragraph with text; drawing none");
+    }
 }
 
 fn clear_paragraph_fragment_borders(blocks: &mut [Block], fragment_indices: &[usize]) {

@@ -201,7 +201,7 @@ fn extract_vml_style_wrap_mode(style: Option<&str>) -> Option<crate::ir::WrapMod
     }
 }
 
-fn extract_vml_style_value(style: &str, key: &str) -> Option<String> {
+pub(super) fn extract_vml_style_value(style: &str, key: &str) -> Option<String> {
     for part in style.split(';') {
         let Some((name, value)) = part.split_once(':') else {
             continue;
@@ -231,7 +231,7 @@ fn extract_vml_style_length(style: Option<&str>, key: &str) -> Option<f64> {
     None
 }
 
-fn extract_vml_style_dimension(style: Option<&str>, key: &str) -> Option<f64> {
+pub(super) fn extract_vml_style_dimension(style: Option<&str>, key: &str) -> Option<f64> {
     let style = style?;
     for part in style.split(';') {
         let Some((name, value)) = part.split_once(':') else {

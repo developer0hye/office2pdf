@@ -969,6 +969,8 @@ pub(super) fn merge_paragraph_style(
         } else {
             style_paragraph.and_then(|style| style.border_space.clone())
         },
+        // Run content, not formatting: no style carries a rule.
+        horizontal_rule: None,
         // Word does not share a fixed line box across a
         // paragraph's fonts, so its paragraph mark carries no line-box role.
         paragraph_mark_font_family: None,

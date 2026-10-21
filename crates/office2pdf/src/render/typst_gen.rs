@@ -11,13 +11,14 @@ use crate::ir::{
     ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage,
     FloatingImageVerticalAnchor, FloatingShape, FloatingTable, FloatingTextBox, FlowPage,
     FrameAnchor, GradientFill, HFInline, HeaderFooter, HeaderFooterFrame, HeaderFooterShapeContent,
-    IconShading, ImageCrop, ImageData, ImageFormat, ImageParagraphIndent, ImageParagraphSpacing,
-    InlineTextBox, Insets, LegendPosition, LineBox, LineCap, LineJoin, LineSpacing, List, ListKind,
-    Margins, MathEquation, Metadata, Page, PageNumberFormat, PageSize, PairKerning, Paragraph,
-    ParagraphStyle, PatternFill, PatternPreset, PositionedTabAlignment, PositionedTabRelativeTo,
-    Run, Shadow, Shape, ShapeKind, SheetPage, SmartArt, SparklineInfo, TabAlignment, TabLeader,
-    TabStop, Table, TableBorderPaintModel, TableCell, TableOfContents, TableRow, TextBoxData,
-    TextBoxVerticalAlign, TextDirection, TextFrame, TextStyle, VerticalTextAlign, WrapMode,
+    HorizontalRule, HorizontalRulePaint, HorizontalRuleWidth, IconShading, ImageCrop, ImageData,
+    ImageFormat, ImageParagraphIndent, ImageParagraphSpacing, InlineTextBox, Insets,
+    LegendPosition, LineBox, LineCap, LineJoin, LineSpacing, List, ListKind, Margins, MathEquation,
+    Metadata, Page, PageNumberFormat, PageSize, PairKerning, Paragraph, ParagraphStyle,
+    PatternFill, PatternPreset, PositionedTabAlignment, PositionedTabRelativeTo, Run, Shadow,
+    Shape, ShapeKind, SheetPage, SmartArt, SparklineInfo, TabAlignment, TabLeader, TabStop, Table,
+    TableBorderPaintModel, TableCell, TableOfContents, TableRow, TextBoxData, TextBoxVerticalAlign,
+    TextDirection, TextFrame, TextStyle, VerticalTextAlign, WrapMode,
 };
 
 use self::diagrams::{

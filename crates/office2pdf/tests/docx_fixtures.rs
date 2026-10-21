@@ -13,9 +13,9 @@ use office2pdf::config::ConvertOptions;
 use office2pdf::internal::DocxParser;
 use office2pdf::internal::Parser;
 use office2pdf::ir::{
-    ArrowHead, Block, BorderLineStyle, Color, FlowPage, FrameAnchor, HFInline, Insets, ListKind,
-    Page, Paragraph, PositionedTabAlignment, PositionedTabRelativeTo, Run, ShapeKind,
-    TextBoxVerticalAlign,
+    Alignment, ArrowHead, Block, BorderLineStyle, Color, FlowPage, FrameAnchor, HFInline,
+    HorizontalRule, HorizontalRulePaint, HorizontalRuleWidth, Insets, ListKind, Page, Paragraph,
+    PositionedTabAlignment, PositionedTabRelativeTo, Run, ShapeKind, TextBoxVerticalAlign,
 };
 
 // ---------------------------------------------------------------------------
@@ -624,6 +624,70 @@ fn blank_paragraphs_without_a_picture_are_kept() {
             |block| matches!(block, Block::Paragraph(paragraph) if !paragraph.runs.is_empty())
         ),
         "paragraphs carrying text must survive alongside pictures"
+    );
+}
+
+/// Word's *Insert > Horizontal Line* rules in a real Word file (issue #2251):
+/// one shaded 1.5pt rule alone in a nested table cell's paragraph and three
+/// unshaded 9pt `#E5E5E5` bars alone in body paragraphs carry their rules. A
+/// fifth rule shares its paragraph with a break and text, which keeps its
+/// text and draws no rule until such a rule's own line is laid out.
+#[test]
+fn drawing_rule_only_paragraphs_carry_their_horizontal_rules() {
+    fn collect_rules(blocks: &[Block], out: &mut Vec<(HorizontalRule, String)>) {
+        for block in blocks {
+            match block {
+                Block::Paragraph(paragraph) => {
+                    if let Some(rule) = paragraph.style.horizontal_rule.as_deref() {
+                        let text: String =
+                            paragraph.runs.iter().map(|run| run.text.as_str()).collect();
+                        out.push((*rule, text));
+                    }
+                }
+                Block::Table(table) => {
+                    for cell in table.rows.iter().flat_map(|row| &row.cells) {
+                        collect_rules(&cell.content, out);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    let pages = flow_pages("drawing.docx");
+    let mut rules: Vec<(HorizontalRule, String)> = Vec::new();
+    for page in &pages {
+        collect_rules(&page.content, &mut rules);
+    }
+
+    let unshaded_bar = HorizontalRule {
+        width: HorizontalRuleWidth::Fraction(1.0),
+        height: 9.0,
+        alignment: Alignment::Center,
+        paint: HorizontalRulePaint::Solid(Color::new(0xE5, 0xE5, 0xE5)),
+    };
+    assert_eq!(
+        rules,
+        [
+            (
+                HorizontalRule {
+                    width: HorizontalRuleWidth::Fraction(1.0),
+                    height: 1.5,
+                    alignment: Alignment::Center,
+                    paint: HorizontalRulePaint::Shaded,
+                },
+                String::new(),
+            ),
+            (unshaded_bar, String::new()),
+            (unshaded_bar, String::new()),
+            (unshaded_bar, String::new()),
+        ]
+    );
+    let all = all_blocks(&pages);
+    let text: String = all_runs(&all).iter().map(|run| run.text.as_str()).collect();
+    assert!(
+        text.contains("ВолгаИнформ"),
+        "the text sharing a paragraph with a rule survives"
     );
 }
 
