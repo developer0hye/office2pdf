@@ -26,6 +26,7 @@ Curated open-source projects relevant to office2pdf's architecture (OOXML → IR
 | [mammoth.js](https://github.com/mwilliamson/mammoth.js) | JS | DOCX → semantic HTML | [mammoth.md](mammoth.md) |
 | [ONLYOFFICE Document Server](https://github.com/ONLYOFFICE/DocumentServer) | Mixed | DOCX document editing and section layout | [onlyoffice.md](onlyoffice.md) |
 | [LibreOffice Writer](https://github.com/LibreOffice/core/blob/022c34f162f94d59499ec48e48edbfd075f583b0/sw/source/core/text/itrform2.cxx#L2445-L2469) | C++ | Exact and at-least line heights | [libreoffice-writer-line-height.md](libreoffice-writer-line-height.md) |
+| [LibreOffice Writer OOXML import](https://github.com/LibreOffice/core/blob/f7faa162c274df921fdb431ddab7c74d26f9c1cf/sw/source/writerfilter/ooxml/OOXMLPropertySet.cxx#L445-L514) | C++ | Universal measures and percentages in OOXML lengths | [libreoffice-ooxml-measures.md](libreoffice-ooxml-measures.md) |
 
 ## Typst & PDF Generation
 
