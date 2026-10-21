@@ -66,7 +66,7 @@ pub(super) use table_header::TableHeaderContext;
 #[cfg(test)]
 pub(super) use table_header::scan_table_headers;
 pub(super) use table_style::{ResolvedTableStyle, TableStyleContext, apply_table_text_style};
-pub(super) use vml::{VmlTextBoxContext, VmlTextBoxInfo};
+pub(super) use vml::{VmlTextBoxContext, VmlTextBoxInfo, horizontal_rule};
 pub(super) use word_wrap::{WordWrapContext, scan_style_word_wrap};
 pub(super) use wrap::{WrapContext, build_wrap_context_from_xml};
 
