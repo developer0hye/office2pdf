@@ -30,6 +30,9 @@
 # A failing check on main is worked first: the loop files a `main-red` issue for it
 # when none is open and takes that before the rest of the queue.
 #
+# Between runs the loop re-executes itself when this file's contents change, so a
+# merged fix to it takes effect without a restart; attempt counts carry over.
+#
 #   scripts/issue_loop.sh --agent codex --max-issues 1  # one Codex attempt
 #   --agent claude|codex (default claude), --model NAME, --label LABEL
 #   --max-turns N (Claude only, default 200)
@@ -45,6 +48,10 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
+SCRIPT_PATH="$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")"
+LOOP_ARGS=("$@")                  # kept for the re-exec in reload_if_changed
+script_digest() { cksum < "$SCRIPT_PATH"; }
+LOADED_DIGEST="$(script_digest)"
 
 BLOCKED_LABEL="autofix-blocked"   # set by the loop when attempts fail; excluded from the queue
 SKIP_LABEL="autofix-skip"         # set by a human on umbrella/tracker issues; excluded too
@@ -382,6 +389,27 @@ run_agent() {
   fi
 }
 
+# Bash parses the loop body and its functions once, so a running loop keeps the
+# code it started with. The loop started on 2026-10-19 still counted progress over
+# the newest 30 pull requests on 2026-10-21, after cc33dda4 had replaced that count
+# and the main worktree held the fix: it read a merged milestone of #2229 as no
+# progress and blocked the issue. Only this file goes stale this way; the prompt
+# file and the Python helpers are read afresh for every run.
+reload_if_changed() {
+  local digest
+  digest="$(script_digest)" || return 0
+  [[ "$digest" == "$LOADED_DIGEST" ]] && return 0
+  if ! "$BASH" -n "$SCRIPT_PATH"; then
+    echo "issue-loop: $SCRIPT_PATH changed but does not parse; continuing with the loaded version." >&2
+    LOADED_DIGEST="$digest"         # warn once per version, retry when it changes again
+    return 0
+  fi
+  echo "issue-loop: $SCRIPT_PATH changed — restarting with the new version."
+  # exec keeps the process ID, so run directories stay one numbered series.
+  export ISSUE_LOOP_RESUME_STATE="$last_issue:$last_issue_attempts:$consecutive_failures:$processed"
+  exec "$BASH" "$SCRIPT_PATH" ${LOOP_ARGS[@]+"${LOOP_ARGS[@]}"}
+}
+
 if [[ -n "$PRINT_PROMPT" ]]; then
   build_prompt "$PRINT_PROMPT"
   exit $?
@@ -415,6 +443,15 @@ last_issue=""
 last_issue_attempts=0
 consecutive_failures=0
 processed=0
+if [[ -n "${ISSUE_LOOP_RESUME_STATE:-}" ]]; then
+  if [[ "$ISSUE_LOOP_RESUME_STATE" =~ ^[0-9]*:[0-9]+:[0-9]+:[0-9]+$ ]]; then
+    IFS=: read -r last_issue last_issue_attempts consecutive_failures processed <<<"$ISSUE_LOOP_RESUME_STATE"
+    echo "issue-loop: resumed after $processed runs"
+  else
+    echo "issue-loop: ignoring malformed resume state '$ISSUE_LOOP_RESUME_STATE'" >&2
+  fi
+  unset ISSUE_LOOP_RESUME_STATE    # the agents must not inherit it
+fi
 
 while true; do
   if [[ -f "$STOP_FILE" ]]; then
@@ -422,6 +459,8 @@ while true; do
     rm -f "$STOP_FILE"
     break
   fi
+
+  reload_if_changed
 
   if (( $(free_gb) < MIN_FREE_GB )); then
     echo "less than ${MIN_FREE_GB}GB free on the repository's filesystem — exiting." >&2
