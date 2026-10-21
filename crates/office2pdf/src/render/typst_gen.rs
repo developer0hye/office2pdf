@@ -4459,6 +4459,20 @@ fn generate_flow_hf_content(
     // spacing of its own takes `par(spacing:)`, so the leading separates every
     // paragraph whatever wraps it.
     //
+    // That pitch is the first paragraph's, though. Word advances from one
+    // paragraph's last line to the next one's first by the upper line's
+    // descent plus the lower line's ascent, and wraps each paragraph on its
+    // own line, so a paragraph whose face or size differs from the first
+    // states its own leading, and a `#v` tops the spacing above it up to that
+    // advance. The first paragraph's pitch advanced a 16pt Yu Mincho header
+    // line 22.12pt under an 11pt one where Word advances it 24.25pt (issue
+    // #2328). Typst keeps the larger of the spacing below one paragraph and
+    // above the next and adds the `#v` to it, and the spacing stays the
+    // story's so that the block-level elements one paragraph can emit, such
+    // as its pictures, keep the gaps between them. A block per paragraph
+    // stating its own gap broke the story apart in a footer region of zero or
+    // negative height, which a paragraph overflows.
+    //
     // A ruled paragraph also reserves its rules and their `w:space` gaps,
     // which no leading expresses. When the story was still joined by line
     // breaks, the second line of a ruled header landed 20pt low, over the
@@ -4471,41 +4485,65 @@ fn generate_flow_hf_content(
         generate_stacked_hf_paragraphs(out, hf, ctx);
         return;
     }
-    let mut emitted = hf
+    let emitted: Vec<(&crate::ir::HeaderFooterParagraph, Vec<Run>)> = hf
         .paragraphs
         .iter()
-        .filter(|paragraph| hf_paragraph_is_emitted(paragraph));
-    let has_several_paragraphs: bool = emitted.clone().nth(1).is_some();
-    let leading: Option<f64> = emitted.next().and_then(|paragraph| {
-        let runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
-        text::word_hf_line_leading_pt(&runs, bottom_edge_em)
-    });
+        .filter(|paragraph| hf_paragraph_is_emitted(paragraph))
+        .map(|paragraph| (paragraph, hf_paragraph_metric_runs(paragraph)))
+        .collect();
+    let leading: Option<f64> = emitted
+        .first()
+        .and_then(|(_, runs)| text::word_hf_line_leading_pt(runs, bottom_edge_em));
     if let Some(leading) = leading {
         let _ = writeln!(out, "#set par(leading: {}pt)", format_f64(leading));
     }
-    if has_several_paragraphs {
-        // Typst's own 0.65em leading where the face's metrics are unknown.
-        let spacing: String = leading.map_or_else(
-            || "0.65em".to_string(),
-            |leading| format!("{}pt", format_f64(leading)),
-        );
-        let _ = writeln!(out, "#set par(spacing: {spacing})");
-        // A story taller than its band overflows it, as Word lets it, but a
-        // breakable block would rather shrink the gap above it to fit: two
-        // indented 11pt Arial footer lines in a 21.6pt band advanced only
-        // 11.70pt (issue #2222).
-        out.push_str("#set block(breakable: false)\n");
-    }
-    let mut is_first: bool = true;
-    for paragraph in &hf.paragraphs {
-        if !hf_paragraph_is_emitted(paragraph) {
-            continue;
+    match emitted.as_slice() {
+        [] => {}
+        [(only, _)] => generate_hf_styled_paragraph(out, only, ctx),
+        several => {
+            // Typst's own 0.65em leading where the face's metrics are unknown.
+            let spacing: String = leading.map_or_else(
+                || "0.65em".to_string(),
+                |leading| format!("{}pt", format_f64(leading)),
+            );
+            let _ = writeln!(out, "#set par(spacing: {spacing})");
+            // A story taller than its band overflows it, as Word lets it, but
+            // a breakable block would rather shrink the gap above it to fit:
+            // two indented 11pt Arial footer lines in a 21.6pt band advanced
+            // only 11.70pt (issue #2222).
+            out.push_str("#set block(breakable: false)\n");
+            // Where a paragraph's face metrics are unknown, it keeps the
+            // first paragraph's leading and the spacing on either side of it.
+            let differs = |left: f64, right: f64| (left - right).abs() > 1e-6;
+            let mut current_leading: Option<f64> = leading;
+            let mut upper_runs: Option<&[Run]> = None;
+            for (paragraph, runs) in several {
+                if let Some(upper_runs) = upper_runs {
+                    out.push_str("\n#parbreak()\n");
+                    let gap: Option<f64> =
+                        text::word_hf_paragraph_gap_pt(upper_runs, runs, bottom_edge_em);
+                    match (gap, leading) {
+                        (Some(gap), Some(leading)) if differs(gap, leading) => {
+                            let _ = writeln!(out, "#v({}pt)", format_f64(gap - leading));
+                        }
+                        (Some(gap), None) => {
+                            let _ = writeln!(out, "#v({}pt - {spacing})", format_f64(gap));
+                        }
+                        _ => {}
+                    }
+                    let own_leading: Option<f64> =
+                        text::word_hf_line_leading_pt(runs, bottom_edge_em).or(leading);
+                    if let Some(own) = own_leading
+                        && current_leading.is_none_or(|current| differs(own, current))
+                    {
+                        let _ = writeln!(out, "#set par(leading: {}pt)", format_f64(own));
+                        current_leading = Some(own);
+                    }
+                }
+                generate_hf_styled_paragraph(out, paragraph, ctx);
+                upper_runs = Some(runs);
+            }
         }
-        if !is_first {
-            out.push_str("\n#parbreak()\n");
-        }
-        generate_hf_styled_paragraph(out, paragraph, ctx);
-        is_first = false;
     }
 }
 
