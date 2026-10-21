@@ -162,6 +162,9 @@ struct GenCtx {
     /// Header/footer story tables preserve their sibling-derived blank
     /// paragraph metrics so paragraph-anchored artwork keeps its native seat.
     prefer_sibling_metrics_for_empty_cell_paragraphs: bool,
+    /// Whether the header story being written lays each line out as Word's
+    /// own line box, which is the only form that honours an exact line.
+    hf_lines_are_word_boxes: bool,
     /// How many sheet drawing layers have been written. Each needs its own
     /// label, because the layer is a page foreground that has to recognise
     /// its own sheet's first printed page (issue #1168).
@@ -349,6 +352,7 @@ impl GenCtx {
             next_text_box_id: 0,
             in_top_aligned_floating_text_box: false,
             prefer_sibling_metrics_for_empty_cell_paragraphs: false,
+            hf_lines_are_word_boxes: false,
             next_sheet_drawing_layer_id: 0,
             next_excel_fill_id: 0,
             table_depth: 0,
@@ -3311,10 +3315,12 @@ enum HfLineHeights {
 ///
 /// Reserve each measurable wrapped line plus its paragraph border rules. An
 /// empty paragraph is a line of its paragraph mark in Word's measurement and
-/// nothing in the drawn story's, which leaves it out (issue #2062). Paragraph
-/// spacing and proportional line spacing retain their existing behavior, as
-/// does an empty paragraph with a rule; their drawn and reserved layout needs a
-/// separate correction (issue #2056).
+/// nothing in the drawn story's, which leaves it out (issue #2062). A
+/// horizontal rule's paragraph is a line of its mark in both, because the
+/// drawn story draws it (issue #2251). Paragraph spacing and proportional line
+/// spacing retain their existing behavior, as does an empty paragraph with a
+/// `w:pBdr` rule; their drawn and reserved layout needs a separate correction
+/// (issue #2056).
 fn hf_content_height_pt(
     hf: &HeaderFooter,
     default_text: Option<&TextStyle>,
@@ -3327,6 +3333,12 @@ fn hf_content_height_pt(
         if include_empty_flow_paragraphs
             && paragraph.frame.as_ref().is_some_and(is_page_anchored_frame)
         {
+            continue;
+        }
+        // A rule's paragraph is a line of its mark in Word's measure and in
+        // the drawn story alike, which draws it (issue #2251).
+        if hf_paragraph_rule(paragraph).is_some() {
+            total += hf_empty_paragraph_line_pt(paragraph, default_text)?;
             continue;
         }
         if !include_empty_flow_paragraphs && hf_paragraph_is_empty_flow_line(paragraph) {
@@ -3570,8 +3582,10 @@ fn hf_paragraph_height_pt(
     use_default_for_empty: bool,
 ) -> Option<f64> {
     let mut runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
-    let is_empty_flow_paragraph: bool = runs.is_empty() && use_default_for_empty;
-    if is_empty_flow_paragraph {
+    // A rule's paragraph is measured as the empty line of its mark it is.
+    let is_empty_flow_paragraph: bool =
+        (runs.is_empty() || hf_paragraph_rule(paragraph).is_some()) && use_default_for_empty;
+    if runs.is_empty() && use_default_for_empty {
         let style: TextStyle = paragraph
             .style
             .paragraph_mark_text_style
@@ -3886,7 +3900,21 @@ fn hf_has_flow_content(header_footer: &HeaderFooter) -> bool {
 }
 
 fn hf_paragraph_has_content(paragraph: &crate::ir::HeaderFooterParagraph) -> bool {
-    !paragraph.elements.is_empty() || paragraph.border.is_some()
+    !paragraph.elements.is_empty()
+        || paragraph.border.is_some()
+        || hf_paragraph_rule(paragraph).is_some()
+}
+
+/// The horizontal rule a header or footer paragraph holds as its only
+/// content, which it draws on a line of its paragraph mark (issue #2251).
+fn hf_paragraph_rule(
+    paragraph: &crate::ir::HeaderFooterParagraph,
+) -> Option<&crate::ir::HorizontalRule> {
+    paragraph
+        .style
+        .horizontal_rule
+        .as_deref()
+        .filter(|_| paragraph.elements.is_empty())
 }
 
 fn hf_paragraph_has_flow_content(paragraph: &crate::ir::HeaderFooterParagraph) -> bool {
@@ -4326,7 +4354,9 @@ fn generate_line_boxed_header_paragraphs(
                 format_f64(descent_pt)
             );
         }
+        ctx.hf_lines_are_word_boxes = true;
         generate_hf_styled_paragraph(out, paragraph, ctx);
+        ctx.hf_lines_are_word_boxes = false;
         out.push_str("]\n");
     }
 }
@@ -4334,7 +4364,8 @@ fn generate_line_boxed_header_paragraphs(
 /// Whether [`generate_flow_hf_content`] writes this paragraph into the story.
 ///
 /// Page-anchored frames are drawn separately in the page background, and an
-/// empty paragraph carrying neither content nor a border produces nothing.
+/// empty paragraph carrying neither content, a border nor a horizontal rule
+/// produces nothing.
 /// Shared with the band placement so the two cannot disagree about which
 /// paragraph comes first (issue #629).
 fn hf_paragraph_is_emitted(paragraph: &crate::ir::HeaderFooterParagraph) -> bool {
@@ -4394,8 +4425,24 @@ fn header_band_shift_pt(hf: &HeaderFooter) -> Option<f64> {
 /// and shapes as digits, so it folds in as a synthetic run: a header whose first
 /// paragraph is nothing but a page number still has an ascent to seat, and
 /// without this the decision would leak onto the second paragraph (issue #629).
-/// Positioned tabs contribute no glyphs.
+/// Positioned tabs contribute no glyphs. A paragraph whose only content is a
+/// horizontal rule is a line of its paragraph mark, so it measures as an
+/// empty run in the mark's style (issue #2251).
 fn hf_paragraph_metric_runs(paragraph: &crate::ir::HeaderFooterParagraph) -> Vec<Run> {
+    if hf_paragraph_rule(paragraph).is_some() {
+        return vec![Run {
+            text: String::new(),
+            style: paragraph
+                .style
+                .paragraph_mark_text_style
+                .as_deref()
+                .cloned()
+                .unwrap_or_default(),
+            href: None,
+            footnote: None,
+            inline_box: None,
+        }];
+    }
     paragraph
         .elements
         .iter()
@@ -5273,7 +5320,9 @@ fn generate_hf_paragraph(
         bottom_border_extension_pt,
     );
 
-    if let Some(index) = right_tab {
+    if let Some(rule) = hf_paragraph_rule(paragraph) {
+        write_hf_rule_line(out, paragraph, rule, ctx.hf_lines_are_word_boxes);
+    } else if let Some(index) = right_tab {
         out.push_str("#grid(columns: (1fr, auto), [");
         generate_hf_elements(out, &paragraph.elements[..index], ctx);
         out.push_str("], [");
@@ -5334,6 +5383,58 @@ fn generate_hf_paragraph(
     if stacks_rules {
         out.push(')');
     }
+}
+
+/// Draw a header or footer paragraph's horizontal rule on the bottom of its
+/// line (issue #2251).
+///
+/// The paragraph is a line of its mark: a zero-width strut in the mark's
+/// style lays that line out wherever the story's form puts a line of text,
+/// so the lines around it keep their places. A zero-height box as wide as the
+/// line stands on its baseline and carries the rule, which Word stands on the
+/// line's bottom, one Word descent below the baseline. That descent is the
+/// exact line's share where the story draws Word's line boxes, and the face's
+/// natural one in the flowed and stacked forms, which lay every line out on
+/// its face's natural line.
+///
+/// TODO(unknown mark face): with no metrics for the mark's face, that descent
+/// is unknown and the rule stands on the baseline.
+fn write_hf_rule_line(
+    out: &mut String,
+    paragraph: &crate::ir::HeaderFooterParagraph,
+    rule: &crate::ir::HorizontalRule,
+    lines_are_word_boxes: bool,
+) {
+    let line_box: Option<(f64, f64)> = if lines_are_word_boxes {
+        hf_paragraph_line_box_pt(paragraph)
+    } else {
+        text::word_header_line_box_pt(&hf_paragraph_metric_runs(paragraph))
+    };
+    let descent_pt: f64 = match line_box {
+        Some((_, descent_pt)) => descent_pt,
+        None => {
+            tracing::debug!(
+                "horizontal rule's line has no face metrics; standing it on the baseline"
+            );
+            0.0
+        }
+    };
+    let mark: TextStyle = paragraph
+        .style
+        .paragraph_mark_text_style
+        .as_deref()
+        .cloned()
+        .unwrap_or_default();
+    if has_text_properties(&mark) {
+        out.push_str("#text(");
+        write_text_params(out, &mark);
+        out.push_str(")[\u{2060}]");
+    } else {
+        out.push('\u{2060}');
+    }
+    out.push_str("#box(width: 100%, height: 0pt)[");
+    write_horizontal_rule(out, rule, descent_pt);
+    out.push(']');
 }
 
 /// Emit the one or two `line()` blocks a single paragraph-border side needs.

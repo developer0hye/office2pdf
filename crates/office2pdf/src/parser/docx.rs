@@ -2265,9 +2265,11 @@ fn convert_paragraph_blocks(
 /// paragraph that also holds text or another rule. That line is not laid out,
 /// so such a paragraph draws no rule rather than one over its text.
 ///
-/// TODO(#2251 header and text box rules): header and footer stories convert
-/// through their own path, and a VML text box's paragraphs are rebuilt from
-/// the raw XML, so neither reaches this and their rules are not drawn yet.
+/// Header and footer stories convert through their own path, which gives
+/// their rules to their paragraphs itself (`attach_story_horizontal_rule`).
+///
+/// TODO(#2251 text box rules): a VML text box's paragraphs are rebuilt from
+/// the raw XML, so they never reach this and their rules are not drawn yet.
 fn attach_horizontal_rule(block: &mut Block, horizontal_rules: &[HorizontalRule]) {
     let [rule] = horizontal_rules else {
         if !horizontal_rules.is_empty() {

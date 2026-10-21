@@ -6,12 +6,12 @@ use crate::error::ConvertWarning;
 use crate::ir::{
     Block, Color, ColumnLayout, FloatingTableFrame, FlowPage, FrameAlign, FrameAnchor, HFInline,
     HeaderFooter, HeaderFooterFrame, HeaderFooterParagraph, HeaderFooterShape,
-    HeaderFooterShapeContent, Margins, PageNumbering, PageSize, PositionedTab,
+    HeaderFooterShapeContent, HorizontalRule, Margins, PageNumbering, PageSize, PositionedTab,
     PositionedTabAlignment, PositionedTabRelativeTo, Run, TabLeader, Table, TextDirection,
     TextFrame, TextStyle,
 };
 
-use super::contexts::{DocxConversionContext, PictureCropContext, WrapContext};
+use super::contexts::{DocxConversionContext, PictureCropContext, WrapContext, horizontal_rule};
 use super::media::extract_drawing_image;
 use super::tables::convert_table;
 use super::text::ThemeFonts;
@@ -133,6 +133,7 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
         };
         let images = build_part_image_map(archive, &path, warnings);
         let simple_fields = scan_simple_fields(&xml);
+        let horizontal_rules = scan_story_horizontal_rules(&xml);
         let Ok(header) = <docx_rs::Header as docx_rs::FromXML>::from_xml(xml.as_bytes()) else {
             continue;
         };
@@ -149,7 +150,11 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
         if let Some(converted) = convert_docx_header_with_context(
             &header,
             &images,
-            &simple_fields,
+            StoryParagraphMetadata {
+                bidi_paragraphs: &[],
+                simple_fields: &simple_fields,
+                horizontal_rules: &horizontal_rules,
+            },
             &anchors,
             styles,
             &mut conversion_context,
@@ -166,6 +171,7 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
         let images = build_part_image_map(archive, &path, warnings);
         let bidi_paragraphs = scan_bidi_paragraphs(&xml);
         let simple_fields = scan_simple_fields(&xml);
+        let horizontal_rules = scan_story_horizontal_rules(&xml);
         let Ok(footer) = <docx_rs::Footer as docx_rs::FromXML>::from_xml(xml.as_bytes()) else {
             continue;
         };
@@ -182,9 +188,10 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
         if let Some(converted) = convert_docx_footer_with_context(
             &footer,
             &images,
-            FooterParagraphMetadata {
+            StoryParagraphMetadata {
                 bidi_paragraphs: &bidi_paragraphs,
                 simple_fields: &simple_fields,
+                horizontal_rules: &horizontal_rules,
             },
             &anchors,
             styles,
@@ -708,7 +715,11 @@ fn convert_docx_header(
     convert_docx_header_with_context(
         header,
         images,
-        simple_fields,
+        StoryParagraphMetadata {
+            bidi_paragraphs: &[],
+            simple_fields,
+            horizontal_rules: &[],
+        },
         anchors,
         styles,
         &mut conversion_context,
@@ -719,7 +730,7 @@ fn convert_docx_header(
 fn convert_docx_header_with_context(
     header: &docx_rs::Header,
     images: &ImageMap,
-    simple_fields: &[Vec<SimpleFieldMarker>],
+    paragraph_metadata: StoryParagraphMetadata<'_>,
     anchors: &[HfAnchorBox],
     styles: HeaderFooterStyleContext<'_>,
     conversion_context: &mut DocxConversionContext,
@@ -743,9 +754,11 @@ fn convert_docx_header_with_context(
     let mut source_to_rendered_paragraphs: Vec<usize> = Vec::new();
     let mut paragraphs: Vec<HeaderFooterParagraph> = Vec::new();
     let mut index: usize = 0;
+    let mut follows_flow_table: bool = false;
     for child in story_children {
         let paragraph = match child {
             StoryChild::Table(table) => {
+                follows_flow_table |= !table_is_positioned(table);
                 shapes.push(convert_hf_table(
                     table,
                     images,
@@ -758,14 +771,28 @@ fn convert_docx_header_with_context(
             StoryChild::Paragraph(paragraph) => paragraph,
         };
         source_to_rendered_paragraphs.push(paragraphs.len());
-        paragraphs.push(convert_hf_paragraph(
+        let mut converted: HeaderFooterParagraph = convert_hf_paragraph(
             paragraph,
             images,
             false,
-            simple_fields.get(index).map(Vec::as_slice).unwrap_or(&[]),
+            paragraph_metadata
+                .simple_fields
+                .get(index)
+                .map(Vec::as_slice)
+                .unwrap_or(&[]),
             styles,
             &conversion_context.picture_crops,
-        ));
+        );
+        attach_story_horizontal_rule(
+            &mut converted,
+            paragraph_metadata
+                .horizontal_rules
+                .get(index)
+                .map(Vec::as_slice)
+                .unwrap_or(&[]),
+            follows_flow_table,
+        );
+        paragraphs.push(converted);
         paragraphs.extend(hf_anchored_text_box_paragraphs(
             paragraph,
             &mut anchors,
@@ -807,9 +834,10 @@ fn convert_docx_footer(
     convert_docx_footer_with_context(
         footer,
         images,
-        FooterParagraphMetadata {
+        StoryParagraphMetadata {
             bidi_paragraphs,
             simple_fields,
+            horizontal_rules: &[],
         },
         anchors,
         styles,
@@ -818,15 +846,19 @@ fn convert_docx_footer(
     )
 }
 
-struct FooterParagraphMetadata<'a> {
+/// What the part scans read for each of a story's own paragraphs, indexed as
+/// the story converts them.
+struct StoryParagraphMetadata<'a> {
     bidi_paragraphs: &'a [bool],
     simple_fields: &'a [Vec<SimpleFieldMarker>],
+    /// The horizontal rules each paragraph draws (issue #2251).
+    horizontal_rules: &'a [Vec<HorizontalRule>],
 }
 
 fn convert_docx_footer_with_context(
     footer: &docx_rs::Footer,
     images: &ImageMap,
-    paragraph_metadata: FooterParagraphMetadata<'_>,
+    paragraph_metadata: StoryParagraphMetadata<'_>,
     anchors: &[HfAnchorBox],
     styles: HeaderFooterStyleContext<'_>,
     conversion_context: &mut DocxConversionContext,
@@ -850,9 +882,11 @@ fn convert_docx_footer_with_context(
     let mut source_to_rendered_paragraphs: Vec<usize> = Vec::new();
     let mut paragraphs: Vec<HeaderFooterParagraph> = Vec::new();
     let mut index: usize = 0;
+    let mut follows_flow_table: bool = false;
     for child in story_children {
         let paragraph = match child {
             StoryChild::Table(table) => {
+                follows_flow_table |= !table_is_positioned(table);
                 shapes.push(convert_hf_table(
                     table,
                     images,
@@ -865,7 +899,7 @@ fn convert_docx_footer_with_context(
             StoryChild::Paragraph(paragraph) => paragraph,
         };
         source_to_rendered_paragraphs.push(paragraphs.len());
-        paragraphs.push(convert_hf_paragraph(
+        let mut converted: HeaderFooterParagraph = convert_hf_paragraph(
             paragraph,
             images,
             paragraph_metadata
@@ -880,7 +914,17 @@ fn convert_docx_footer_with_context(
                 .unwrap_or(&[]),
             styles,
             &conversion_context.picture_crops,
-        ));
+        );
+        attach_story_horizontal_rule(
+            &mut converted,
+            paragraph_metadata
+                .horizontal_rules
+                .get(index)
+                .map(Vec::as_slice)
+                .unwrap_or(&[]),
+            follows_flow_table,
+        );
+        paragraphs.push(converted);
         paragraphs.extend(hf_anchored_text_box_paragraphs(
             paragraph,
             &mut anchors,
@@ -900,6 +944,104 @@ fn convert_docx_footer_with_context(
         sheet_print_scale: None,
         shapes,
     })
+}
+
+/// Give a header or footer paragraph whose only content is one horizontal
+/// rule that rule, which is drawn on the paragraph's line as a body
+/// paragraph's is (issue #2251).
+///
+/// TODO(#2411): a paragraph after a table in the story's flow is drawn at the
+/// top of the story, over the table's rows, so its rule would cross the
+/// table's text. Such a paragraph keeps its blank line until it is drawn
+/// below the table.
+fn attach_story_horizontal_rule(
+    paragraph: &mut HeaderFooterParagraph,
+    horizontal_rules: &[HorizontalRule],
+    follows_flow_table: bool,
+) {
+    let [rule] = horizontal_rules else {
+        if !horizontal_rules.is_empty() {
+            tracing::debug!(
+                rules = horizontal_rules.len(),
+                "story paragraph holds several horizontal rules; drawing none"
+            );
+        }
+        return;
+    };
+    if !paragraph.elements.is_empty() {
+        tracing::debug!("horizontal rule shares its story paragraph with content; drawing none");
+    } else if follows_flow_table {
+        tracing::debug!("horizontal rule follows a table in the story's flow; drawing none");
+    } else {
+        paragraph.style.horizontal_rule = Some(Box::new(*rule));
+    }
+}
+
+/// The horizontal rules each of a header or footer story's own paragraphs
+/// draws, one entry per paragraph in the order the story converts them
+/// (issue #2251).
+///
+/// docx-rs drops a rule's `v:rect`, and the body's run scan reads only a
+/// `w:body`. A story's own paragraphs are its top-level ones, a content
+/// control's included. A table's cell paragraphs convert with their table,
+/// and a text box's or an `mc:Fallback` copy's not as story paragraphs, so
+/// none of them takes an entry. A rule is a `v:rect` directly inside the
+/// `w:pict` of one of the paragraph's runs; a deleted run draws none.
+fn scan_story_horizontal_rules(xml: &str) -> Vec<Vec<HorizontalRule>> {
+    let mut reader = quick_xml::Reader::from_str(xml);
+    let mut paragraphs: Vec<Vec<HorizontalRule>> = Vec::new();
+    // Open elements whose paragraphs or runs are not the story's own.
+    let mut excluded_depth: usize = 0;
+    let mut paragraph_depth: usize = 0;
+    let mut depth: usize = 0;
+    // The depth of the open `w:pict` of a story paragraph's run.
+    let mut pict_depth: Option<usize> = None;
+    let excludes = |name: &[u8]| {
+        matches!(
+            name,
+            b"tbl" | b"txbxContent" | b"Fallback" | b"del" | b"moveFrom"
+        )
+    };
+    loop {
+        let (element, is_empty) = match reader.read_event() {
+            Ok(quick_xml::events::Event::Start(element)) => (element, false),
+            Ok(quick_xml::events::Event::Empty(element)) => (element, true),
+            Ok(quick_xml::events::Event::End(element)) => {
+                let name = element.local_name();
+                if pict_depth == Some(depth) {
+                    pict_depth = None;
+                }
+                depth = depth.saturating_sub(1);
+                paragraph_depth -= usize::from(name.as_ref() == b"p" && paragraph_depth > 0);
+                excluded_depth -= usize::from(excludes(name.as_ref()) && excluded_depth > 0);
+                continue;
+            }
+            Ok(quick_xml::events::Event::Eof) | Err(_) => break,
+            _ => continue,
+        };
+        let name = element.local_name();
+        let is_own: bool = excluded_depth == 0;
+        match name.as_ref() {
+            b"p" if is_own && paragraph_depth == 0 => paragraphs.push(Vec::new()),
+            b"pict" if is_own && paragraph_depth == 1 && !is_empty => {
+                pict_depth = Some(depth + 1);
+            }
+            b"rect" if is_own && pict_depth == Some(depth) => {
+                if let (Some(rule), Some(rules)) =
+                    (horizontal_rule(&reader, &element), paragraphs.last_mut())
+                {
+                    rules.push(rule);
+                }
+            }
+            _ => {}
+        }
+        if !is_empty {
+            depth += 1;
+            paragraph_depth += usize::from(name.as_ref() == b"p");
+            excluded_depth += usize::from(excludes(name.as_ref()));
+        }
+    }
+    paragraphs
 }
 
 fn convert_hf_table(
@@ -2906,5 +3048,57 @@ mod structured_tag_tests {
             .expect("footer SDT paragraph should be retained");
 
         assert!(contains_page_number(&converted));
+    }
+}
+
+#[cfg(test)]
+mod horizontal_rule_scan_tests {
+    use super::*;
+    use crate::ir::{Alignment, HorizontalRulePaint, HorizontalRuleWidth};
+
+    /// One entry per paragraph the story converts as its own, in order: a
+    /// table's cell paragraphs, a text box's and an `mc:Fallback` copy's are
+    /// not among them, a content control's are, and an empty `<w:p/>` counts.
+    /// Each entry holds the rules its direct runs' `w:pict` draw (issue
+    /// #2251).
+    #[test]
+    fn scans_each_story_paragraphs_own_rules_in_story_order() {
+        let xml = r##"<w:hdr xmlns:w="urn:w" xmlns:v="urn:v" xmlns:o="urn:o" xmlns:mc="urn:mc">
+          <w:p><w:r><w:t>Title</w:t></w:r></w:p>
+          <w:tbl><w:tr><w:tc><w:p><w:r><w:pict>
+            <v:rect style="width:0;height:3pt" o:hr="t"/>
+          </w:pict></w:r></w:p></w:tc></w:tr></w:tbl>
+          <w:p/>
+          <w:p><w:r><mc:AlternateContent><mc:Choice Requires="wps"><w:t>Choice</w:t></mc:Choice>
+            <mc:Fallback><w:pict><v:rect style="width:0;height:3pt" o:hr="t"/></w:pict></mc:Fallback>
+          </mc:AlternateContent></w:r></w:p>
+          <w:p><w:r><w:pict><v:shape><v:textbox><w:txbxContent>
+            <w:p><w:r><w:pict><v:rect style="width:0;height:3pt" o:hr="t"/></w:pict></w:r></w:p>
+          </w:txbxContent></v:textbox></v:shape></w:pict></w:r></w:p>
+          <w:sdt><w:sdtContent><w:p><w:r><w:pict>
+            <v:rect style="width:0;height:1.5pt" o:hralign="center" o:hr="t" fillcolor="#a0a0a0"/>
+          </w:pict></w:r></w:p></w:sdtContent></w:sdt>
+          <w:p><w:r><w:pict><v:rect style="width:100pt;height:20pt"/></w:pict></w:r><w:r><w:pict>
+            <v:rect style="width:0;height:2pt" o:hrpct="500" o:hralign="right" o:hr="t"/>
+          </w:pict></w:r></w:p>
+        </w:hdr>"##;
+
+        let shaded = |width: f64, height: f64, alignment: Alignment| HorizontalRule {
+            width: HorizontalRuleWidth::Fraction(width),
+            height,
+            alignment,
+            paint: HorizontalRulePaint::Shaded,
+        };
+        assert_eq!(
+            scan_story_horizontal_rules(xml),
+            vec![
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                vec![shaded(1.0, 1.5, Alignment::Center)],
+                vec![shaded(0.5, 2.0, Alignment::Right)],
+            ]
+        );
     }
 }

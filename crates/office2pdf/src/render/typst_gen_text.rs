@@ -487,7 +487,7 @@ pub(super) fn generate_paragraph(
         );
         if let Some(rule) = style.horizontal_rule.as_deref() {
             out.push('\n');
-            write_horizontal_rule(out, rule);
+            write_horizontal_rule(out, rule, 0.0);
         }
         if wraps_in_style_block {
             out.push_str("\n]");
@@ -826,10 +826,11 @@ pub(super) fn paragraph_indent_pt(style: &ParagraphStyle) -> Option<(f64, f64)> 
 const SHADED_RULE_OUTLINE_PT: f64 = 0.75;
 const SHADED_RULE_INSET_PT: f64 = 0.2;
 
-/// Place a paragraph's horizontal rule on the bottom of the block it is
-/// written into, which spans the paragraph's line between its indents (issue
-/// #2251). Word stands the rule on the bottom of its line.
-fn write_horizontal_rule(out: &mut String, rule: &HorizontalRule) {
+/// Place a paragraph's horizontal rule on the bottom of its line, which lies
+/// `line_bottom_pt` below the bottom of the block it is written into; that
+/// block spans the paragraph's line between its indents (issue #2251). Word
+/// stands the rule on the bottom of its line.
+pub(super) fn write_horizontal_rule(out: &mut String, rule: &HorizontalRule, line_bottom_pt: f64) {
     let width: String = match rule.width {
         HorizontalRuleWidth::Fraction(fraction) => format!("{}%", format_f64(fraction * 100.0)),
         HorizontalRuleWidth::Points(points) => format!("{}pt", format_f64(points)),
@@ -843,9 +844,9 @@ fn write_horizontal_rule(out: &mut String, rule: &HorizontalRule) {
         HorizontalRulePaint::Shaded => {
             let _ = write!(
                 out,
-                "#place(bottom + {alignment}, dy: -{}pt, rect(width: {width}, height: {}pt, \
+                "#place(bottom + {alignment}, dy: {}pt, rect(width: {width}, height: {}pt, \
                  fill: none, stroke: {}pt + rgb(0, 0, 0)))",
-                format_f64(SHADED_RULE_INSET_PT),
+                format_f64(line_bottom_pt - SHADED_RULE_INSET_PT),
                 format_f64((rule.height - 2.0 * SHADED_RULE_INSET_PT).max(0.0)),
                 format_f64(SHADED_RULE_OUTLINE_PT),
             );
@@ -853,8 +854,9 @@ fn write_horizontal_rule(out: &mut String, rule: &HorizontalRule) {
         HorizontalRulePaint::Solid(color) => {
             let _ = write!(
                 out,
-                "#place(bottom + {alignment}, rect(width: {width}, height: {}pt, fill: {}, \
-                 stroke: none))",
+                "#place(bottom + {alignment}, dy: {}pt, rect(width: {width}, height: {}pt, \
+                 fill: {}, stroke: none))",
+                format_f64(line_bottom_pt),
                 format_f64(rule.height),
                 rgb(&color),
             );
