@@ -11,7 +11,9 @@ use crate::ir::{
     TextFrame, TextStyle,
 };
 
-use super::contexts::{DocxConversionContext, PictureCropContext, WrapContext, horizontal_rule};
+use super::contexts::{
+    DocxConversionContext, PictureCropContext, WrapContext, doc_pr_states_hidden, horizontal_rule,
+};
 use super::media::extract_drawing_image;
 use super::tables::convert_table;
 use super::text::ThemeFonts;
@@ -1713,13 +1715,17 @@ fn convert_hf_paragraph(
                 extract_hf_run_elements(&run.children, &run_style, &mut elements, &mut field_state);
                 for run_child in &run.children {
                     if let docx_rs::RunChild::Drawing(drawing) = run_child {
-                        let crop = picture_crops.next_drawing(true);
+                        let metadata = picture_crops.next_drawing(true);
+                        // A hidden picture is not drawn (issue #2299).
+                        if metadata.hidden {
+                            continue;
+                        }
                         let Some(block) = extract_drawing_image(
                             drawing,
                             images,
                             &WrapContext::empty(),
                             None,
-                            crop,
+                            metadata.crop,
                         ) else {
                             continue;
                         };
@@ -1840,6 +1846,9 @@ struct HfAnchorBox {
     /// `<a:bodyPr wrap="none">` — the paragraph stays on one line and hangs
     /// out of the text column rather than breaking (issue #967).
     wraps_text: bool,
+    /// `<wp:docPr hidden="1">` — Word draws neither the shape nor its text
+    /// (issue #2299).
+    hidden: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -1933,6 +1942,7 @@ impl HfAnchorBox {
 fn hf_anchored_shapes(anchors: &[HfAnchorBox]) -> Vec<crate::ir::HeaderFooterShape> {
     anchors
         .iter()
+        .filter(|anchor| !anchor.hidden)
         .filter_map(|anchor| {
             let shape = anchor.shape.clone()?;
             let frame = anchor.to_shape_frame()?;
@@ -1999,7 +2009,7 @@ fn hf_anchored_text_box_paragraphs(
             };
             // Every anchored drawing consumes one scanned anchor, so an image
             // beside a shape does not shift the shape onto the wrong box.
-            let anchor: Option<&HfAnchorBox> = anchors.next();
+            let anchor: Option<&HfAnchorBox> = anchors.next().filter(|anchor| !anchor.hidden);
             let Some(docx_rs::DrawingData::TextBox(text_box)) = &drawing.data else {
                 continue;
             };
@@ -2187,6 +2197,9 @@ fn scan_hf_anchors(xml: &str, theme_colors: &HashMap<String, Color>) -> Vec<HfAn
     let mut story_paragraph_index: Option<usize> = None;
     let mut table_depth: usize = 0;
     let mut line_depth: usize = 0;
+    // Only the anchor's own `wp:docPr`, which precedes its graphic, decides
+    // whether it is hidden; a drawing nested in its text box has another.
+    let mut reads_doc_pr: bool = false;
     let empty_color_aliases: HashMap<String, String> = HashMap::new();
     loop {
         match reader.read_event() {
@@ -2209,6 +2222,12 @@ fn scan_hf_anchors(xml: &str, theme_colors: &HashMap<String, Color>) -> Vec<HfAn
                         wraps_text: true,
                         ..HfAnchorBox::default()
                     });
+                    reads_doc_pr = true;
+                }
+                b"docPr" if std::mem::take(&mut reads_doc_pr) => {
+                    if let Some(anchor) = current.as_mut() {
+                        anchor.hidden = doc_pr_states_hidden(element);
+                    }
                 }
                 b"positionH" | b"positionV" => {
                     let horizontal = element.local_name().as_ref() == b"positionH";
@@ -2369,6 +2388,14 @@ fn scan_hf_anchors(xml: &str, theme_colors: &HashMap<String, Color>) -> Vec<HfAn
             },
             Ok(Event::Empty(ref element)) if element.local_name().as_ref() == b"bodyPr" => {
                 read_body_insets(element, current.as_mut());
+            }
+            Ok(Event::Empty(ref element))
+                if element.local_name().as_ref() == b"docPr"
+                    && std::mem::take(&mut reads_doc_pr) =>
+            {
+                if let Some(anchor) = current.as_mut() {
+                    anchor.hidden = doc_pr_states_hidden(element);
+                }
             }
             Ok(Event::Empty(ref element)) if element.local_name().as_ref() == b"p" => {
                 if current.is_none() && table_depth == 0 {
