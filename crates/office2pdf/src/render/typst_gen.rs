@@ -3079,6 +3079,66 @@ fn hf_trailing_space_after_pt(hf: &HeaderFooter) -> f64 {
         .unwrap_or(0.0)
 }
 
+/// The page-space `(top, bottom)` bands of the footer pictures its lines
+/// cannot sit beside, lowest first, each widened by its `distT`/`distB`.
+///
+/// A picture wrapped top and bottom keeps text off both of its sides; a
+/// square or tight one only where it leaves no room beside it in the text
+/// column. TODO(side wrap): one that leaves room lets Word set the lines
+/// beside it, narrowed, at their own height, so they stay where they are.
+fn footer_line_obstacles(footer: &HeaderFooter, page: &FlowPage) -> Vec<(f64, f64)> {
+    let column_left: f64 = page.margins.left;
+    let column_right: f64 = page.size.width - page.margins.right;
+    let mut obstacles: Vec<(f64, f64)> = footer
+        .shapes
+        .iter()
+        .filter_map(|shape| {
+            let HeaderFooterShapeContent::Picture(picture) = &shape.content else {
+                return None;
+            };
+            let distance = picture.wrap_distance;
+            let covers_column = || {
+                let left: f64 = shape.frame.x? - distance.left;
+                let right: f64 = shape.frame.x? + shape.width + distance.right;
+                Some(left <= column_left && right >= column_right)
+            };
+            let keeps_lines_off: bool = match picture.wrap_mode {
+                WrapMode::TopAndBottom => true,
+                WrapMode::Square | WrapMode::Tight => covers_column().unwrap_or(false),
+                WrapMode::Behind | WrapMode::InFront | WrapMode::None => false,
+            };
+            if !keeps_lines_off || shape.frame.vertical_anchor != FrameAnchor::Page {
+                return None;
+            }
+            let top: f64 = shape.frame.y?;
+            Some((top - distance.top, top + shape.height + distance.bottom))
+        })
+        .collect();
+    obstacles.sort_by(|left, right| right.0.total_cmp(&left.0));
+    obstacles
+}
+
+/// How far Word's line box for a flowed story's first line reaches above the
+/// cap height Typst starts that line at, in points; zero where the face is
+/// unknown, the line holds a picture, or the story is laid out as stacked
+/// blocks of Word's own line heights.
+fn hf_story_first_line_ascent_above_cap_pt(hf: &HeaderFooter) -> f64 {
+    if hf_story_rules_a_paragraph(hf) {
+        return 0.0;
+    }
+    hf.paragraphs
+        .iter()
+        .find(|paragraph| hf_paragraph_is_emitted(paragraph))
+        .filter(|paragraph| {
+            !paragraph
+                .elements
+                .iter()
+                .any(|element| matches!(element, HFInline::Image(_)))
+        })
+        .and_then(|paragraph| text::word_header_band_shift_pt(&hf_paragraph_metric_runs(paragraph)))
+        .unwrap_or(0.0)
+}
+
 /// Build the `#set page(footer: …)` value for one footer story (issue #846).
 fn flow_footer_value(footer: &HeaderFooter, page: &FlowPage, ctx: &mut GenCtx) -> FlowFooterValue {
     let mut value = String::new();
@@ -3116,19 +3176,52 @@ fn flow_footer_value(footer: &HeaderFooter, page: &FlowPage, ctx: &mut GenCtx) -
         // `w:pgMar/@w:footer` rather than on it. A gap deeper than the band
         // itself would invert the block, so the band is as far as the story can
         // be lifted (issue #1195).
-        let drawn_band: f64 =
-            round_to_hundredths((band - hf_trailing_space_after_pt(footer)).max(0.0));
+        let space_after: f64 = hf_trailing_space_after_pt(footer);
+        let drawn_band: f64 = round_to_hundredths((band - space_after).max(0.0));
         let _ = write!(
             value,
-            "block(width: 100%, height: {}pt)[#set text(bottom-edge: {bottom_edge}); #place(bottom, block(width: 100%)[",
+            "block(width: 100%, height: {}pt)[#set text(bottom-edge: {bottom_edge}); ",
             format_f64(drawn_band)
         );
+        let obstacles: Vec<(f64, f64)> = footer_line_obstacles(footer, page);
+        if obstacles.is_empty() {
+            value.push_str("#place(bottom, block(width: 100%)[");
+        } else {
+            value.push_str("#context { let story = block(width: 100%)[");
+        }
         // That edge sits under every line of the story, so the leading has to
         // leave room for it. Where it is the renderer's own `"descender"`, the
         // last paragraph's face did not resolve and no descent is known to
         // leave room for.
         generate_flow_hf_content(&mut value, footer, descent_em.unwrap_or(0.0), ctx);
-        value.push_str("])]");
+        if obstacles.is_empty() {
+            value.push_str("])]");
+        } else {
+            // Word sets the story's lines above a picture they cannot sit
+            // beside: its box, `w:spacing w:after` included, ends at the top
+            // of the first picture its bottom-anchored lines would cross, and
+            // of each one that box then crosses (issue #2327).
+            let page_height: f64 = page.size.height;
+            let story_bottom: f64 = page_height - page.margins.bottom + drawn_band + space_after;
+            let text_width: f64 = page.size.width - page.margins.left - page.margins.right;
+            // The measured story starts at its first line's cap height;
+            // Word's line box reaches that face's ascent.
+            let word_box_extra: f64 = hf_story_first_line_ascent_above_cap_pt(footer) + space_after;
+            let tuples: String = obstacles
+                .iter()
+                .map(|(above, below)| {
+                    format!("({}pt, {}pt), ", format_f64(*above), format_f64(*below))
+                })
+                .collect();
+            let _ = write!(
+                value,
+                "]; let height = measure(story, width: {}pt).height + {}pt; let edge = {}pt; for (above, below) in ({tuples}) {{ if edge - height < below and above < edge {{ edge = above }} }}; place(bottom, dy: edge - {}pt, story) }}]",
+                format_f64(text_width),
+                format_f64(word_box_extra),
+                format_f64(story_bottom),
+                format_f64(story_bottom),
+            );
+        }
         return FlowFooterValue {
             markup: value,
             wants_zero_descent: true,
@@ -3509,8 +3602,9 @@ fn hf_content_height_pt(
             continue;
         }
         // A rule's paragraph is a line of its mark in Word's measure and in
-        // the drawn story alike, which draws it (issue #2251).
-        if hf_paragraph_rule(paragraph).is_some() {
+        // the drawn story alike, which draws it (issue #2251), and so is one
+        // that anchors a drawing (issue #2327).
+        if hf_paragraph_is_mark_line(paragraph) {
             total += hf_empty_paragraph_line_pt(paragraph, default_text)?;
             continue;
         }
@@ -3723,7 +3817,7 @@ fn hf_story_tables_height_pt(header: &HeaderFooter, line_grid_pitch: Option<f64>
                 }
                 height_pt
             }
-            HeaderFooterShapeContent::Shape(_) => None,
+            HeaderFooterShapeContent::Shape(_) | HeaderFooterShapeContent::Picture(_) => None,
         })
         .sum()
 }
@@ -3755,9 +3849,10 @@ fn hf_paragraph_height_pt(
     use_default_for_empty: bool,
 ) -> Option<f64> {
     let mut runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
-    // A rule's paragraph is measured as the empty line of its mark it is.
+    // A paragraph holding only a rule or anchored drawings is measured as the
+    // empty line of its mark it is.
     let is_empty_flow_paragraph: bool =
-        (runs.is_empty() || hf_paragraph_rule(paragraph).is_some()) && use_default_for_empty;
+        (runs.is_empty() || hf_paragraph_is_mark_line(paragraph)) && use_default_for_empty;
     if runs.is_empty() && use_default_for_empty {
         let style: TextStyle = paragraph
             .style
@@ -4124,7 +4219,15 @@ fn hf_has_flow_content(header_footer: &HeaderFooter) -> bool {
 fn hf_paragraph_has_content(paragraph: &crate::ir::HeaderFooterParagraph) -> bool {
     !paragraph.elements.is_empty()
         || paragraph.border.is_some()
-        || hf_paragraph_rule(paragraph).is_some()
+        || hf_paragraph_is_mark_line(paragraph)
+}
+
+/// Whether a header or footer paragraph with no runs is still a line of its
+/// paragraph mark: one whose only content is a horizontal rule (issue #2251)
+/// or drawings the story draws at their anchors (issue #2327).
+fn hf_paragraph_is_mark_line(paragraph: &crate::ir::HeaderFooterParagraph) -> bool {
+    paragraph.elements.is_empty()
+        && (paragraph.style.horizontal_rule.is_some() || paragraph.style.holds_anchored_drawing)
 }
 
 /// The horizontal rule a header or footer paragraph holds as its only
@@ -4186,7 +4289,8 @@ fn page_anchored_layer_markup(
 
 /// Place header/footer elements in the page overlay. Paragraph-relative
 /// drawing shapes use their anchor paragraph's position; page-relative shapes
-/// use their stored extent, and tables use converted dimensions and frame anchors.
+/// use their stored extent, tables use converted dimensions and frame anchors,
+/// and pictures sit at their resolved frame position.
 fn generate_page_anchored_hf_elements(
     out: &mut String,
     hf: &HeaderFooter,
@@ -4251,6 +4355,21 @@ fn generate_page_anchored_hf_elements(
                 ctx.prefer_sibling_metrics_for_empty_cell_paragraphs = previous_preference;
                 result?;
                 out.push(']');
+            }
+            HeaderFooterShapeContent::Picture(picture) => {
+                if element.behind_text != behind_text {
+                    continue;
+                }
+                let x: f64 = page_relative_hf_table_x(element, page, page_size);
+                let y: f64 = page_relative_hf_table_y(element, hf, page, page_size, is_footer);
+                let _ = write!(
+                    out,
+                    "#place(top + left, dx: {}pt, dy: {}pt)[",
+                    format_f64(x),
+                    format_f64(y)
+                );
+                generate_image(out, &picture.image, ctx);
+                out.push_str("]\n");
             }
         }
     }
@@ -4596,8 +4715,8 @@ fn generate_line_boxed_header_paragraphs(
 /// Whether [`generate_flow_hf_content`] writes this paragraph into the story.
 ///
 /// Page-anchored frames are drawn separately in the page background, and an
-/// empty paragraph carrying neither content, a border nor a horizontal rule
-/// produces nothing.
+/// empty paragraph carrying neither content, a border, a horizontal rule nor
+/// an anchored drawing produces nothing.
 /// Shared with the band placement so the two cannot disagree about which
 /// paragraph comes first (issue #629).
 fn hf_paragraph_is_emitted(paragraph: &crate::ir::HeaderFooterParagraph) -> bool {
@@ -4658,10 +4777,10 @@ fn header_band_shift_pt(hf: &HeaderFooter) -> Option<f64> {
 /// paragraph is nothing but a page number still has an ascent to seat, and
 /// without this the decision would leak onto the second paragraph (issue #629).
 /// Positioned tabs contribute no glyphs. A paragraph whose only content is a
-/// horizontal rule is a line of its paragraph mark, so it measures as an
-/// empty run in the mark's style (issue #2251).
+/// horizontal rule or anchored drawings is a line of its paragraph mark, so it
+/// measures as an empty run in the mark's style (issues #2251 and #2327).
 fn hf_paragraph_metric_runs(paragraph: &crate::ir::HeaderFooterParagraph) -> Vec<Run> {
-    if hf_paragraph_rule(paragraph).is_some() {
+    if hf_paragraph_is_mark_line(paragraph) {
         return vec![Run {
             text: String::new(),
             style: paragraph
@@ -5552,8 +5671,13 @@ fn generate_hf_paragraph(
         bottom_border_extension_pt,
     );
 
-    if let Some(rule) = hf_paragraph_rule(paragraph) {
-        write_hf_rule_line(out, paragraph, rule, ctx.hf_lines_are_word_boxes);
+    if hf_paragraph_is_mark_line(paragraph) {
+        write_hf_mark_line(
+            out,
+            paragraph,
+            hf_paragraph_rule(paragraph),
+            ctx.hf_lines_are_word_boxes,
+        );
     } else if let Some(index) = right_tab {
         out.push_str("#grid(columns: (1fr, auto), [");
         generate_hf_elements(out, &paragraph.elements[..index], ctx);
@@ -5617,26 +5741,41 @@ fn generate_hf_paragraph(
     }
 }
 
-/// Draw a header or footer paragraph's horizontal rule on the bottom of its
-/// line (issue #2251).
+/// Draw a header or footer paragraph that is a line of its mark, and its
+/// horizontal rule on the bottom of that line (issues #2251 and #2327).
 ///
-/// The paragraph is a line of its mark: a zero-width strut in the mark's
-/// style lays that line out wherever the story's form puts a line of text,
-/// so the lines around it keep their places. A zero-height box as wide as the
-/// line stands on its baseline and carries the rule, which Word stands on the
-/// line's bottom, one Word descent below the baseline. That descent is the
-/// exact line's share where the story draws Word's line boxes, and the face's
-/// natural one in the flowed and stacked forms, which lay every line out on
-/// its face's natural line.
+/// A zero-width strut in the mark's style lays that line out wherever the
+/// story's form puts a line of text, so the lines around it keep their places.
+/// A zero-height box as wide as the line stands on its baseline and carries
+/// the rule, which Word stands on the line's bottom, one Word descent below
+/// the baseline. That descent is the exact line's share where the story draws
+/// Word's line boxes, and the face's natural one in the flowed and stacked
+/// forms, which lay every line out on its face's natural line.
 ///
 /// TODO(unknown mark face): with no metrics for the mark's face, that descent
 /// is unknown and the rule stands on the baseline.
-fn write_hf_rule_line(
+fn write_hf_mark_line(
     out: &mut String,
     paragraph: &crate::ir::HeaderFooterParagraph,
-    rule: &crate::ir::HorizontalRule,
+    rule: Option<&crate::ir::HorizontalRule>,
     lines_are_word_boxes: bool,
 ) {
+    let mark: TextStyle = paragraph
+        .style
+        .paragraph_mark_text_style
+        .as_deref()
+        .cloned()
+        .unwrap_or_default();
+    if has_text_properties(&mark) {
+        out.push_str("#text(");
+        write_text_params(out, &mark);
+        out.push_str(")[\u{2060}]");
+    } else {
+        out.push('\u{2060}');
+    }
+    let Some(rule) = rule else {
+        return;
+    };
     let line_box: Option<(f64, f64)> = if lines_are_word_boxes {
         hf_paragraph_line_box_pt(paragraph)
     } else {
@@ -5651,19 +5790,6 @@ fn write_hf_rule_line(
             0.0
         }
     };
-    let mark: TextStyle = paragraph
-        .style
-        .paragraph_mark_text_style
-        .as_deref()
-        .cloned()
-        .unwrap_or_default();
-    if has_text_properties(&mark) {
-        out.push_str("#text(");
-        write_text_params(out, &mark);
-        out.push_str(")[\u{2060}]");
-    } else {
-        out.push('\u{2060}');
-    }
     out.push_str("#box(width: 100%, height: 0pt)[");
     write_horizontal_rule(out, rule, descent_pt);
     out.push(']');

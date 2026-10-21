@@ -11,16 +11,16 @@ pub struct HeaderFooter {
     /// Fit-to-page scale of a worksheet header/footer's horizontal coordinate
     /// box. `None` for flow-page stories and sheets whose story is not scaled.
     pub sheet_print_scale: Option<f64>,
-    /// Drawing shapes and tables placed in the page overlay. Shapes may be
-    /// page-relative or anchored to a header/footer paragraph; a decorative
-    /// header banner carries no text (issue #961). A table with
+    /// Drawing shapes, tables and anchored pictures placed in the page
+    /// overlay. Shapes may be page-relative or anchored to a header/footer
+    /// paragraph; a decorative header banner carries no text (issue #961). A table with
     /// [`HeaderFooterShape::flows_in_story`] is drawn there too, but counts
     /// toward the story's height (issue #2250).
     pub shapes: Vec<HeaderFooterShape>,
 }
 
-/// An element a header or footer story draws in the page overlay: a drawing
-/// or a table, which may still sit in the story's flow
+/// An element a header or footer story draws in the page overlay: a drawing,
+/// a picture or a table, which may still sit in the story's flow
 /// ([`Self::flows_in_story`]).
 #[derive(Debug, Clone)]
 pub struct HeaderFooterShape {
@@ -29,12 +29,14 @@ pub struct HeaderFooterShape {
     /// Header/footer paragraph a text-flow-relative drawing is anchored to.
     /// Page-relative drawings and floating tables leave this unset.
     pub anchor_paragraph_index: Option<usize>,
-    /// On-page size in points. Drawing shapes use `wp:extent`; tables use
-    /// converted column widths and declared row heights.
+    /// On-page size in points. Drawing shapes use `wp:extent`; pictures
+    /// their image's size; tables converted column widths and declared row
+    /// heights.
     pub width: f64,
     pub height: f64,
-    /// Drawing-shape z-order from `<wp:anchor behindDoc="1">`. Header/footer
-    /// tables are placed behind the main story to match Word's paint order.
+    /// Drawing-shape and picture z-order from `<wp:anchor behindDoc="1">`.
+    /// Header/footer tables are placed behind the main story to match Word's
+    /// paint order.
     pub behind_text: bool,
     /// Whether this is a table in the story's text flow — a top-level `w:tbl`
     /// that no `w:tblpPr` positions — whose rows Word stacks with the story's
@@ -49,6 +51,22 @@ pub enum HeaderFooterShapeContent {
     Shape(Shape),
     /// A floating `w:tbl` from a header/footer part.
     Table(Table),
+    /// A `wp:anchor` picture positioned against the page or its margins,
+    /// which Word draws there rather than in the story's flow (issue #2327).
+    Picture(HeaderFooterPicture),
+}
+
+/// A header or footer picture drawn at its anchor, and how the story's text
+/// makes room for it.
+#[derive(Debug, Clone)]
+pub struct HeaderFooterPicture {
+    pub image: ImageData,
+    /// The anchor's `wp:wrap*` element; [`WrapMode::Behind`] for
+    /// `behindDoc="1"`.
+    pub wrap_mode: WrapMode,
+    /// `wp:anchor/@distT`, `@distR`, `@distB` and `@distL` in points: the
+    /// space text keeps from the picture.
+    pub wrap_distance: Insets,
 }
 
 /// A paragraph within a header or footer.

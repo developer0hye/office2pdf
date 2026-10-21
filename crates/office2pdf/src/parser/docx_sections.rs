@@ -5,14 +5,15 @@ use std::io::{Cursor, Read, Seek};
 use crate::error::ConvertWarning;
 use crate::ir::{
     Block, Color, ColumnLayout, FloatingTableFrame, FlowPage, FrameAlign, FrameAnchor, HFInline,
-    HeaderFooter, HeaderFooterFrame, HeaderFooterParagraph, HeaderFooterShape,
-    HeaderFooterShapeContent, HorizontalRule, Margins, PageNumbering, PageSize, PositionedTab,
-    PositionedTabAlignment, PositionedTabRelativeTo, Run, TabLeader, Table, TextDirection,
-    TextFrame, TextStyle,
+    HeaderFooter, HeaderFooterFrame, HeaderFooterParagraph, HeaderFooterPicture, HeaderFooterShape,
+    HeaderFooterShapeContent, HorizontalRule, ImageData, Margins, PageNumbering, PageSize,
+    PositionedTab, PositionedTabAlignment, PositionedTabRelativeTo, Run, TabLeader, Table,
+    TextDirection, TextFrame, TextStyle, WrapMode,
 };
 
 use super::contexts::{
-    DocxConversionContext, PictureCropContext, WrapContext, doc_pr_states_hidden, horizontal_rule,
+    AnchorAxisPlacement, AnchorPlacement, DocxConversionContext, PictureCropContext, WrapContext,
+    doc_pr_states_hidden, horizontal_rule,
 };
 use super::media::extract_drawing_image;
 use super::tables::convert_table;
@@ -501,7 +502,7 @@ pub(super) fn build_flow_page_from_section(
     if let Some(header) = &mut header {
         header.distance_from_edge = Some(twips_to_pt(section_prop.page_margin.header));
         apply_doc_default_text_style(header, doc_default_style);
-        resolve_hf_table_page_positions(header, &size, &margins, false);
+        resolve_hf_overlay_page_positions(header, &size, &margins, false);
     }
     let mut footer = extract_docx_footer(
         section_prop,
@@ -512,7 +513,7 @@ pub(super) fn build_flow_page_from_section(
     if let Some(footer) = &mut footer {
         footer.distance_from_edge = Some(twips_to_pt(section_prop.page_margin.footer));
         apply_doc_default_text_style(footer, doc_default_style);
-        resolve_hf_table_page_positions(footer, &size, &margins, true);
+        resolve_hf_overlay_page_positions(footer, &size, &margins, true);
     }
     // The first-page stories take the same edge distance and default style the
     // whole-section ones do; only which story is chosen differs (issue #846).
@@ -525,7 +526,7 @@ pub(super) fn build_flow_page_from_section(
     if let Some(first_header) = &mut linked_first_header {
         first_header.distance_from_edge = Some(twips_to_pt(section_prop.page_margin.header));
         apply_doc_default_text_style(first_header, doc_default_style);
-        resolve_hf_table_page_positions(first_header, &size, &margins, false);
+        resolve_hf_overlay_page_positions(first_header, &size, &margins, false);
     }
     let mut linked_first_footer = extract_docx_first_footer(
         section_prop,
@@ -536,7 +537,7 @@ pub(super) fn build_flow_page_from_section(
     if let Some(first_footer) = &mut linked_first_footer {
         first_footer.distance_from_edge = Some(twips_to_pt(section_prop.page_margin.footer));
         apply_doc_default_text_style(first_footer, doc_default_style);
-        resolve_hf_table_page_positions(first_footer, &size, &margins, true);
+        resolve_hf_overlay_page_positions(first_footer, &size, &margins, true);
     }
     // `w:titlePg` shows those stories on the section's first page. Where none
     // is linked, that page is blank: Word's references print no header or
@@ -575,10 +576,10 @@ pub(super) fn build_flow_page_from_section(
     )
 }
 
-/// Resolve floating table anchors against the section that defines the story.
-/// A linked later section must reuse these page-space coordinates even when its
-/// body margins differ.
-fn resolve_hf_table_page_positions(
+/// Resolve floating table and picture anchors against the section that
+/// defines the story. A linked later section must reuse these page-space
+/// coordinates even when its body margins differ.
+fn resolve_hf_overlay_page_positions(
     header_footer: &mut HeaderFooter,
     page_size: &PageSize,
     margins: &Margins,
@@ -586,9 +587,11 @@ fn resolve_hf_table_page_positions(
 ) {
     let distance_from_edge: f64 = header_footer.distance_from_edge.unwrap_or(0.0);
     for element in &mut header_footer.shapes {
-        if !matches!(element.content, HeaderFooterShapeContent::Table(_)) {
-            continue;
-        }
+        let is_table: bool = match element.content {
+            HeaderFooterShapeContent::Table(_) => true,
+            HeaderFooterShapeContent::Picture(_) => false,
+            HeaderFooterShapeContent::Shape(_) => continue,
+        };
 
         let frame: &mut HeaderFooterFrame = &mut element.frame;
         let (horizontal_origin, horizontal_available): (f64, f64) = match frame.horizontal_anchor {
@@ -640,7 +643,8 @@ fn resolve_hf_table_page_positions(
             });
         // Word clamps a header table placed above the page to the physical
         // page top, while footer positioning may legitimately extend below it.
-        let vertical_position: f64 = if is_footer {
+        // A picture keeps the offset its anchor states.
+        let vertical_position: f64 = if is_footer || !is_table {
             requested_vertical_position
         } else {
             requested_vertical_position.max(0.0)
@@ -784,6 +788,7 @@ fn convert_docx_header_with_context(
                 .unwrap_or(&[]),
             styles,
             &conversion_context.picture_crops,
+            &mut shapes,
         );
         attach_story_horizontal_rule(
             &mut converted,
@@ -916,6 +921,7 @@ fn convert_docx_footer_with_context(
                 .unwrap_or(&[]),
             styles,
             &conversion_context.picture_crops,
+            &mut shapes,
         );
         attach_story_horizontal_rule(
             &mut converted,
@@ -1658,6 +1664,9 @@ fn apply_doc_default_text_style(
 
 /// Convert a docx-rs Paragraph into a HeaderFooterParagraph.
 /// Detects PAGE/NUMPAGES field codes within runs and emits page counter inlines.
+/// The pictures it anchors against the page or its margins are drawn in the
+/// page overlay, so they go to `overlays` rather than into its lines
+/// (issue #2327).
 fn convert_hf_paragraph(
     paragraph: &docx_rs::Paragraph,
     images: &ImageMap,
@@ -1665,6 +1674,7 @@ fn convert_hf_paragraph(
     simple_fields: &[SimpleFieldMarker],
     styles: HeaderFooterStyleContext<'_>,
     picture_crops: &PictureCropContext,
+    overlays: &mut Vec<HeaderFooterShape>,
 ) -> HeaderFooterParagraph {
     // A header paragraph resolves `w:pStyle` exactly as a body paragraph
     // does. It used to resolve none, so everything a style supplied — Word's
@@ -1688,6 +1698,7 @@ fn convert_hf_paragraph(
         style.direction = Some(TextDirection::Rtl);
     }
     let mut elements: Vec<HFInline> = Vec::new();
+    let overlays_before: usize = overlays.len();
 
     let mut processed_runs: usize = 0;
     let mut cached_runs_to_skip: usize = append_simple_fields(
@@ -1732,7 +1743,21 @@ fn convert_hf_paragraph(
                         match block {
                             Block::Image(image) => elements.push(HFInline::Image(image)),
                             Block::FloatingImage(image) => {
-                                elements.push(HFInline::Image(image.image));
+                                match metadata.anchor.as_ref().and_then(|anchor| {
+                                    Some((hf_picture_frame(&image.image, anchor)?, anchor))
+                                }) {
+                                    Some((frame, anchor)) => {
+                                        overlays.push(hf_picture_overlay(
+                                            image.image,
+                                            frame,
+                                            anchor,
+                                        ));
+                                    }
+                                    // TODO(#2414): a picture placed against its
+                                    // paragraph or line is still laid out in the
+                                    // story's lines.
+                                    None => elements.push(HFInline::Image(image.image)),
+                                }
                             }
                             _ => {}
                         }
@@ -1772,6 +1797,9 @@ fn convert_hf_paragraph(
             styles.style_map,
             styles.theme_fonts,
         )));
+        // TODO(#2062): Word gives every empty story paragraph that line; only
+        // one that anchors a drawing is drawn as one so far.
+        style.holds_anchored_drawing = overlays.len() > overlays_before;
     }
 
     HeaderFooterParagraph {
@@ -1781,6 +1809,60 @@ fn convert_hf_paragraph(
         elements,
         sheet_section_is_rich: false,
         frame: extract_hf_frame(&paragraph.property),
+    }
+}
+
+/// Where a story picture sits when both of its axes are placed against the
+/// page, its margins or (horizontally) the story's one column, none of which
+/// moves with the story's text. Word draws such a picture at its anchor and
+/// lays the story's lines out without it (issue #2327). `None` for a picture
+/// placed against its paragraph or line.
+fn hf_picture_frame(image: &ImageData, anchor: &AnchorPlacement) -> Option<HeaderFooterFrame> {
+    let placed = |axis: &AnchorAxisPlacement| -> Option<(FrameAnchor, Option<f64>)> {
+        let reference: FrameAnchor = axis.reference?;
+        let offset: Option<f64> = axis.align.is_none().then(|| axis.offset_pt.unwrap_or(0.0));
+        Some((reference, offset))
+    };
+    let (horizontal_anchor, x) = placed(&anchor.horizontal)?;
+    let (vertical_anchor, y) = placed(&anchor.vertical)?;
+    if vertical_anchor == FrameAnchor::Text {
+        return None;
+    }
+    Some(HeaderFooterFrame {
+        x,
+        y,
+        width: Some(image.width?),
+        height: Some(image.height?),
+        horizontal_anchor,
+        vertical_anchor,
+        horizontal_align: anchor.horizontal.align,
+        vertical_align: anchor.vertical.align,
+        inset_left: 0.0,
+        inset_top: 0.0,
+        bottom_offset: None,
+        wraps_text: true,
+    })
+}
+
+/// The page overlay that draws a story picture at `frame`.
+fn hf_picture_overlay(
+    image: ImageData,
+    frame: HeaderFooterFrame,
+    anchor: &AnchorPlacement,
+) -> HeaderFooterShape {
+    let wrap_mode: WrapMode = anchor.wrap_mode();
+    HeaderFooterShape {
+        width: frame.width.unwrap_or_default(),
+        height: frame.height.unwrap_or_default(),
+        content: HeaderFooterShapeContent::Picture(HeaderFooterPicture {
+            image,
+            wrap_mode,
+            wrap_distance: anchor.distance,
+        }),
+        frame,
+        anchor_paragraph_index: None,
+        behind_text: wrap_mode == WrapMode::Behind,
+        flows_in_story: false,
     }
 }
 
@@ -2020,6 +2102,8 @@ fn hf_anchored_text_box_paragraphs(
                 let docx_rs::TextBoxContentChild::Paragraph(inner) = text_box_child else {
                     continue;
                 };
+                // No picture resolves without an image map, so none is
+                // anchored here.
                 let mut converted = convert_hf_paragraph(
                     inner,
                     &ImageMap::new(),
@@ -2027,6 +2111,7 @@ fn hf_anchored_text_box_paragraphs(
                     &[],
                     styles,
                     &PictureCropContext::default(),
+                    &mut Vec::new(),
                 );
                 if !hf_paragraph_carries_text(&converted) {
                     continue;
@@ -3021,6 +3106,7 @@ mod structured_tag_tests {
             &[],
             styles,
             &PictureCropContext::default(),
+            &mut Vec::new(),
         );
 
         assert!(

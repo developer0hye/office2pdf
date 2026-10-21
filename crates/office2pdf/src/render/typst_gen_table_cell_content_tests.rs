@@ -5789,7 +5789,7 @@ fn perturb_header_footer_marks(story: &mut Option<HeaderFooter>) -> usize {
                     HeaderFooterShapeContent::Table(table) => {
                         perturb_header_story_table_marks(table)
                     }
-                    HeaderFooterShapeContent::Shape(_) => 0,
+                    HeaderFooterShapeContent::Shape(_) | HeaderFooterShapeContent::Picture(_) => 0,
                 })
                 .sum()
         })
