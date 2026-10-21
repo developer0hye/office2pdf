@@ -19,7 +19,10 @@ use quick_xml::{Reader, Writer};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::io::{Cursor, Read, Write};
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
+#[cfg(target_arch = "wasm32")]
+use web_time::Instant;
 
 /// Elements whose `w:w` is a `CT_TblWidth` wherever they appear.
 const WIDTH_ELEMENTS: [&[u8]; 6] = [
