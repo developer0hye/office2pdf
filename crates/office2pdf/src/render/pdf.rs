@@ -656,6 +656,11 @@ pub(crate) struct PlacedTextRun {
     pub text: String,
     /// Per-glyph horizontal offsets from the run origin, in run-local points.
     pub glyph_x_offsets_pt: Vec<f64>,
+    /// Distance from the page's left edge to the end of the run's last
+    /// non-whitespace glyph, in points, with every advance as laid out, so a
+    /// justified line's stretched spaces count. Meaningful only for an unturned
+    /// run.
+    pub ink_end_pt: f64,
     /// The run's solid paint as 8-bit RGBA; `None` for a gradient or tiling.
     pub fill_rgba: Option<[u8; 4]>,
 }
@@ -751,6 +756,7 @@ fn compiled_text_runs_with_line_seating(
                         .iter()
                         .map(|glyph| glyph.x_offset.at(text.size).to_pt())
                         .collect(),
+                    ink_end_pt: at.tx.to_pt() + inked_advance_pt(text),
                     fill_rgba: match &text.fill {
                         typst::visualize::Paint::Solid(color) => Some(color.to_vec4_u8()),
                         _ => None,
@@ -759,6 +765,20 @@ fn compiled_text_runs_with_line_seating(
                 _ => {}
             }
         }
+    }
+
+    /// The summed advances up to and including the last glyph that paints
+    /// something other than whitespace.
+    fn inked_advance_pt(text: &typst::text::TextItem) -> f64 {
+        let inked_glyphs: usize = text
+            .glyphs
+            .iter()
+            .rposition(|glyph| !text.text[glyph.range()].chars().all(char::is_whitespace))
+            .map_or(0, |index| index + 1);
+        text.glyphs[..inked_glyphs]
+            .iter()
+            .map(|glyph| glyph.x_advance.at(text.size).to_pt())
+            .sum()
     }
 
     // The same font set the conversion pipeline compiles with, so a probe sees

@@ -2204,3 +2204,187 @@ fn list_items_whose_indents_differ_by_a_few_twips_keep_their_word_columns() {
         }
     }
 }
+
+/// Long enough to wrap onto at least three lines of a list body on A4.
+#[cfg(not(target_arch = "wasm32"))]
+const WRAPPING_LIST_BODY: &str = "The committee reviewed every provision of the earlier \
+    regulation and kept only those articles that still serve a purpose under the new \
+    statute, while the remaining clauses were either merged into broader sections or \
+    removed because later legislation already covers the same ground for all candidates.";
+
+/// One list item's `(level, w:jc)`.
+#[cfg(not(target_arch = "wasm32"))]
+type AlignedItem = (u32, Option<Alignment>);
+
+/// A two-level numbered Word list, `1.` then `a.`, whose items each declare
+/// `(level, w:jc)` and wrap [`WRAPPING_LIST_BODY`] after a tab suffix.
+#[cfg(not(target_arch = "wasm32"))]
+fn aligned_word_list(items: &[AlignedItem]) -> crate::ir::List {
+    let level_style = |pattern: &str| ListLevelStyle {
+        kind: ListKind::Ordered,
+        numbering_pattern: Some(NumberingPattern::parse(pattern)),
+        full_numbering: false,
+        marker_text: None,
+        marker_style: None,
+    };
+    crate::ir::List {
+        kind: ListKind::Ordered,
+        items: items
+            .iter()
+            .enumerate()
+            .map(|(index, (level, alignment))| ListItem {
+                content: vec![Paragraph {
+                    style: ParagraphStyle {
+                        alignment: *alignment,
+                        indent_left: Some(36.0 * f64::from(level + 1)),
+                        indent_first_line: Some(-18.0),
+                        numbering_suffix: Some(crate::ir::ListMarkerSuffix::Tab),
+                        ..ParagraphStyle::default()
+                    },
+                    runs: vec![Run {
+                        text: WRAPPING_LIST_BODY.to_string(),
+                        style: TextStyle {
+                            font_family: Some("Libertinus Serif".to_string()),
+                            font_size: Some(11.0),
+                            ..TextStyle::default()
+                        },
+                        href: None,
+                        footnote: None,
+                        inline_box: None,
+                    }],
+                }],
+                level: *level,
+                start_at: (index == 0).then_some(1),
+            })
+            .collect(),
+        level_styles: BTreeMap::from([(0, level_style("1.")), (1, level_style("a."))]),
+    }
+}
+
+/// The painted runs of a flow page holding just `list`.
+#[cfg(not(target_arch = "wasm32"))]
+fn painted_list_runs(list: crate::ir::List) -> Vec<crate::render::pdf::PlacedTextRun> {
+    let source = generate_typst(&make_doc(vec![make_flow_page(vec![Block::List(list)])]))
+        .unwrap()
+        .source;
+    let mut runs = crate::render::pdf::compiled_text_runs(&source, 0)
+        .unwrap_or_else(|error| panic!("compile failed: {error}\n{source}"));
+    runs.retain(|run| !run.text.trim().is_empty());
+    runs
+}
+
+/// Each item's lines top to bottom, as their text and where they end in
+/// points from the page's left edge; an item starts at the line that paints
+/// its marker.
+#[cfg(not(target_arch = "wasm32"))]
+fn list_item_lines(list: crate::ir::List, markers: &[&str]) -> Vec<Vec<(String, f64)>> {
+    let mut runs = painted_list_runs(list);
+    runs.sort_by(|left, right| {
+        left.baseline_pt
+            .total_cmp(&right.baseline_pt)
+            .then_with(|| left.left_pt.total_cmp(&right.left_pt))
+    });
+    let mut lines: Vec<(f64, String, f64)> = Vec::new();
+    for run in &runs {
+        match lines.last_mut() {
+            Some((baseline, text, end)) if (*baseline - run.baseline_pt).abs() < 0.1 => {
+                text.push_str(&run.text);
+                *end = end.max(run.ink_end_pt);
+            }
+            _ => lines.push((run.baseline_pt, run.text.clone(), run.ink_end_pt)),
+        }
+    }
+    let mut item_starts: Vec<f64> = markers
+        .iter()
+        .map(|marker| {
+            runs.iter()
+                .find(|run| run.text.trim() == *marker)
+                .unwrap_or_else(|| panic!("no {marker} marker in {runs:?}"))
+                .baseline_pt
+        })
+        .collect();
+    item_starts.push(f64::INFINITY);
+    item_starts
+        .windows(2)
+        .map(|bounds| {
+            lines
+                .iter()
+                .filter(|(baseline, ..)| *baseline > bounds[0] - 0.1 && *baseline < bounds[1] - 0.1)
+                .map(|(_, text, end)| (text.split_whitespace().collect::<Vec<_>>().join(" "), *end))
+                .collect()
+        })
+        .collect()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_justified_word_list_item_fills_every_line_but_its_last() {
+    // A Word list item is a paragraph like any other: its own w:jc="both"
+    // justifies every line but the last. docxide-pdf's scraped
+    // k4_regulations_synthesis_document sets it on every numbered
+    // ListParagraph, and Word ends item 1.'s first three lines within 0.7pt
+    // of the margin where the list path left them up to 40pt short (issue
+    // #2336). A nested item keeps its own alignment, not its parent's.
+    let right_margin = crate::defaults::A4_WIDTH_PT - crate::defaults::DEFAULT_MARGIN_PT;
+    let justify = Some(Alignment::Justify);
+    let left = Some(Alignment::Left);
+    let cases: [(&[AlignedItem], &[&str]); 4] = [
+        (&[(0, justify)], &["1."]),
+        (&[(0, left)], &["1."]),
+        (&[(0, justify), (1, left)], &["1.", "a."]),
+        (&[(0, left), (1, justify)], &["1.", "a."]),
+    ];
+    for (items, markers) in cases {
+        let lines = list_item_lines(aligned_word_list(items), markers);
+        for ((level, alignment), item_lines) in items.iter().zip(&lines) {
+            let ends: Vec<f64> = item_lines.iter().map(|(_, end)| *end).collect();
+            let (last, wrapped) = ends.split_last().unwrap();
+            assert!(
+                wrapped.len() >= 2,
+                "level {level} must wrap onto three lines: {lines:?}"
+            );
+            let shortfalls: Vec<f64> = wrapped.iter().map(|end| right_margin - end).collect();
+            assert!(
+                right_margin - last > 20.0,
+                "level {level}'s last line stays ragged: {lines:?}"
+            );
+            if *alignment == justify {
+                assert!(
+                    shortfalls.iter().all(|shortfall| shortfall.abs() < 0.5),
+                    "justified level {level} must end each wrapped line at the \
+                     {right_margin}pt margin, short by {shortfalls:?} in {items:?}"
+                );
+            } else {
+                assert!(
+                    shortfalls.iter().any(|shortfall| *shortfall > 2.0),
+                    "left-aligned level {level} stays ragged, short by {shortfalls:?} in {items:?}"
+                );
+            }
+        }
+    }
+    // Justifying moves no word to another line, and adds no space before the
+    // body. Typst's optimized breaker, which `justify` would otherwise bring,
+    // rewrapped 25 of the 48 lines on k4's page 1 away from Word's, where
+    // first-fit keeps Word's break on every numbered line (TODO(#2063): body
+    // paragraphs still use it).
+    let item_text = |alignment: Option<Alignment>| -> Vec<String> {
+        list_item_lines(aligned_word_list(&[(0, alignment)]), &["1."])[0]
+            .iter()
+            .map(|(text, _)| text.clone())
+            .collect()
+    };
+    assert_eq!(item_text(justify), item_text(left));
+    let body_start = |alignment: Option<Alignment>| {
+        painted_list_runs(aligned_word_list(&[(0, alignment)]))
+            .iter()
+            .find(|run| run.text.starts_with("The"))
+            .expect("the body's first line")
+            .left_pt
+    };
+    assert!(
+        (body_start(justify) - body_start(left)).abs() < 0.01,
+        "a justified body starts at {}pt, a left-aligned one at {}pt",
+        body_start(justify),
+        body_start(left)
+    );
+}

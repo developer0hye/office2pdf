@@ -6465,7 +6465,8 @@ fn write_page_format_state(out: &mut String) {
     // breaker instead, which never squeezes to seat a token. The gate is
     // `justified_lines_use_first_fit_breaker`: it covers legacy East Asian
     // paragraphs and legacy table-cell paragraphs while leaving Latin body
-    // paragraphs on the optimized breaker (issues #1130, #2020).
+    // paragraphs on the optimized breaker (issues #1130, #2020). A justified
+    // list item always breaks first-fit (issue #2336).
     //
     // Set for the document, next to the overhang rule above, so every
     // justified paragraph is covered whether it comes through the body, a
