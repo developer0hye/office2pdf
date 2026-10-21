@@ -2075,6 +2075,37 @@ pub(super) fn word_hf_line_leading_pt(runs: &[Run], bottom_edge_em: f64) -> Opti
     Some(leading_em.max(0.0) * paragraph_font_size_pt(runs))
 }
 
+/// Gap that makes a header or footer story advance from the last line of the
+/// paragraph set in `upper` to the first line of the one set in `lower` by
+/// Word's pitch, in points.
+///
+/// Word stacks the paragraphs' own line boxes, so that advance is the upper
+/// line's descent plus the lower line's ascent, each from
+/// [`word_header_line_box_pt`]. Typst advances it by the upper line's bottom
+/// edge, the gap and the lower line's cap-height top edge. The upper
+/// paragraph's leading as the gap advanced a 16pt Yu Mincho header line
+/// 22.12pt under an 11pt one, where Word advances it 24.25pt and this gap
+/// 24.35pt (issue #2328). Between two paragraphs of one face and size it is
+/// [`word_hf_line_leading_pt`].
+///
+/// `bottom_edge_em` is the enclosing band's bottom edge, which Typst resolves
+/// at the upper line's size. `None` where either face's metrics are unknown;
+/// clamped at zero as that leading is.
+pub(super) fn word_hf_paragraph_gap_pt(
+    upper: &[Run],
+    lower: &[Run],
+    bottom_edge_em: f64,
+) -> Option<f64> {
+    let (_upper_ascent_pt, upper_descent_pt) = word_header_line_box_pt(upper)?;
+    let (lower_ascent_pt, _lower_descent_pt) = word_header_line_box_pt(lower)?;
+    let lower_family: &str = east_asian_aware_metric_family(lower)?;
+    let lower_top_edge_pt: f64 =
+        crate::render::pdf::font_cap_height_em(lower_family)? * paragraph_font_size_pt(lower);
+    let upper_bottom_edge_pt: f64 = bottom_edge_em * paragraph_font_size_pt(upper);
+    let gap_pt: f64 = upper_descent_pt + lower_ascent_pt - upper_bottom_edge_pt - lower_top_edge_pt;
+    Some(gap_pt.max(0.0))
+}
+
 /// The height one header or footer line takes, in points.
 ///
 /// Word's natural line for the paragraph's resolved face and size — the hhea
