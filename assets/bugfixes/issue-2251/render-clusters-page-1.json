@@ -75,10 +75,11 @@
         "issues": [
           "#2414",
           "#2416",
-          "#2062"
+          "#2062",
+          "#1874"
         ],
         "kind": "issue",
-        "note": "The header's 60.9% horizontal rule, drawn by this PR: Word's at y 121.0-122.1 and ours at 119.5-120.6, the same 291.7pt hollow 0.75pt outline at x 174.6-466.3 (ours 174.63-466.32). Its line's place comes from the header story above it, which differs from Word's through #2414 (the logo drawn inline, +29.9pt), #2416 (the w:br dropped, one line short) and #2062 (the empty paragraph above the rule dropped, one line short); those offsets nearly cancel."
+        "note": "The header's 60.9% horizontal rule, drawn by this PR: Word's at y 121.0-122.1 and ours at 119.5-120.6, the same 291.7pt hollow 0.75pt outline at x 174.6-466.3 (ours 174.63-466.32). Its line's place comes from the header story above it, which differs from Word's through #2414 (the logo drawn inline, +29.9pt), #2416 (the w:br dropped, one line short) and #2062 (the empty paragraph above the rule dropped, one line short). The rule's paragraph mark is Korinna BT, which has no metrics here, so the rule stands on its line's baseline rather than one descent below it (TODO(unknown mark face), recorded in #1874). These offsets nearly cancel."
       },
       "id": "p1-8cd3511c87df",
       "region": "top"
@@ -116,10 +117,11 @@
         "issues": [
           "#2414",
           "#2416",
-          "#2062"
+          "#2062",
+          "#1874"
         ],
         "kind": "issue",
-        "note": "The header's 60.9% horizontal rule, drawn by this PR: Word's at y 121.0-122.1 and ours at 119.5-120.6, the same 291.7pt hollow 0.75pt outline at x 174.6-466.3 (ours 174.63-466.32). Its line's place comes from the header story above it, which differs from Word's through #2414 (the logo drawn inline, +29.9pt), #2416 (the w:br dropped, one line short) and #2062 (the empty paragraph above the rule dropped, one line short); those offsets nearly cancel."
+        "note": "The header's 60.9% horizontal rule, drawn by this PR: Word's at y 121.0-122.1 and ours at 119.5-120.6, the same 291.7pt hollow 0.75pt outline at x 174.6-466.3 (ours 174.63-466.32). Its line's place comes from the header story above it, which differs from Word's through #2414 (the logo drawn inline, +29.9pt), #2416 (the w:br dropped, one line short) and #2062 (the empty paragraph above the rule dropped, one line short). The rule's paragraph mark is Korinna BT, which has no metrics here, so the rule stands on its line's baseline rather than one descent below it (TODO(unknown mark face), recorded in #1874). These offsets nearly cancel."
       },
       "id": "p1-f240dab50785",
       "region": "top"
