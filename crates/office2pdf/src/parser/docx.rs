@@ -451,7 +451,9 @@ impl Parser for DocxParser {
         _options: &ConvertOptions,
     ) -> Result<(Document, Vec<ConvertWarning>), ConvertError> {
         let (expanded, mut warnings) = super::docx_alt_chunk::expand(data)?;
-        let data = expanded.as_ref();
+        // docx-rs reads table widths only as integers (issue #2245).
+        let normalized = super::docx_universal_measures::normalize(expanded.as_ref());
+        let data = normalized.as_ref();
         let default_tab_stop_pt: Option<f64> = extract_default_tab_stop_pt(data);
         let word_compatibility_mode: WordCompatibilityMode = extract_compatibility_mode(data);
         let hyphenates_automatically: bool = extract_auto_hyphenation(data);

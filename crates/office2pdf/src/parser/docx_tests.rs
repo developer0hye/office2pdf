@@ -1578,6 +1578,8 @@ mod section_mark_tests;
 mod text_frame_tests;
 #[path = "docx_tracked_paragraph_mark_tests.rs"]
 mod tracked_paragraph_mark_tests;
+#[path = "docx_universal_measures_tests.rs"]
+mod universal_measures_tests;
 
 #[test]
 fn issue_189_footer_preserves_inline_image_and_rtl_text() {

@@ -1,0 +1,523 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 16466.2272,
+      "bbox_pt": {
+        "height": 149.76,
+        "width": 216.0,
+        "x": 72.0,
+        "y": 83.52
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2395",
+          "#2145",
+          "#2238",
+          "#2401"
+        ],
+        "kind": "issue",
+        "note": "The whole outer table, one connected component. Fills and column edges now agree with the reference within a device pixel; the component is the table drawn 12.9pt higher with shorter rows. The serif 10pt face and size stand in for the styles part's Carlito 11pt (#2243), and the leading empty paragraph's 8pt after and 12.95pt line are lost (#2394), so every row is shorter. The outer left and right rules are black stubs where the reference paints continuous AEAAAA rules (#2395 colour, #2145 missing middle segments). The empty paragraph closing the outer cell adds a line under the nested table (#2238). The nested West, Central and East cells are centred instead of top-aligned (#2401)."
+      },
+      "id": "p1-ca52d3b50281",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 150.4512,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 22.08,
+        "x": 232.8,
+        "y": 124.8
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2401"
+        ],
+        "kind": "issue",
+        "note": "Nested-table cell text (West, Approve/d, Centra/l, Pending, East): each row is shorter and higher for the face and size (#2243) and the lost spacing (#2394), so GT and output glyphs sit at different heights; the single-line cells are also centred instead of top-aligned (#2401)."
+      },
+      "id": "p1-18feb5509969",
+      "region": "top"
+    },
+    {
+      "area_pt2": 147.9168,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 26.88,
+        "x": 187.2,
+        "y": 122.88
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2401"
+        ],
+        "kind": "issue",
+        "note": "Nested-table cell text (West, Approve/d, Centra/l, Pending, East): each row is shorter and higher for the face and size (#2243) and the lost spacing (#2394), so GT and output glyphs sit at different heights; the single-line cells are also centred instead of top-aligned (#2401)."
+      },
+      "id": "p1-ee7c15f6bc76",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 73.2672,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 39.36,
+        "x": 181.92,
+        "y": 152.16
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2401"
+        ],
+        "kind": "issue",
+        "note": "Nested-table cell text (West, Approve/d, Centra/l, Pending, East): each row is shorter and higher for the face and size (#2243) and the lost spacing (#2394), so GT and output glyphs sit at different heights; the single-line cells are also centred instead of top-aligned (#2401)."
+      },
+      "id": "p1-f5bbc5ccc495",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 54.144,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 29.28,
+        "x": 72.48,
+        "y": 174.24
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2238"
+        ],
+        "kind": "issue",
+        "note": "All Projects / Pending in the outer left column and the outer table's bottom rule: the same words in a different face, centred in an outer row whose height differs by the face and size (#2243), the lost paragraph spacing (#2394) and the extra line under the nested table (#2238)."
+      },
+      "id": "p1-4048e3b5fa64",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 49.9968,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 12.0,
+        "x": 101.76,
+        "y": 173.76
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2238"
+        ],
+        "kind": "issue",
+        "note": "All Projects / Pending in the outer left column and the outer table's bottom rule: the same words in a different face, centred in an outer row whose height differs by the face and size (#2243), the lost paragraph spacing (#2394) and the extra line under the nested table (#2238)."
+      },
+      "id": "p1-75217cce6d8d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 49.3056,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 12.48,
+        "x": 107.04,
+        "y": 139.2
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2238"
+        ],
+        "kind": "issue",
+        "note": "All Projects / Pending in the outer left column and the outer table's bottom rule: the same words in a different face, centred in an outer row whose height differs by the face and size (#2243), the lost paragraph spacing (#2394) and the extra line under the nested table (#2238)."
+      },
+      "id": "p1-93bcbbf3f0fb",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 12.0,
+        "x": 227.04,
+        "y": 146.4
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2401"
+        ],
+        "kind": "issue",
+        "note": "Nested-table cell text (West, Approve/d, Centra/l, Pending, East): each row is shorter and higher for the face and size (#2243) and the lost spacing (#2394), so GT and output glyphs sit at different heights; the single-line cells are also centred instead of top-aligned (#2401)."
+      },
+      "id": "p1-42fd43f80e6f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 44.2368,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 49.92,
+        "x": 221.76,
+        "y": 136.32
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2401"
+        ],
+        "kind": "issue",
+        "note": "Nested-table cell text (West, Approve/d, Centra/l, Pending, East): each row is shorter and higher for the face and size (#2243) and the lost spacing (#2394), so GT and output glyphs sit at different heights; the single-line cells are also centred instead of top-aligned (#2401)."
+      },
+      "id": "p1-bf0201539cff",
+      "region": "top"
+    },
+    {
+      "area_pt2": 42.8544,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 6.24,
+        "x": 227.04,
+        "y": 123.36
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2401"
+        ],
+        "kind": "issue",
+        "note": "Nested-table cell text (West, Approve/d, Centra/l, Pending, East): each row is shorter and higher for the face and size (#2243) and the lost spacing (#2394), so GT and output glyphs sit at different heights; the single-line cells are also centred instead of top-aligned (#2401)."
+      },
+      "id": "p1-1b4bab4fc208",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.7808,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 12.96,
+        "x": 84.48,
+        "y": 127.68
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2238"
+        ],
+        "kind": "issue",
+        "note": "All Projects / Pending in the outer left column and the outer table's bottom rule: the same words in a different face, centred in an outer row whose height differs by the face and size (#2243), the lost paragraph spacing (#2394) and the extra line under the nested table (#2238)."
+      },
+      "id": "p1-b948d565cb15",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 40.5504,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 5.76,
+        "x": 254.4,
+        "y": 125.28
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2401"
+        ],
+        "kind": "issue",
+        "note": "Nested-table cell text (West, Approve/d, Centra/l, Pending, East): each row is shorter and higher for the face and size (#2243) and the lost spacing (#2394), so GT and output glyphs sit at different heights; the single-line cells are also centred instead of top-aligned (#2401)."
+      },
+      "id": "p1-48fbc1831d84",
+      "region": "top"
+    },
+    {
+      "area_pt2": 36.864,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 22.56,
+        "x": 121.44,
+        "y": 175.68
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2238"
+        ],
+        "kind": "issue",
+        "note": "All Projects / Pending in the outer left column and the outer table's bottom rule: the same words in a different face, centred in an outer row whose height differs by the face and size (#2243), the lost paragraph spacing (#2394) and the extra line under the nested table (#2238)."
+      },
+      "id": "p1-4762638eaa9d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.8688,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 10.08,
+        "x": 115.2,
+        "y": 162.24
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2238"
+        ],
+        "kind": "issue",
+        "note": "All Projects / Pending in the outer left column and the outer table's bottom rule: the same words in a different face, centred in an outer row whose height differs by the face and size (#2243), the lost paragraph spacing (#2394) and the extra line under the nested table (#2238)."
+      },
+      "id": "p1-852550f54788",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 10.56,
+        "x": 120.96,
+        "y": 129.12
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2238"
+        ],
+        "kind": "issue",
+        "note": "All Projects / Pending in the outer left column and the outer table's bottom rule: the same words in a different face, centred in an outer row whose height differs by the face and size (#2243), the lost paragraph spacing (#2394) and the extra line under the nested table (#2238)."
+      },
+      "id": "p1-38abee99219a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.7952,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 8.64,
+        "x": 99.84,
+        "y": 128.16
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2238"
+        ],
+        "kind": "issue",
+        "note": "All Projects / Pending in the outer left column and the outer table's bottom rule: the same words in a different face, centred in an outer row whose height differs by the face and size (#2243), the lost paragraph spacing (#2394) and the extra line under the nested table (#2238)."
+      },
+      "id": "p1-4dc6bf2fa6bb",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.16,
+        "x": 113.28,
+        "y": 175.68
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2238"
+        ],
+        "kind": "issue",
+        "note": "All Projects / Pending in the outer left column and the outer table's bottom rule: the same words in a different face, centred in an outer row whose height differs by the face and size (#2243), the lost paragraph spacing (#2394) and the extra line under the nested table (#2238)."
+      },
+      "id": "p1-eeb35e27ae17",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.648,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.8,
+        "x": 120.0,
+        "y": 141.12
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2238"
+        ],
+        "kind": "issue",
+        "note": "All Projects / Pending in the outer left column and the outer table's bottom rule: the same words in a different face, centred in an outer row whose height differs by the face and size (#2243), the lost paragraph spacing (#2394) and the extra line under the nested table (#2238)."
+      },
+      "id": "p1-bf9ac56bb38a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 162.72,
+        "y": 154.08
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394"
+        ],
+        "kind": "issue",
+        "note": "The stacked U/S/A of the merged nested cell: centred in a three-row span whose rows are shorter for the face and size (#2243) and the lost spacing (#2394)."
+      },
+      "id": "p1-033d40b64dc9",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 97.44,
+        "y": 160.8
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2238"
+        ],
+        "kind": "issue",
+        "note": "All Projects / Pending in the outer left column and the outer table's bottom rule: the same words in a different face, centred in an outer row whose height differs by the face and size (#2243), the lost paragraph spacing (#2394) and the extra line under the nested table (#2238)."
+      },
+      "id": "p1-0cc8530014c7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 7.2,
+        "x": 162.24,
+        "y": 140.16
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394"
+        ],
+        "kind": "issue",
+        "note": "The stacked U/S/A of the merged nested cell: centred in a three-row span whose rows are shorter for the face and size (#2243) and the lost spacing (#2394)."
+      },
+      "id": "p1-e77f67216cd8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 83.04,
+        "y": 160.8
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2238"
+        ],
+        "kind": "issue",
+        "note": "All Projects / Pending in the outer left column and the outer table's bottom rule: the same words in a different face, centred in an outer row whose height differs by the face and size (#2243), the lost paragraph spacing (#2394) and the extra line under the nested table (#2238)."
+      },
+      "id": "p1-35ea665a3b4d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 163.2,
+        "y": 128.64
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394"
+        ],
+        "kind": "issue",
+        "note": "The stacked U/S/A of the merged nested cell: centred in a three-row span whose rows are shorter for the face and size (#2243) and the lost spacing (#2394)."
+      },
+      "id": "p1-db0b4dfa762f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 91.68,
+        "y": 139.68
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2238"
+        ],
+        "kind": "issue",
+        "note": "All Projects / Pending in the outer left column and the outer table's bottom rule: the same words in a different face, centred in an outer row whose height differs by the face and size (#2243), the lost paragraph spacing (#2394) and the extra line under the nested table (#2238)."
+      },
+      "id": "p1-4323901e28e0",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 259.68,
+        "y": 124.8
+      },
+      "disposition": {
+        "issues": [
+          "#2243",
+          "#2394",
+          "#2401"
+        ],
+        "kind": "issue",
+        "note": "Nested-table cell text (West, Approve/d, Centra/l, Pending, East): each row is shorter and higher for the face and size (#2243) and the lost spacing (#2394), so GT and output glyphs sit at different heights; the single-line cells are also centred instead of top-aligned (#2401)."
+      },
+      "id": "p1-5577b2585259",
+      "region": "top"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 25,
+    "duplicate": 0,
+    "total": 25,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
