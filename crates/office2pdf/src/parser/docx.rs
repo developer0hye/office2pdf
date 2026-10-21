@@ -1423,7 +1423,14 @@ fn extract_run_children_media(
             let wpg_drawing: Option<WpgDrawingInfo> = ctx.drawing_shapes.consume_wpg_drawing();
             let canvas_image_offset: Option<(f64, f64)> =
                 ctx.drawing_shapes.consume_canvas_image_offset();
-            let crop = ctx.picture_crops.next_drawing(false);
+            let metadata = ctx.picture_crops.next_drawing(false);
+            let crop = metadata.crop;
+            let emitted: [usize; 4] = [
+                text_box_blocks.len(),
+                inline_text_boxes.len(),
+                inline_pictures.len(),
+                inline_images.len(),
+            ];
             if let Some(mut group) = ctx.smartart.consume_next() {
                 if let Some(anchor) = group.anchor.as_mut() {
                     anchor.wrap_mode = ctx.wraps.consume_next();
@@ -1485,6 +1492,15 @@ fn extract_run_children_media(
                     // docx-rs leaves geometry-only `wps:wsp` drawings unclassified.
                     text_box_blocks.push(Block::FloatingShape(shape));
                 }
+            }
+            if metadata.hidden {
+                // Converted anyway, so every side-channel cursor steps past
+                // the drawing and its nested ones; then nothing of it stays,
+                // not even the wrap it would reserve (issue #2299).
+                text_box_blocks.truncate(emitted[0]);
+                inline_text_boxes.truncate(emitted[1]);
+                inline_pictures.truncate(emitted[2]);
+                inline_images.truncate(emitted[3]);
             }
         }
         if let docx_rs::RunChild::Shape(shape) = run_child {
