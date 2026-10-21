@@ -6486,6 +6486,44 @@ fn a_header_line_advances_by_words_pitch() {
     );
 }
 
+/// A bottom edge deeper than Word's line leaves the story no leading at all.
+///
+/// A pinned footer band takes its edge from the last paragraph, and the leading
+/// from the first. Malgun Gothic's 1.3x line box puts 0.4412em under a Korean
+/// last line, where an Arial first line leaves only 0.4336em of its pitch below
+/// its cap-height edge. No leading shrinks that line's advance to Word's, and
+/// none comes closest: answering `None` instead dropped the story to Typst's
+/// 0.65em default leading and paragraph spacing (issue #2326).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_bottom_edge_deeper_than_words_line_leaves_no_leading() {
+    let runs = [Run {
+        text: "Footer".to_string(),
+        style: arial(11.0),
+        href: None,
+        footnote: None,
+        inline_box: None,
+    }];
+    let Some(baseline_leading) =
+        crate::render::typst_gen::text::word_hf_line_leading_pt(&runs, 0.0)
+    else {
+        return; // the face is unavailable on this runner
+    };
+    let remainder_em: f64 = baseline_leading / 11.0;
+
+    let half: Option<f64> =
+        crate::render::typst_gen::text::word_hf_line_leading_pt(&runs, remainder_em / 2.0);
+    assert!(
+        half.is_some_and(|leading| (leading - baseline_leading / 2.0).abs() < 1e-9),
+        "half the remainder taken by the bottom edge leaves half the leading, got {half:?}"
+    );
+    assert_eq!(
+        crate::render::typst_gen::text::word_hf_line_leading_pt(&runs, remainder_em + 0.01),
+        Some(0.0),
+        "an edge deeper than the remainder leaves no leading"
+    );
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 /// Build a one-section document whose footer is pinned 36pt from the page
 /// edge and holds `paragraphs`.
@@ -6685,6 +6723,102 @@ fn footer_paragraphs_advance_by_one_pitch_whatever_wraps_them() {
             "{label}: the footer lines advance {pitch}pt, not the plain story's \
              {plain_pitch}pt"
         );
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// A footer pinned to `w:pgMar/@w:footer` advances each further line by
+/// Word's natural line, whether a paragraph break or a wrap starts it.
+///
+/// The band sets `text(bottom-edge:)` to the last line's descent, so that
+/// line's descender lands on the footer distance. Typst advances a line by
+/// `top-edge + bottom-edge + leading`, and the leading was computed for the
+/// baseline edge, so every further line advanced one descent too far: two
+/// 11pt Arial paragraphs 14.98pt against Word's 12.65pt, and a Word
+/// document's two-paragraph Calibri footer drew its upper line 3.06pt high
+/// (issue #2326). The faces and sizes differ in their descent share, so an
+/// excess of any one of them would show.
+///
+/// The band anchors the last line, so the fix must leave it where a story of
+/// that line alone puts it.
+#[test]
+fn a_pinned_footer_line_advances_by_words_pitch() {
+    let run = |text: &str, style: &TextStyle| {
+        crate::ir::HFInline::Run(Run {
+            text: text.to_string(),
+            style: style.clone(),
+            href: None,
+            footnote: None,
+            inline_box: None,
+        })
+    };
+    let paragraph = |text: &str, style: &TextStyle| {
+        footer_paragraph(ParagraphStyle::default(), vec![run(text, style)])
+    };
+    for style in [arial(11.0), arial(8.0), times(12.0)] {
+        let label: String = format!(
+            "{} {}pt",
+            style.font_family.as_deref().unwrap_or_default(),
+            style.font_size.unwrap_or_default()
+        );
+        let Some(word_pitch) = crate::render::typst_gen::text::word_line_advance_pt(&[Run {
+            text: "Upper".to_string(),
+            style: style.clone(),
+            href: None,
+            footnote: None,
+            inline_box: None,
+        }]) else {
+            continue; // the face is unavailable on this runner
+        };
+
+        let pitch: f64 = footer_pitch(paragraph("Upper", &style), paragraph("Lower", &style));
+        assert!(
+            (pitch - word_pitch).abs() < 0.01,
+            "{label}: two pinned footer paragraphs advance {pitch}pt, not Word's \
+             {word_pitch}pt"
+        );
+
+        let doc = doc_with_footer(vec![
+            paragraph("First", &style),
+            paragraph("Second", &style),
+            paragraph("Third", &style),
+        ]);
+        let baselines: Vec<f64> = ["First", "Second", "Third"]
+            .iter()
+            .map(|text| baselines_of(&doc, text)[0])
+            .collect();
+        for pair in baselines.windows(2) {
+            let pitch: f64 = pair[1] - pair[0];
+            assert!(
+                (pitch - word_pitch).abs() < 0.01,
+                "{label}: three pinned footer paragraphs advance {pitch}pt, not \
+                 Word's {word_pitch}pt ({baselines:?})"
+            );
+        }
+        let alone: f64 =
+            baselines_of(&doc_with_footer(vec![paragraph("Third", &style)]), "Third")[0];
+        assert!(
+            (baselines[2] - alone).abs() < 0.01,
+            "{label}: the last footer line moved from {alone}pt to {}pt",
+            baselines[2]
+        );
+
+        let wrapped: Vec<f64> = baselines_of(
+            &doc_with_footer(vec![paragraph(&"Wrapped ".repeat(80), &style)]),
+            "Wrapped",
+        );
+        assert!(
+            wrapped.len() >= 2,
+            "{label}: the long footer paragraph must wrap, got {wrapped:?}"
+        );
+        for pair in wrapped.windows(2) {
+            let pitch: f64 = pair[1] - pair[0];
+            assert!(
+                (pitch - word_pitch).abs() < 0.01,
+                "{label}: a wrapped pinned footer line advances {pitch}pt, not \
+                 Word's {word_pitch}pt ({wrapped:?})"
+            );
+        }
     }
 }
 

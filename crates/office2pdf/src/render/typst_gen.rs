@@ -3103,11 +3103,12 @@ fn flow_footer_value(footer: &HeaderFooter, page: &FlowPage, ctx: &mut GenCtx) -
         // Typst's `"descender"` is its normalised one, which is the wrong
         // quantity for a face whose line box carries more below the
         // baseline than its descender does (issue #630).
-        let bottom_edge: String = footer
+        let descent_em: Option<f64> = footer
             .paragraphs
             .last()
             .map(hf_paragraph_metric_runs)
-            .and_then(|runs| text::word_line_box_descent_em(&runs))
+            .and_then(|runs| text::word_line_box_descent_em(&runs));
+        let bottom_edge: String = descent_em
             .map(|descent_em| format!("-{}em", format_f64(descent_em)))
             .unwrap_or_else(|| "\"descender\"".to_string());
         // Word reserves the last paragraph's own `w:spacing w:after` between
@@ -3122,7 +3123,11 @@ fn flow_footer_value(footer: &HeaderFooter, page: &FlowPage, ctx: &mut GenCtx) -
             "block(width: 100%, height: {}pt)[#set text(bottom-edge: {bottom_edge}); #place(bottom, block(width: 100%)[",
             format_f64(drawn_band)
         );
-        generate_flow_hf_content(&mut value, footer, ctx);
+        // That edge sits under every line of the story, so the leading has to
+        // leave room for it. Where it is the renderer's own `"descender"`, the
+        // last paragraph's face did not resolve and no descent is known to
+        // leave room for.
+        generate_flow_hf_content(&mut value, footer, descent_em.unwrap_or(0.0), ctx);
         value.push_str("])]");
         return FlowFooterValue {
             markup: value,
@@ -3131,14 +3136,14 @@ fn flow_footer_value(footer: &HeaderFooter, page: &FlowPage, ctx: &mut GenCtx) -
     }
     if hf_needs_stack_offset(footer) {
         value.push_str("context { let footer_content = block(width: 100%)[");
-        generate_flow_hf_content(&mut value, footer, ctx);
+        generate_flow_hf_content(&mut value, footer, 0.0, ctx);
         value.push_str("]; move(dy: -measure(footer_content).height / 2)[#footer_content] }");
     } else {
         if hf_needs_context(footer) {
             value.push_str("context ");
         }
         value.push('[');
-        generate_flow_hf_content(&mut value, footer, ctx);
+        generate_flow_hf_content(&mut value, footer, 0.0, ctx);
         value.push(']');
     }
     FlowFooterValue {
@@ -4305,13 +4310,23 @@ fn page_relative_hf_table_y(
     }
 }
 
-fn generate_flow_hf_content(out: &mut String, hf: &HeaderFooter, ctx: &mut GenCtx) {
+/// `bottom_edge_em` is how far below the baseline the enclosing band set the
+/// text's bottom edge, in em; zero where it kept the baseline.
+fn generate_flow_hf_content(
+    out: &mut String,
+    hf: &HeaderFooter,
+    bottom_edge_em: f64,
+    ctx: &mut GenCtx,
+) {
     // `par(leading:)` is what separates a paragraph's lines. Typst advances a
     // line by `top-edge + bottom-edge + leading`, and the story set no leading,
     // so it took the 0.65em default: an 8pt Arial header advanced 10.9305pt
     // where Word advances 9.1992pt. Stating the remainder after the edges
     // leaves the first baseline — seated against the top edge by #629 —
     // exactly where it was, and corrects only the advance between lines (#735).
+    // A pinned footer band's descender edge is one of those edges: a leading
+    // that ignored it advanced two 11pt Arial footer lines 14.98pt against
+    // Word's 12.65pt (issue #2326).
     //
     // Word advances to the next paragraph's line by the same pitch, so the
     // story's paragraphs are separate Typst paragraphs whose `par(spacing:)`
@@ -4344,7 +4359,7 @@ fn generate_flow_hf_content(out: &mut String, hf: &HeaderFooter, ctx: &mut GenCt
     let has_several_paragraphs: bool = emitted.clone().nth(1).is_some();
     let leading: Option<f64> = emitted.next().and_then(|paragraph| {
         let runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
-        text::word_hf_line_leading_pt(&runs, 0.0)
+        text::word_hf_line_leading_pt(&runs, bottom_edge_em)
     });
     if let Some(leading) = leading {
         let _ = writeln!(out, "#set par(leading: {}pt)", format_f64(leading));
@@ -4358,8 +4373,8 @@ fn generate_flow_hf_content(out: &mut String, hf: &HeaderFooter, ctx: &mut GenCt
         let _ = writeln!(out, "#set par(spacing: {spacing})");
         // A story taller than its band overflows it, as Word lets it, but a
         // breakable block would rather shrink the gap above it to fit: two
-        // indented 11pt Arial footer lines in a 21.6pt band advanced 11.70pt
-        // against the 14.98pt of two plain ones (issue #2222).
+        // indented 11pt Arial footer lines in a 21.6pt band advanced only
+        // 11.70pt (issue #2222).
         out.push_str("#set block(breakable: false)\n");
     }
     let mut is_first: bool = true;
@@ -4511,7 +4526,7 @@ fn generate_flow_header_content(out: &mut String, header: &HeaderFooter, ctx: &m
     if header_story_draws_line_boxes(header) {
         generate_line_boxed_header_paragraphs(out, header, ctx);
     } else {
-        generate_flow_hf_content(out, header, ctx);
+        generate_flow_hf_content(out, header, 0.0, ctx);
     }
 }
 

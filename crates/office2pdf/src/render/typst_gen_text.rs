@@ -2046,17 +2046,20 @@ pub(super) fn word_header_band_shift_pt(runs: &[Run]) -> Option<f64> {
 /// The leading is the remainder after the edges, not a replacement for them.
 /// That matters: the top edge is what #629's `word_header_band_shift_pt` seats
 /// the first baseline against, so leaving it alone keeps that seat exactly
-/// where it was and confines this to the advance *between* lines. `bottom_edge_em`
-/// is whatever the caller set, which is nonzero only where a `w:pBdr` wrapper
-/// pinned it (#737).
+/// where it was and confines this to the advance *between* lines.
+/// `bottom_edge_em` is how far below the baseline the caller set the bottom
+/// edge, which is nonzero where a pinned footer band sets its last line's
+/// descent there (issue #2326).
 ///
 /// Not to be confused with [`word_line_leading_pt`], which answers a different
 /// question for body paragraphs: that one is folded into a fixed line box,
 /// this one is emitted directly as `par(leading:)` for a header or footer
 /// story.
 ///
-/// `None` where the face's metrics are unknown, or where the edges already
-/// exceed Word's pitch and no leading could shrink the advance to it.
+/// `None` where the face's metrics are unknown. Where the edges already
+/// exceed Word's pitch — a band edge taken from a deeper face than this
+/// paragraph's — no leading shrinks the advance to it, and none at all comes
+/// closest.
 pub(super) fn word_hf_line_leading_pt(runs: &[Run], bottom_edge_em: f64) -> Option<f64> {
     let family: &str = east_asian_aware_metric_family(runs)?;
     let (_ascender_em, _descender_em, pitch_em) =
@@ -2069,7 +2072,7 @@ pub(super) fn word_hf_line_leading_pt(runs: &[Run], bottom_edge_em: f64) -> Opti
     let top_edge_em: f64 = crate::render::pdf::font_cap_height_em(family)?;
     let advance_em: f64 = word_natural_line_em(runs, pitch_em);
     let leading_em: f64 = advance_em - top_edge_em - bottom_edge_em;
-    (leading_em >= 0.0).then(|| leading_em * paragraph_font_size_pt(runs))
+    Some(leading_em.max(0.0) * paragraph_font_size_pt(runs))
 }
 
 /// The height one header or footer line takes, in points.
