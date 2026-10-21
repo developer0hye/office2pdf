@@ -3631,6 +3631,95 @@ fn a_header_tab_places_its_segment_exactly_like_a_body_tab() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn a_header_tab_leader_takes_the_tab_runs_formatting_like_a_body_tab() {
+    // A leader is the tab character's own ink, in the run holding the tab
+    // (issue #2244). Header tabs are written by a separate path from body
+    // tabs, so both must carry the tab run's size and colour to its leader.
+    let tab_style = TextStyle {
+        font_size: Some(15.0),
+        color: Some(Color::new(192, 0, 0)),
+        ..TextStyle::default()
+    };
+    let plain = |text: &str| Run {
+        text: text.to_string(),
+        style: TextStyle::default(),
+        href: None,
+        footnote: None,
+        inline_box: None,
+    };
+    let tab = Run {
+        text: "\t".to_string(),
+        style: tab_style.clone(),
+        href: None,
+        footnote: None,
+        inline_box: None,
+    };
+    let stops = vec![TabStop {
+        position: 451.3,
+        alignment: TabAlignment::Right,
+        leader: TabLeader::Dot,
+    }];
+    let Page::Flow(mut flow) = make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            tab_stops: Some(stops.clone()),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![plain("Body"), tab.clone(), plain("4")],
+    })]) else {
+        unreachable!()
+    };
+    let mut head = running_head(&[], stops);
+    head.elements = vec![
+        HFInline::Run(plain("Head")),
+        HFInline::Run(tab),
+        HFInline::Run(plain("9")),
+    ];
+    flow.header = Some(crate::ir::HeaderFooter {
+        shapes: Vec::new(),
+        paragraphs: vec![head],
+        distance_from_edge: None,
+        sheet_print_scale: None,
+    });
+    let source: String = generate_typst(&make_doc(vec![Page::Flow(flow)]))
+        .unwrap()
+        .source;
+    let runs = crate::render::pdf::compiled_text_runs(&source, 0).unwrap();
+
+    let baseline_of = |label: &str| -> f64 {
+        runs.iter()
+            .find(|run| run.text == label)
+            .unwrap_or_else(|| panic!("no run {label:?} in {runs:?}"))
+            .baseline_pt
+    };
+    for (label, baseline_pt) in [
+        ("header", baseline_of("Head")),
+        ("body", baseline_of("Body")),
+    ] {
+        let leaders: Vec<&crate::render::pdf::PlacedTextRun> = runs
+            .iter()
+            .filter(|run| run.text == "." && (run.baseline_pt - baseline_pt).abs() < 0.01)
+            .collect();
+        assert!(
+            leaders.len() > 10,
+            "{label}: expected a row of leader dots, got {runs:?}"
+        );
+        for dot in leaders {
+            assert!(
+                (dot.font_size_pt - 15.0).abs() < 0.01,
+                "{label}: leader size {}pt",
+                dot.font_size_pt
+            );
+            assert_eq!(
+                dot.fill_rgba,
+                Some([192, 0, 0, 255]),
+                "{label}: leader colour"
+            );
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn centered_header_page_field_uses_its_effective_left_and_right_indents() {
     let page_number_x = |indent_left: Option<f64>, indent_right: Option<f64>| -> f64 {
         let header_paragraph = crate::ir::HeaderFooterParagraph {
