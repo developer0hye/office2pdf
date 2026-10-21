@@ -394,6 +394,81 @@ fn empty_paragraph_without_line_spacing_takes_its_mark_line() {
     );
 }
 
+/// Word paces and seats single-spaced lines by the `hhea` of the face the run
+/// names, not the face that paints it. A host without Tahoma paints Tahoma and
+/// Arial with the same Liberation Sans, yet Tahoma's 2049/-423/0 line at 2048
+/// units per em is 1.2070em with its baseline 1.0005em down, and Arial's
+/// 1854/-434/67 line is 1.1499em with its baseline 0.9380em down. Laid out on
+/// the painted face, each Tahoma line advanced 4.7% short: in the header
+/// fixture with its body replaced by 40 single 10pt lines, the 40th landed
+/// 23.48pt above where Word's Tahoma puts it (issue #2247).
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn single_spaced_lines_take_the_named_faces_pitch_and_seat() {
+    let lines_in = |family: &str, size_pt: f64| -> Vec<f64> {
+        let style = TextStyle {
+            font_family: Some(family.to_string()),
+            font_size: Some(size_pt),
+            ..TextStyle::default()
+        };
+        let content: Vec<Block> = ["ALPHA", "BRAVO", "CHARLIE"]
+            .into_iter()
+            .map(|text| {
+                Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: text.to_string(),
+                        style: style.clone(),
+                        href: None,
+                        footnote: None,
+                        inline_box: None,
+                    }],
+                })
+            })
+            .collect();
+        let doc = make_doc(vec![make_flow_page(content)]);
+        let source: String = generate_typst(&doc).unwrap().source;
+        let runs = crate::render::pdf::compiled_text_runs(&source, 0)
+            .unwrap_or_else(|error| panic!("compile failed: {error}\n{source}"));
+        ["ALPHA", "BRAVO", "CHARLIE"]
+            .into_iter()
+            .map(|needle| {
+                runs.iter()
+                    .find(|run| run.text.contains(needle))
+                    .unwrap_or_else(|| panic!("{needle} must be placed"))
+                    .baseline_pt
+            })
+            .collect()
+    };
+
+    let top_margin_pt: f64 = Margins::default().top;
+    for (family, ascender, descender, line_gap) in [
+        ("Tahoma", 2049.0, 423.0, 0.0),
+        ("Arial", 1854.0, 434.0, 67.0),
+    ] {
+        let seat_em: f64 = (ascender + line_gap) / 2048.0;
+        let pitch_em: f64 = (ascender + descender + line_gap) / 2048.0;
+        for size_pt in [7.5, 10.0, 12.0] {
+            let baselines: Vec<f64> = lines_in(family, size_pt);
+            for pair in baselines.windows(2) {
+                let advance_pt: f64 = pair[1] - pair[0];
+                assert!(
+                    (advance_pt - pitch_em * size_pt).abs() < 0.01,
+                    "{family} {size_pt}pt lines must advance {}pt, got {advance_pt}pt",
+                    pitch_em * size_pt
+                );
+            }
+            let seat_pt: f64 = baselines[0] - top_margin_pt;
+            assert!(
+                (seat_pt - seat_em * size_pt).abs() < 0.01,
+                "{family} {size_pt}pt's first baseline must sit {}pt below the margin, \
+                 got {seat_pt}pt",
+                seat_em * size_pt
+            );
+        }
+    }
+}
+
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
 fn issue_2018_empty_bodycopy_keeps_the_following_paragraph_at_the_word_baseline() {

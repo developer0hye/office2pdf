@@ -401,9 +401,12 @@ pub(crate) fn budget_normal_font_substitute() -> Option<String> {
 /// substitute its chain reached, and not nothing at all.
 ///
 /// `font_line_metrics_em(family).is_some()` alone holds for a substitute too,
-/// which then answers with its own metrics (issue #2208).
+/// which then answers with its own metrics (issue #2208), and for a family
+/// with reference line metrics even where no face resolves (issue #2247). The
+/// cap height is read from the shaped face alone, so it tells a resolved face
+/// from none.
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn has_own_face(family: &str) -> bool {
-    crate::render::pdf::font_line_metrics_em(family).is_some()
+    crate::render::pdf::font_cap_height_em(family).is_some()
         && crate::render::pdf::substitute_face_family(family).is_none()
 }
