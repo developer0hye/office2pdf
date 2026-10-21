@@ -2654,13 +2654,16 @@ fn a_continuous_sections_later_pages_leave_its_first_story_out_of_the_margin() {
 /// `w:titlePg`, and ends with its `lines`-th line. The continuous second
 /// section closes with `second_section` and holds `continued` lines. The
 /// cover stories, and any `rIdOwnCover` the second section states, carry
-/// their names as text.
+/// their names as text. The body declares Times New Roman, which resolves
+/// through Liberation Serif or Tinos where the native face is absent: an
+/// exact line keeps its height only for a declared face whose metrics resolve.
 fn continuous_title_page_package(
     lines: usize,
     continued: &[&str],
     second_section: &str,
 ) -> Vec<u8> {
     let spacing = r#"<w:spacing w:before="0" w:after="0" w:line="320" w:lineRule="exact"/>"#;
+    let font = r#"<w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/></w:rPr>"#;
     let first_section = section_properties_xml(
         &[
             ("headerReference", "first", "rIdCoverHead"),
@@ -2674,12 +2677,12 @@ fn continuous_title_page_package(
     for line in 1..=lines {
         let mark: &str = if line == lines { &first_section } else { "" };
         body.push_str(&format!(
-            r#"<w:p><w:pPr>{spacing}{mark}</w:pPr><w:r><w:t>Line {line}</w:t></w:r></w:p>"#
+            r#"<w:p><w:pPr>{spacing}{mark}</w:pPr><w:r>{font}<w:t>Line {line}</w:t></w:r></w:p>"#
         ));
     }
     for text in continued {
         body.push_str(&format!(
-            r#"<w:p><w:pPr>{spacing}</w:pPr><w:r><w:t>{text}</w:t></w:r></w:p>"#
+            r#"<w:p><w:pPr>{spacing}</w:pPr><w:r>{font}<w:t>{text}</w:t></w:r></w:p>"#
         ));
     }
     body.push_str(
