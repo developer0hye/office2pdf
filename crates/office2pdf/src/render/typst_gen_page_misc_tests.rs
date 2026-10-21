@@ -5678,6 +5678,43 @@ fn a_continuous_section_after_a_floating_table_starts_below_it() {
     );
 }
 
+/// `page_header_ordinary_marker.docx`, docxide-pdf's
+/// `page-header-ordinary-marker`, sets two Tahoma 10 lines where Word puts
+/// them: `HEADER 1` at 38.25pt and `Following section` at 94.03pt below the
+/// page top, read with `mutool draw -F stext` from the Microsoft Word export
+/// docxide-pdf ships as the case's `reference.pdf`. A host without Tahoma paints them in Liberation
+/// Sans, and laying them out on Liberation Sans's metrics too put them 0.52pt
+/// and 1.15pt high (issue #2247). The tolerance is half a pixel at 150 DPI,
+/// which still separates the substitute's seat.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn header_and_body_tahoma_lines_sit_on_words_baselines() {
+    const WORD_BASELINES_PT: [(&str, f64); 2] = [("HEADER", 38.25), ("Following", 94.03)];
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/page_header_ordinary_marker.docx");
+    let (document, _warnings) = crate::parser::Parser::parse(
+        &crate::parser::docx::DocxParser,
+        fixture,
+        &crate::config::ConvertOptions::default(),
+    )
+    .expect("the header marker fixture should parse");
+    let generated = generate_typst(&document).expect("the fixture should generate");
+    let runs: Vec<crate::render::pdf::PlacedTextRun> =
+        crate::render::pdf::compiled_text_runs(&generated.source, 0)
+            .expect("the fixture's first page should compile");
+    for (text, word_baseline_pt) in WORD_BASELINES_PT {
+        let run: &crate::render::pdf::PlacedTextRun = runs
+            .iter()
+            .find(|run| run.text.starts_with(text))
+            .unwrap_or_else(|| panic!("the first page should contain {text:?}"));
+        assert!(
+            (run.baseline_pt - word_baseline_pt).abs() <= 0.24,
+            "{text:?} must sit on Word's {word_baseline_pt}pt baseline, got {}pt",
+            run.baseline_pt
+        );
+    }
+}
+
 /// docxide-pdf's `first-header-small-control` and
 /// `first-header-no-minimum-control`, unmodified: packages with no styles
 /// part, whose three Arial 12pt body paragraphs state `w:after="0"` but no

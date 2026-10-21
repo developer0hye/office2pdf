@@ -1,0 +1,103 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 223.7184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 37.44,
+        "x": 79.2,
+        "y": 30.24
+      },
+      "disposition": {
+        "issue": "#2405",
+        "kind": "issue",
+        "note": "HEADER 1, Following and section: Liberation Sans glyph outlines and advances against Word's Tahoma on matching baselines; the substitute's capitals run wider."
+      },
+      "id": "p1-8f106896bb4d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 176.0256,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 34.08,
+        "x": 72.48,
+        "y": 85.92
+      },
+      "disposition": {
+        "issue": "#2405",
+        "kind": "issue",
+        "note": "HEADER 1, Following and section: Liberation Sans glyph outlines and advances against Word's Tahoma on matching baselines; the substitute's capitals run wider."
+      },
+      "id": "p1-cb3cbc4bfb35",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 163.1232,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 31.68,
+        "x": 116.64,
+        "y": 85.92
+      },
+      "disposition": {
+        "issue": "#2405",
+        "kind": "issue",
+        "note": "HEADER 1, Following and section: Liberation Sans glyph outlines and advances against Word's Tahoma on matching baselines; the substitute's capitals run wider."
+      },
+      "id": "p1-d9bca3489a6b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 48.1536,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 7.68,
+        "x": 106.08,
+        "y": 87.84
+      },
+      "disposition": {
+        "issue": "#2405",
+        "kind": "issue",
+        "note": "HEADER 1, Following and section: Liberation Sans glyph outlines and advances against Word's Tahoma on matching baselines; the substitute's capitals run wider."
+      },
+      "id": "p1-3cba3922c827",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 73.44,
+        "y": 30.24
+      },
+      "disposition": {
+        "issue": "#2405",
+        "kind": "issue",
+        "note": "HEADER 1, Following and section: Liberation Sans glyph outlines and advances against Word's Tahoma on matching baselines; the substitute's capitals run wider."
+      },
+      "id": "p1-070564c0ed23",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 5,
+    "duplicate": 0,
+    "total": 5,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
