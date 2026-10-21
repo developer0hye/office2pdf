@@ -132,6 +132,14 @@ Apache-2.0. Thirty-eight exact 16pt lines end in an empty paragraph carrying a
 24pt before an exact 16pt line. Native Word puts that line's baseline 40pt below
 the last filler line, and a compiled-layout regression checks both positions.
 
+`continuous_empty_paragraph_overflow.docx` is the unmodified synthetic
+`cases/cont-first-empty-overflow/input.docx` from the same revision and license.
+Forty-three exact 16pt lines end 9.9pt above page 1's bottom margin, followed by
+the empty framed section mark, an empty Times New Roman 14pt paragraph and, in
+the continuous next section, "Continued text". The empty paragraph's line does
+not fit, so native Word opens page 2 with it and sets the text on a 100.78pt
+baseline, one line low; a compiled-layout regression checks both pages.
+
 `empty_frame_control.docx` is the unmodified synthetic
 `cases/empty-frame-control/input.docx` from the same revision and license: an
 empty `w:framePr` paragraph, then "Following paragraph". Native Word sets the

@@ -431,6 +431,7 @@ pub(super) fn generate_paragraph(
         if outer_indent.is_some() {
             write_paragraph_indent_inset(out, outer_indent);
         }
+        write_empty_paragraph_unbreakable(out, is_empty_paragraph);
         out.push_str(")[\n");
         if let Some(open) = float_wrap.as_deref().filter(|_| wraps_in_outer_block) {
             out.push_str(open);
@@ -448,6 +449,7 @@ pub(super) fn generate_paragraph(
             write_block_spacing_params(out, style, true, empty_paragraph_bottom_border_extent_pt);
         }
         write_block_decoration_params(out, style, should_move_empty_top_border_to_before_spacing);
+        write_empty_paragraph_unbreakable(out, is_empty_paragraph);
         out.push_str(")[\n");
         write_paragraph_double_border_overlays(
             out,
@@ -3257,6 +3259,19 @@ fn write_block_spacing_params(
     {
         let below: f64 = style.space_after.unwrap_or(0.0) + after_spacing_adjustment_pt;
         let _ = write!(out, ", below: {}pt", format_f64(below));
+    }
+}
+
+/// Keeps an empty paragraph's line whole at a page or column break.
+///
+/// The line is a `#v` inside the paragraph's blocks, and Typst cuts spacing
+/// off at the end of a region without carrying the rest over. So an empty
+/// paragraph that did not fit at a page's bottom vanished, and the text after
+/// it started the next page one line high, where Word moves the line to the
+/// next page like any one-line paragraph (issue #2253).
+fn write_empty_paragraph_unbreakable(out: &mut String, is_empty_paragraph: bool) {
+    if is_empty_paragraph {
+        out.push_str(", breakable: false");
     }
 }
 

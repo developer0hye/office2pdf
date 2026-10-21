@@ -1,0 +1,199 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 293.5296,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 51.36,
+        "x": 72.0,
+        "y": 31.2
+      },
+      "disposition": {
+        "issue": "#2254",
+        "kind": "issue",
+        "note": "Word prints the continuous section's `FIRST HEADER` on page 2, where the section's first paragraph lands; this output prints `DEFAULT HEADER` (#2254). Unchanged by this fix."
+      },
+      "id": "p2-bf727e33a05a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 244.6848,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 38.4,
+        "x": 121.44,
+        "y": 31.2
+      },
+      "disposition": {
+        "issue": "#2254",
+        "kind": "issue",
+        "note": "Word prints the continuous section's `FIRST HEADER` on page 2, where the section's first paragraph lands; this output prints `DEFAULT HEADER` (#2254). Unchanged by this fix."
+      },
+      "id": "p2-95b2a2e259f7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 112.896,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 18.24,
+        "x": 159.36,
+        "y": 31.2
+      },
+      "disposition": {
+        "issue": "#2254",
+        "kind": "issue",
+        "note": "Word prints the continuous section's `FIRST HEADER` on page 2, where the section's first paragraph lands; this output prints `DEFAULT HEADER` (#2254). Unchanged by this fix."
+      },
+      "id": "p2-6abf4d3c9a0b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 59.4432,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 13.44,
+        "x": 117.12,
+        "y": 90.24
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "`Continued text` glyph outlines: Word's embedded Times New Roman against the metric-compatible Liberation Serif, on the matched line one empty line below the first baseline. Its baseline is 101.07pt against Word's 100.78pt: the 0.19pt first-baseline offset every page shares plus 0.10pt in the empty paragraph's line (16.10pt here, 16.00pt in Word), below the 0.5pt fine threshold and recorded under #1874. No doubled, missing or re-wrapped glyph in the inspected 300 DPI crops."
+      },
+      "id": "p2-456e1b61ab1e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 48.8448,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 11.04,
+        "x": 144.0,
+        "y": 91.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "`Continued text` glyph outlines: Word's embedded Times New Roman against the metric-compatible Liberation Serif, on the matched line one empty line below the first baseline. Its baseline is 101.07pt against Word's 100.78pt: the 0.19pt first-baseline offset every page shares plus 0.10pt in the empty paragraph's line (16.10pt here, 16.00pt in Word), below the 0.5pt fine threshold and recorded under #1874. No doubled, missing or re-wrapped glyph in the inspected 300 DPI crops."
+      },
+      "id": "p2-c0c471974a84",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 41.2416,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 13.92,
+        "x": 95.04,
+        "y": 91.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "`Continued text` glyph outlines: Word's embedded Times New Roman against the metric-compatible Liberation Serif, on the matched line one empty line below the first baseline. Its baseline is 101.07pt against Word's 100.78pt: the 0.19pt first-baseline offset every page shares plus 0.10pt in the empty paragraph's line (16.10pt here, 16.00pt in Word), below the 0.5pt fine threshold and recorded under #1874. No doubled, missing or re-wrapped glyph in the inspected 300 DPI crops."
+      },
+      "id": "p2-29f8efe9bb07",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 39.3984,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 9.6,
+        "x": 186.72,
+        "y": 31.2
+      },
+      "disposition": {
+        "issue": "#2254",
+        "kind": "issue",
+        "note": "Word prints the continuous section's `FIRST HEADER` on page 2, where the section's first paragraph lands; this output prints `DEFAULT HEADER` (#2254). Unchanged by this fix."
+      },
+      "id": "p2-f7246a680620",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 36.864,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 137.76,
+        "y": 93.6
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "`Continued text` glyph outlines: Word's embedded Times New Roman against the metric-compatible Liberation Serif, on the matched line one empty line below the first baseline. Its baseline is 101.07pt against Word's 100.78pt: the 0.19pt first-baseline offset every page shares plus 0.10pt in the empty paragraph's line (16.10pt here, 16.00pt in Word), below the 0.5pt fine threshold and recorded under #1874. No doubled, missing or re-wrapped glyph in the inspected 300 DPI crops."
+      },
+      "id": "p2-1a94d672cae4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 36.1728,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.16,
+        "x": 178.08,
+        "y": 31.2
+      },
+      "disposition": {
+        "issue": "#2254",
+        "kind": "issue",
+        "note": "Word prints the continuous section's `FIRST HEADER` on page 2, where the section's first paragraph lands; this output prints `DEFAULT HEADER` (#2254). Unchanged by this fix."
+      },
+      "id": "p2-4ecf2919da6e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.2,
+        "x": 109.92,
+        "y": 94.08
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "`Continued text` glyph outlines: Word's embedded Times New Roman against the metric-compatible Liberation Serif, on the matched line one empty line below the first baseline. Its baseline is 101.07pt against Word's 100.78pt: the 0.19pt first-baseline offset every page shares plus 0.10pt in the empty paragraph's line (16.10pt here, 16.00pt in Word), below the 0.5pt fine threshold and recorded under #1874. No doubled, missing or re-wrapped glyph in the inspected 300 DPI crops."
+      },
+      "id": "p2-d32634cb5275",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 3.84,
+        "x": 133.92,
+        "y": 91.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "`Continued text` glyph outlines: Word's embedded Times New Roman against the metric-compatible Liberation Serif, on the matched line one empty line below the first baseline. Its baseline is 101.07pt against Word's 100.78pt: the 0.19pt first-baseline offset every page shares plus 0.10pt in the empty paragraph's line (16.10pt here, 16.00pt in Word), below the 0.5pt fine threshold and recorded under #1874. No doubled, missing or re-wrapped glyph in the inspected 300 DPI crops."
+      },
+      "id": "p2-28f48a0656ed",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 11,
+    "duplicate": 0,
+    "total": 11,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
