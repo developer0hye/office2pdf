@@ -421,6 +421,9 @@ matching issue references in PR bodies without relying on the search index.
 Inspect an issue's merged count and newest open citing PR with
 `scripts/issue_loop.sh --print-progress N`; an API failure returns an error
 without reporting a partial count.
+Between runs the loop re-executes itself when `scripts/issue_loop.sh` changes on
+disk and the new file passes `bash -n`, keeping its attempt and failure counts; a
+file that does not parse is reported on stderr and the loaded version keeps running.
 See `scripts/issue_loop.sh --help` for limits, paths and stop behavior.
 
 ## Contributing files
