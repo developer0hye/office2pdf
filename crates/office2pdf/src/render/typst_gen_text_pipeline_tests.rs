@@ -3563,6 +3563,67 @@ fn test_all_caps_right_aligned_sheet_cell_measures_the_uppercase_terminal_glyph(
     );
 }
 
+/// Where the compiled page starts a right-aligned sheet line holding `text`.
+#[cfg(not(target_arch = "wasm32"))]
+fn compiled_right_aligned_sheet_line_left_pt(text: &str, print_scale: f64) -> f64 {
+    let mut page = sheet_page_with_aligned_cell(
+        text,
+        TextStyle {
+            font_size: Some(10.0 * print_scale),
+            ..libertinus_total()
+        },
+        Some(Alignment::Right),
+    );
+    let Page::Sheet(sheet) = &mut page else {
+        unreachable!("sheet_page_with_aligned_cell returns a sheet")
+    };
+    sheet.table.print_scale = (print_scale != 1.0).then_some(print_scale);
+    let source: String = generate_typst(&make_doc(vec![page])).unwrap().source;
+    let runs = crate::render::pdf::compiled_text_runs(&source, 0)
+        .unwrap_or_else(|error| panic!("compile failed: {error}\n{source}"));
+    let placed: Vec<&crate::render::pdf::PlacedTextRun> = runs
+        .iter()
+        .filter(|run| run.text.trim_end() == "Total")
+        .collect();
+    assert_eq!(
+        placed.len(),
+        1,
+        "{text:?} paints one run: {runs:?}\n{source}"
+    );
+    placed[0].left_pt
+}
+
+/// Excel places a right-aligned sheet line from the cell's trailing edge by
+/// its whole-point width `W`, and a trailing space counts in `W` although it
+/// paints nothing: the native budget export ends each right-aligned `"FEB "`
+/// … `"DEC "` 10pt header exactly `W` with the space before the same edge
+/// (issue #1774). Typst drops a paragraph's final markup space but lays out a
+/// longer space run, which is emitted as a code string, so the reserve has to
+/// be measured from the line Typst actually sets in both cases.
+///
+/// Libertinus Serif 10pt "Total" has W = 22 and its space a whole-point 3, so
+/// `"Total "` (W = 25) starts three points left of `"Total"` and `"Total  "`
+/// (W = 28) six. At half scale the same widths are taken at the declared size
+/// and print at half the distance (issue #1238).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn test_right_aligned_sheet_line_reserves_trailing_spaces_typst_does_not_lay_out() {
+    for (text, print_scale, expected_offset_pt) in [
+        ("Total ", 1.0, -3.0),
+        ("Total  ", 1.0, -6.0),
+        ("Total ", 0.5, -1.5),
+    ] {
+        let without_space_pt: f64 = compiled_right_aligned_sheet_line_left_pt("Total", print_scale);
+        let with_space_pt: f64 = compiled_right_aligned_sheet_line_left_pt(text, print_scale);
+        let offset_pt: f64 = with_space_pt - without_space_pt;
+        assert!(
+            (offset_pt - expected_offset_pt).abs() < 0.005,
+            "{text:?} scale={print_scale}: Excel starts it {expected_offset_pt}pt from \
+             \"Total\", the compiled line starts {offset_pt}pt"
+        );
+    }
+}
+
 /// The grid is not a widening: an advance just over a half point rounds *down*
 /// and the line comes out narrower than the face sets it.
 ///
