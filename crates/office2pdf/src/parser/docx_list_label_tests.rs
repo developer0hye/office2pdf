@@ -296,3 +296,57 @@ fn docx_list_labels_follow_their_own_marks_within_one_level() {
         );
     }
 }
+
+/// A list that restarts onto a number it already used, here through a second
+/// `w:num` with a `w:startOverride`, gives the numbering function two labels
+/// it cannot tell apart. They keep what their marks share; every other label
+/// keeps its own (issue #2337).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn docx_list_labels_sharing_a_restarted_number_keep_what_their_marks_share() {
+    let numberings = docx_rs::Numberings::new()
+        .add_abstract_numbering(docx_rs::AbstractNumbering::new(0).add_level(plain_level()))
+        .add_numbering(docx_rs::Numbering::new(1, 0))
+        .add_numbering(
+            docx_rs::Numbering::new(2, 0).add_override(docx_rs::LevelOverride::new(0).start(1)),
+        );
+    let items: [(usize, usize, &str); 3] = [
+        (1, 30, "First body"),
+        (1, 20, "Second body"),
+        (2, 20, "Restarted body"),
+    ];
+    let mut docx = docx_rs::Docx::new()
+        .page_margin(docx_rs::PageMargin::new().left(1440).right(1440))
+        .default_fonts(fonts(MONO))
+        .default_size(22)
+        .numberings(numberings);
+    for (num_id, mark_size, body) in items {
+        docx = docx.add_paragraph(
+            docx_rs::Paragraph::new()
+                .add_run(run(body, MONO, Some(20)))
+                .numbering(
+                    docx_rs::NumberingId::new(num_id),
+                    docx_rs::IndentLevel::new(0),
+                )
+                .fonts(fonts(SERIF))
+                .size(mark_size),
+        );
+    }
+    let mut cursor = Cursor::new(Vec::new());
+    docx.build().pack(&mut cursor).unwrap();
+    let data = cursor.into_inner();
+
+    let first = painted_label_face(&data, "(1)", "First body");
+    let second = painted_label_face(&data, "(2)", "Second body");
+    let restarted = painted_label_face(&data, "(1)", "Restarted body");
+    assert_eq!(second, (SERIF.to_string(), 10.0), "(2) keeps its own mark");
+    assert_eq!(
+        first, restarted,
+        "both `(1)` labels take the formatting their 15pt and 10pt marks share"
+    );
+    assert_eq!(first.0, SERIF, "the marks share their face");
+    assert!(
+        (restarted.1 - 15.0).abs() > 0.01,
+        "the restarted label does not take the first mark's 15pt: {restarted:?}"
+    );
+}

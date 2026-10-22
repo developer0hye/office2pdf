@@ -1398,11 +1398,11 @@ fn level_label_styles(
 ) -> LevelLabelStyles {
     let level_items: Vec<&crate::ir::ListItem> =
         items.iter().filter(|item| item.level == level).collect();
-    // TODO(native bullet probe): Word labels a bullet with its mark's face
-    // but not, on docxide-pdf's `alfies_arc_adult_safeguarding_policy` and
+    // TODO(#2384): Word labels a bullet with its mark's face but not, on
+    // docxide-pdf's `alfies_arc_adult_safeguarding_policy` and
     // `streamnet_steering_committee_meeting`, with the mark's bold. Until a
-    // probe settles which mark properties a bullet takes, bullets keep the
-    // formatting their runs share.
+    // native probe settles which mark properties a bullet takes, bullets keep
+    // the formatting their runs share.
     let marks: Option<Vec<&TextStyle>> = (kind == ListKind::Ordered)
         .then(|| {
             level_items
