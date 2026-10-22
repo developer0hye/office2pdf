@@ -4114,6 +4114,140 @@ fn test_centred_sheet_line_seat_is_scoped_to_fitting_single_lines() {
     );
 }
 
+/// Where each line of a compiled centred sheet cell starts, top line first,
+/// as `(text, left)` in page points. Runs sharing a baseline make one line.
+#[cfg(not(target_arch = "wasm32"))]
+fn compiled_sheet_cell_lines(page: Page) -> Vec<(String, f64)> {
+    let source = generate_typst(&make_doc(vec![page])).unwrap().source;
+    let mut runs = crate::render::pdf::compiled_text_runs(&source, 0)
+        .unwrap_or_else(|error| panic!("the cell must compile: {error}\n{source}"));
+    runs.sort_by(|a, b| {
+        a.baseline_pt
+            .total_cmp(&b.baseline_pt)
+            .then(a.left_pt.total_cmp(&b.left_pt))
+    });
+    let mut lines: Vec<(f64, String, f64)> = Vec::new();
+    for run in runs {
+        match lines.last_mut() {
+            Some((baseline, text, _)) if (*baseline - run.baseline_pt).abs() < 1e-6 => {
+                text.push_str(&run.text);
+            }
+            _ => lines.push((run.baseline_pt, run.text, run.left_pt)),
+        }
+    }
+    lines
+        .into_iter()
+        .map(|(_, text, left)| (text, left))
+        .collect()
+}
+
+/// Excel seats every hard-broken line of a wrapped, centred cell on its own
+/// whole-point origin, `floor((column - W + 1) / 2)` from the left gridline
+/// with `W` that line's rounded advances — the wrapped-cell rule of issue
+/// #1600, measured line by line on the native export of the issue's
+/// unscaled workbook: `Amount`/`budgeted` at 569 + 19 / 569 + 15 in an 80pt
+/// column, `spent` at 649 + 26 and `In store/`/`Online` at 889 + 18 /
+/// 889 + 23 (issue #1738).
+///
+/// Asserted on every line of several cells, in even and odd columns and on a
+/// fitted sheet, so no single offset satisfies it. The gridline comes from the
+/// same cell set left-aligned, whose text starts at the gridline plus the
+/// inset.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn test_each_hard_broken_line_of_a_wrapped_centred_sheet_cell_takes_its_own_seat() {
+    let face = libertinus_total();
+    for (text, column_pt, scale) in [
+        ("Amount\nbudgeted", 80.0, 1.0),
+        ("Amount\nspent", 81.0, 1.0),
+        ("In store/\nOnline", 66.0, 1.0),
+        ("Gift\nbudget\nleft", 65.0, 1.0),
+        ("Amount\nbudgeted", 80.0, 0.5),
+    ] {
+        let inset_pt: f64 = 2.5 * scale;
+        let size_pt: f64 = 10.0 * scale;
+        let cell = |alignment: Alignment| -> Page {
+            let mut page = centred_sheet_page(
+                text,
+                TextStyle {
+                    font_size: Some(size_pt),
+                    ..face.clone()
+                },
+                column_pt * scale,
+                inset_pt,
+                true,
+            );
+            let Page::Sheet(sheet) = &mut page else {
+                unreachable!("centred_sheet_page returns a sheet")
+            };
+            sheet.table.print_scale = (scale < 1.0).then_some(scale);
+            let Block::Paragraph(paragraph) = &mut sheet.table.rows[0].cells[0].content[0] else {
+                unreachable!("the cell holds one paragraph")
+            };
+            paragraph.style.alignment = Some(alignment);
+            page
+        };
+
+        let left_aligned = compiled_sheet_cell_lines(cell(Alignment::Left));
+        let gridline_pt: f64 = left_aligned[0].1 - inset_pt;
+        let centred = compiled_sheet_cell_lines(cell(Alignment::Center));
+        let expected_lines: Vec<&str> = text.split('\n').collect();
+        assert_eq!(
+            centred
+                .iter()
+                .map(|(line, _)| line.as_str())
+                .collect::<Vec<_>>(),
+            expected_lines,
+            "{text:?} must keep its hard-broken lines and nothing else"
+        );
+        for (line, left_pt) in &centred {
+            let advances_em =
+                crate::render::pdf::glyph_advances_em("Libertinus Serif", false, line)
+                    .expect("Libertinus Serif is embedded");
+            let whole_point_width: f64 = advances_em.iter().map(|em| (em * 10.0).round()).sum();
+            let seat_pt: f64 = ((column_pt - whole_point_width + 1.0) / 2.0).floor() * scale;
+            assert!(
+                (left_pt - (gridline_pt + seat_pt)).abs() < 1e-4,
+                "{text:?} at scale {scale}: line {line:?} (W = {whole_point_width}) must start \
+                 {seat_pt}pt from the gridline, got {}",
+                left_pt - gridline_pt
+            );
+        }
+    }
+}
+
+/// The per-line seat covers only lines the cell's own breaks decide: a
+/// hard-broken line too wide for its measure wraps again where Typst breaks
+/// it, an unwrapped cell's line feed is unmeasured, and an empty line has no
+/// origin to seat. Each keeps the paragraph exactly as it was laid out before.
+#[test]
+fn test_hard_broken_centred_sheet_line_seat_is_scoped_to_fitting_wrapped_lines() {
+    for (text, column_pt, wraps_text, case) in [
+        (
+            "Total\nAmount budgeted",
+            40.0,
+            true,
+            "a line wider than its measure",
+        ),
+        ("Amount\nbudgeted", 80.0, false, "an unwrapped cell"),
+        ("Amount\n\nbudgeted", 80.0, true, "an empty line"),
+    ] {
+        let source = generate_typst(&make_doc(vec![centred_sheet_page(
+            text,
+            libertinus_total(),
+            column_pt,
+            2.5,
+            wraps_text,
+        )]))
+        .unwrap()
+        .source;
+        assert!(
+            !source.contains("#h(") && !source.contains("#move(dx: "),
+            "{case} is not seated line by line: {source}"
+        );
+    }
+}
+
 // ── Page breaks inside a multi-column section (issue #1695) ───────
 
 /// Generate one flow page and report both its markup and the page count Typst

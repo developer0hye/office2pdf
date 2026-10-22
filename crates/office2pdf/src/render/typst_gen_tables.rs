@@ -4066,6 +4066,13 @@ fn generate_cell_paragraph(
     if let Some(shift_pt) = centered_sheet_line_start_shift_pt {
         let _ = write!(out, "#move(dx: {}pt)[", format_geometry(shift_pt));
     }
+    // A wrapped cell's own line feeds give each of its lines a seat of its
+    // own (issue #1738); the lines are emitted one by one below.
+    let centered_sheet_hard_broken_lines: Option<Vec<(Vec<Run>, f64)>> = cell
+        .sheet_cell_box
+        .as_ref()
+        .filter(|_| !cell.in_spill_cell)
+        .and_then(|cell_box| centered_sheet_hard_broken_lines(style, &para.runs, cell_box));
     if centered_sheet_odd_line_seat.is_some() {
         out.push_str("#context {\n  let o2p-centered-sheet-body = [");
     }
@@ -4159,6 +4166,30 @@ fn generate_cell_paragraph(
                 // physical line (issue #1256).
                 if let Some(spacing) = powerpoint_trailing_letter_space_pt(style, &para.runs) {
                     let _ = write!(out, "#h({}pt)", format_f64(spacing));
+                }
+            } else if let Some(lines) = centered_sheet_hard_broken_lines.as_deref() {
+                // Each line moves by a strong space pair that sums to nothing,
+                // so Typst still centres the width it measured and only the
+                // glyphs shift onto Excel's seat.
+                for (index, (line_runs, shift_pt)) in lines.iter().enumerate() {
+                    if index > 0 {
+                        out.push_str("#linebreak()");
+                    }
+                    let seats: bool = shift_pt.abs() > 1e-9;
+                    if seats {
+                        let _ = write!(out, "#h({}pt)", format_geometry(*shift_pt));
+                    }
+                    generate_runs_with_tabs_context(
+                        out,
+                        line_runs,
+                        style.tab_stops.as_deref(),
+                        paragraph_default_tab_width_pt(style, cell.default_tab_width_pt),
+                        eojeol_wrap,
+                        ctx,
+                    )?;
+                    if seats {
+                        let _ = write!(out, "#h({}pt)", format_geometry(-*shift_pt));
+                    }
                 }
             } else {
                 generate_runs_with_tabs_context(
