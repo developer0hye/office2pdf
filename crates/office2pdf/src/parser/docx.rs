@@ -23,12 +23,12 @@ use crate::parser::Parser;
 use self::contexts::scan_table_headers;
 use self::contexts::{
     BidiContext, ChartContext, ContextualSpacingContext, DocxConversionContext,
-    DrawingShapeContext, DrawingTextBoxContext, DrawingTextBoxInfo, FieldContext, MathContext,
-    NoteContent, NoteContext, ParagraphContextualSpacing, ParagraphMarkContext, ParagraphRunScan,
-    ParagraphShadingContext, PictureCropContext, RunScan, RunScanContext, SmallCapsContext,
-    TableHeaderContext, TableStyleContext, VmlTextBoxContext, VmlTextBoxInfo, WordWrapContext,
-    WpgDrawingInfo, WrapContext, build_chart_context_from_xml, build_math_context_from_xml,
-    build_note_context_from_xml, build_wrap_context_from_xml,
+    DrawingShapeContext, DrawingTextBoxContext, DrawingTextBoxInfo, FieldContent, FieldContext,
+    MathContext, NoteContent, NoteContext, PageFieldScan, ParagraphContextualSpacing,
+    ParagraphMarkContext, ParagraphRunScan, ParagraphShadingContext, PictureCropContext, RunScan,
+    RunScanContext, SmallCapsContext, TableHeaderContext, TableStyleContext, VmlTextBoxContext,
+    VmlTextBoxInfo, WordWrapContext, WpgDrawingInfo, WrapContext, build_chart_context_from_xml,
+    build_math_context_from_xml, build_note_context_from_xml, build_wrap_context_from_xml,
     extract_column_layout_from_section_property, is_note_reference_run, read_zip_text,
     scan_column_layouts, scan_line_numbering, scan_page_borders, scan_page_numbering,
     scan_section_alignment, scan_style_paragraph_shading, scan_style_word_wrap, seq_identifier,
@@ -62,10 +62,10 @@ use self::text::{
     ThemeFonts, WORD_UNSTATED_FONT_SIZE_PT, extract_doc_default_paragraph_style,
     extract_doc_default_text_style_with_theme, extract_indent, extract_paragraph_style,
     extract_run_style, extract_run_style_id, extract_run_text, extract_run_text_marking_clears,
-    extract_tab_stop_overrides, insert_east_asian_auto_space, is_column_break, is_page_break,
-    pair_kerning_from_half_points, parse_hex_color, parse_theme_fonts, resolve_hyperlink_url,
-    resolve_latin_theme_font_family, resolve_theme_font_family, take_clearing_break_markers,
-    word_built_in_doc_defaults,
+    extract_run_text_reading_fields, extract_tab_stop_overrides, insert_east_asian_auto_space,
+    is_column_break, is_page_break, pair_kerning_from_half_points, parse_hex_color,
+    parse_theme_fonts, resolve_hyperlink_url, resolve_latin_theme_font_family,
+    resolve_theme_font_family, take_clearing_break_markers, word_built_in_doc_defaults,
 };
 #[cfg(test)]
 use self::text::{extract_pair_kerning, extract_tab_stops, resolve_highlight_color};
@@ -1977,6 +1977,8 @@ fn convert_paragraph_blocks(
     let mut caption_identifier: Option<String> = None;
     // Word's horizontal lines, which docx-rs drops from the runs (issue #2251).
     let mut horizontal_rules: Vec<HorizontalRule> = Vec::new();
+    // A header or footer table's `PAGE` field spans runs (issue #2338).
+    let mut page_fields: PageFieldScan = ctx.fields.page_field_scan();
 
     for child in flatten_tracked_changes(&para.children) {
         match child {
@@ -2149,9 +2151,10 @@ fn convert_paragraph_blocks(
 
                             // Extracted even when a field replaces it, so the
                             // later parts' breaks keep their clears.
-                            let run_text: String = extract_run_text_marking_clears(
+                            let run_text: String = extract_run_text_reading_fields(
                                 &run_segment,
                                 &mut line_break_clears,
+                                &mut page_fields,
                             );
                             let text: String =
                                 seq_field_text(&run_segment, &ctx.fields, &mut caption_identifier)

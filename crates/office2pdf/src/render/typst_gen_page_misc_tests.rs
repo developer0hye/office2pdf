@@ -5257,6 +5257,51 @@ fn a_wrapping_header_table_cell_reserves_each_line() {
     );
 }
 
+/// A page field in a header cell measures as a numeral, as a story
+/// paragraph's field does, so the cell still wraps where its words do. The
+/// field's marker has no glyph, and measuring it left the whole cell at one
+/// line (issue #2338).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_header_table_cell_measures_its_page_field_as_a_numeral() {
+    let Some(line_pt) = arial_natural_line_pt(12.0) else {
+        return; // the face is unavailable on this runner
+    };
+    let (Some(word_em), Some(space_em)) = (
+        crate::render::pdf::text_advance_em("Arial", false, "Header"),
+        crate::render::pdf::text_advance_em("Arial", false, " "),
+    ) else {
+        return;
+    };
+    let text_width_pt: f64 = (2.5 * word_em + 1.5 * space_em) * 12.0;
+    for marker in [
+        crate::ir::PAGE_NUMBER_FIELD_CHAR,
+        crate::ir::TOTAL_PAGES_FIELD_CHAR,
+    ] {
+        // Five words and the field: three lines, the last `Header 1`.
+        let text: String = format!("{} {marker}", ["Header"; 5].join(" "));
+        let margin_pt: f64 = header_table_top_margin_pt(
+            36.0,
+            36.0,
+            header_table(
+                vec![auto_header_table_row(vec![header_table_cell(vec![
+                    arial_cell_paragraph(&text, 12.0),
+                ])])],
+                vec![text_width_pt + 4.3],
+                36.0,
+                true,
+            ),
+            Vec::new(),
+            false,
+        );
+        assert!(
+            (margin_pt - (36.0 + 4.3 + 3.0 * line_pt)).abs() < 0.001,
+            "{text:?} must start the body at {}pt, got {margin_pt}pt",
+            36.0 + 4.3 + 3.0 * line_pt
+        );
+    }
+}
+
 /// A row's `w:trHeight` sizes it as Word does: an `atLeast` floor only when
 /// it is taller than the row's lines, an `exact` height always.
 #[cfg(not(target_arch = "wasm32"))]

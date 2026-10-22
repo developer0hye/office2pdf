@@ -49,7 +49,10 @@ pub(super) use columns::{extract_column_layout_from_section_property, scan_colum
 pub(super) use contextual_spacing::{ContextualSpacingContext, ParagraphContextualSpacing};
 pub(super) use docx_context_shape::{DrawingShapeContext, WpgDrawingInfo};
 pub(super) use drawing::{DrawingTextBoxContext, DrawingTextBoxInfo};
-pub(super) use fields::{FieldContext, seq_identifier, toc_caption_identifier, toc_heading_depth};
+pub(super) use fields::{
+    FieldContent, FieldContext, PageFieldScan, seq_identifier, toc_caption_identifier,
+    toc_heading_depth,
+};
 pub(super) use math::{MathContext, build_math_context_from_xml};
 pub(super) use notes::{
     NoteContent, NoteContext, build_note_context_from_xml, is_note_reference_run, read_zip_text,
@@ -143,7 +146,7 @@ impl DocxConversionContext {
             word_wraps: WordWrapContext::from_xml(story_xml),
             contextual_spacing: ContextualSpacingContext::from_xml(story_xml, styles_xml),
             paragraph_marks: ParagraphMarkContext::from_xml(story_xml),
-            fields: FieldContext::default(),
+            fields: FieldContext::for_header_footer_story(),
             default_paragraph_style_is_defined,
             paragraph_property_defaults_are_declared,
         }
