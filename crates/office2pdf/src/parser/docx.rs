@@ -1098,6 +1098,37 @@ fn convert_body_table_block(
     }
 }
 
+/// The formatting a numbered paragraph's list label takes before its level's
+/// own `w:rPr`: the paragraph mark's run properties, resolved through the
+/// cascade a run takes, so `w:pPr/w:rPr` outranks the `w:pStyle` and both
+/// outrank `w:rPrDefault`. Word formats the label this way whatever the
+/// item's runs state (issue #2337).
+///
+/// The mark's underline, vertical position and small capitals stay off the
+/// label, as LibreOffice's `IsIgnoredCharFormatForNumbering` and
+/// `checkApplyParagraphMarkFormatToNumbering` record for Word.
+fn numbering_label_style(
+    para: &docx_rs::Paragraph,
+    style_map: &StyleMap,
+    theme_fonts: &ThemeFonts,
+) -> TextStyle {
+    let resolved_style: Option<&ResolvedStyle> = get_paragraph_style_id(&para.property)
+        .and_then(|id| style_map.get(id))
+        .or_else(|| style_map.get(DOC_DEFAULT_STYLE_ID));
+    let mut style: TextStyle = resolve_run_style(
+        &para.property.run_property,
+        false,
+        resolved_style,
+        style_map,
+        theme_fonts,
+    );
+    style.underline = None;
+    style.vertical_align = None;
+    style.baseline_shift = None;
+    style.small_caps = None;
+    style
+}
+
 /// Convert one docx-rs paragraph into its ordered plain blocks and list paragraph.
 /// A numbered paragraph can produce multiple elements when breaks or images surround its text.
 fn convert_paragraph_element(
@@ -1164,6 +1195,11 @@ fn convert_paragraph_element(
             &mut paragraph.style,
             ctx.paragraph_property_defaults_are_declared,
         );
+        paragraph.style.numbering_label_style = Some(Box::new(numbering_label_style(
+            para,
+            style_map,
+            &ctx.theme_fonts,
+        )));
         tagged.push(TaggedElement::ListParagraph {
             info: info.clone(),
             paragraph: Box::new(paragraph),
