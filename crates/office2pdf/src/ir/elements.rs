@@ -1550,6 +1550,17 @@ pub struct Run {
     pub inline_box: Option<Box<InlineTextBox>>,
 }
 
+/// In-text marker for a `PAGE` field's result in [`Run::text`]: the renderer
+/// draws the number of the page the run lands on in its place, in the run's
+/// style. A header or footer table cell holds ordinary runs rather than
+/// [`HFInline`], so the field has no other way to reach it (issue #2338).
+/// XML 1.0 admits no such character, so no document text can contain it.
+pub(crate) const PAGE_NUMBER_FIELD_CHAR: char = '\u{11}';
+
+/// As [`PAGE_NUMBER_FIELD_CHAR`], for a `NUMPAGES` field's result: the
+/// document's page count.
+pub(crate) const TOTAL_PAGES_FIELD_CHAR: char = '\u{12}';
+
 /// A table.
 #[derive(Debug, Clone, Default)]
 pub struct Table {

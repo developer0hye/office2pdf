@@ -1,6 +1,7 @@
 use super::{
-    Alignment, Color, HyperlinkMap, LineSpacing, PairKerning, ParagraphStyle, TabAlignment,
-    TabLeader, TabStop, TabStopOverride, TextStyle, VerticalTextAlign, apply_tab_stop_overrides,
+    Alignment, Color, FieldContent, HyperlinkMap, LineSpacing, PageFieldScan, PairKerning,
+    ParagraphStyle, TabAlignment, TabLeader, TabStop, TabStopOverride, TextStyle,
+    VerticalTextAlign, apply_tab_stop_overrides,
 };
 use crate::ir::{
     BorderLineStyle, BorderSide, BreakClear, CellBorder, ClearingBreak, Insets, LineCap, LineJoin,
@@ -706,22 +707,71 @@ pub(super) fn extract_run_text_marking_clears(
     run: &docx_rs::Run,
     clears: &mut impl Iterator<Item = Option<BreakClear>>,
 ) -> String {
+    extract_run_text_reading_fields(run, clears, &mut PageFieldScan::default())
+}
+
+/// [`extract_run_text_marking_clears`], replacing each page field's cached
+/// result with the marker `fields` gives it. `fields` carries the paragraph's
+/// open fields from run to run.
+pub(super) fn extract_run_text_reading_fields(
+    run: &docx_rs::Run,
+    clears: &mut impl Iterator<Item = Option<BreakClear>>,
+    fields: &mut PageFieldScan,
+) -> String {
     let mut text = String::new();
     for child in &run.children {
-        match child {
-            docx_rs::RunChild::Text(t) => text.push_str(&t.text),
-            docx_rs::RunChild::Tab(_) => text.push('\t'),
+        let shown: char = match child {
+            docx_rs::RunChild::FieldChar(field_char) => {
+                match field_char.field_char_type {
+                    docx_rs::FieldCharType::Begin => fields.begin(),
+                    docx_rs::FieldCharType::Separate => fields.separate(),
+                    docx_rs::FieldCharType::End => text.extend(fields.end()),
+                    _ => {}
+                }
+                continue;
+            }
+            docx_rs::RunChild::InstrText(instruction) => {
+                fields.instruction(match instruction.as_ref() {
+                    docx_rs::InstrText::PAGE(_) => "PAGE",
+                    docx_rs::InstrText::NUMPAGES(_) => "NUMPAGES",
+                    docx_rs::InstrText::Unsupported(text) => text,
+                    _ => "OTHER",
+                });
+                continue;
+            }
+            docx_rs::RunChild::InstrTextString(instruction) => {
+                fields.instruction(instruction);
+                continue;
+            }
+            docx_rs::RunChild::Text(t) => {
+                if !t.text.is_empty() {
+                    match fields.content() {
+                        FieldContent::Shown => text.push_str(&t.text),
+                        FieldContent::Hidden => {}
+                        FieldContent::Marker(marker) => text.push(marker),
+                    }
+                }
+                continue;
+            }
+            docx_rs::RunChild::Tab(_) => '\t',
             docx_rs::RunChild::Break(br) if is_line_break(br) => {
+                // Taken even inside a hidden result, so the run's later
+                // breaks keep their own clears.
                 let marker: Option<char> = clears.next().flatten().and_then(|clear| {
                     CLEARING_BREAK_MARKERS
                         .iter()
                         .find(|(_, marked)| *marked == clear)
                         .map(|(marker, _)| *marker)
                 });
-                text.push(marker.unwrap_or('\n'));
+                marker.unwrap_or('\n')
             }
-            docx_rs::RunChild::Break(_) => text.push('\n'),
-            _ => {}
+            docx_rs::RunChild::Break(_) => '\n',
+            _ => continue,
+        };
+        match fields.content() {
+            FieldContent::Shown => text.push(shown),
+            FieldContent::Hidden => {}
+            FieldContent::Marker(marker) => text.push(marker),
         }
     }
     text

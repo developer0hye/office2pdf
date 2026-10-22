@@ -14,11 +14,12 @@ use crate::ir::{
     HorizontalRule, HorizontalRulePaint, HorizontalRuleWidth, IconShading, ImageCrop, ImageData,
     ImageFormat, ImageParagraphIndent, ImageParagraphSpacing, InlineTextBox, Insets,
     LegendPosition, LineBox, LineCap, LineJoin, LineSpacing, List, ListKind, Margins, MathEquation,
-    Metadata, Page, PageNumberFormat, PageSize, PairKerning, Paragraph, ParagraphStyle,
-    PatternFill, PatternPreset, PositionedTabAlignment, PositionedTabRelativeTo, Run, Shadow,
-    Shape, ShapeKind, SheetPage, SmartArt, SparklineInfo, TabAlignment, TabLeader, TabStop, Table,
-    TableBorderPaintModel, TableCell, TableOfContents, TableRow, TextBoxData, TextBoxVerticalAlign,
-    TextDirection, TextFrame, TextStyle, VerticalTextAlign, WrapMode,
+    Metadata, PAGE_NUMBER_FIELD_CHAR, Page, PageNumberFormat, PageSize, PairKerning, Paragraph,
+    ParagraphStyle, PatternFill, PatternPreset, PositionedTabAlignment, PositionedTabRelativeTo,
+    Run, Shadow, Shape, ShapeKind, SheetPage, SmartArt, SparklineInfo, TOTAL_PAGES_FIELD_CHAR,
+    TabAlignment, TabLeader, TabStop, Table, TableBorderPaintModel, TableCell, TableOfContents,
+    TableRow, TextBoxData, TextBoxVerticalAlign, TextDirection, TextFrame, TextStyle,
+    VerticalTextAlign, WrapMode,
 };
 
 use self::diagrams::{
@@ -111,6 +112,16 @@ const WRITER_PAGE_LEFT_TEXT_ORIGIN_SEAT_PT: f64 = 0.15;
 /// section an entry points into is only settled by the layout, so the format
 /// has to travel with it (issue #605).
 const PAGE_FORMAT_STATE: &str = "o2p-page-format";
+
+/// The label of the `#metadata` that records a section's restarted page
+/// number on the page where its counter restarts.
+///
+/// Typst lays a page's background out before the page's body, so a page
+/// counter drawn there misses a `counter(page).update` on that same page; the
+/// header and footer, laid out after the body, see it. A page field in a
+/// header or footer table is drawn in the background, so it reads the restart
+/// from this record instead (issue #2338).
+const PAGE_RESTART_LABEL: &str = "o2p-page-restart";
 
 /// The indent a contents entry takes per level below the first.
 ///
@@ -896,6 +907,7 @@ fn generate_flow_page(
     // from the document start, so the section states its own first number.
     if let Some(start) = page.page_numbering.and_then(|numbering| numbering.start) {
         let _ = writeln!(out, "#counter(page).update({start})");
+        let _ = writeln!(out, "#metadata({start}) <{PAGE_RESTART_LABEL}>");
     }
     // A `PAGE` field takes the format from `ctx` at codegen time, but a
     // contents entry cannot: which section an entry lands in is only known
@@ -3741,7 +3753,16 @@ fn runs_line_count(runs: &[Run], available_pt: f64) -> usize {
             .font_size
             .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_SIZE_PT);
         let advance_pt = |text: &str| -> Option<f64> {
-            Some(crate::render::pdf::text_advance_em(family, is_bold, text)? * font_size_pt)
+            // A table cell's page field shapes as digits, as a story
+            // paragraph's [`hf_paragraph_metric_runs`] stands it in; its
+            // marker has no glyph to measure (issue #2338).
+            const FIELDS: [char; 2] = [PAGE_NUMBER_FIELD_CHAR, TOTAL_PAGES_FIELD_CHAR];
+            let text: std::borrow::Cow<'_, str> = if text.contains(FIELDS) {
+                text.replace(FIELDS, "1").into()
+            } else {
+                text.into()
+            };
+            Some(crate::render::pdf::text_advance_em(family, is_bold, &text)? * font_size_pt)
         };
         // OOXML may split a word into runs even when its formatting is
         // unchanged. Only an actual space or hard break ends the word.
@@ -4263,28 +4284,32 @@ fn page_anchored_layer_markup(
     behind_text: bool,
     ctx: &mut GenCtx,
 ) -> Result<String, ConvertError> {
-    let mut markup = String::new();
-    for (hf, is_footer) in [(header, false), (footer, true)] {
-        let Some(hf) = hf else {
-            continue;
-        };
-        generate_page_anchored_hf_elements(
-            &mut markup,
-            hf,
-            page,
-            size,
-            behind_text,
-            is_footer,
-            ctx,
-        )?;
-        // Word paints the main story after header/footer framed paragraphs, so
-        // body drawings can cover those frames. Typst's page background is the
-        // layer that preserves that cross-story order (issue #1408).
-        if behind_text {
-            generate_page_anchored_hf_frames(&mut markup, hf, size, page.margins.right, ctx);
+    // The stories' tables carry their page fields as markers in runs
+    // (issue #2338).
+    with_page_number_format(ctx.page_number_format, || {
+        let mut markup = String::new();
+        for (hf, is_footer) in [(header, false), (footer, true)] {
+            let Some(hf) = hf else {
+                continue;
+            };
+            generate_page_anchored_hf_elements(
+                &mut markup,
+                hf,
+                page,
+                size,
+                behind_text,
+                is_footer,
+                ctx,
+            )?;
+            // Word paints the main story after header/footer framed paragraphs, so
+            // body drawings can cover those frames. Typst's page background is the
+            // layer that preserves that cross-story order (issue #1408).
+            if behind_text {
+                generate_page_anchored_hf_frames(&mut markup, hf, size, page.margins.right, ctx);
+            }
         }
-    }
-    Ok(markup)
+        Ok(markup)
+    })
 }
 
 /// Place header/footer elements in the page overlay. Paragraph-relative

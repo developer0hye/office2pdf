@@ -6386,6 +6386,9 @@ fn generate_run_seated_with_metrics(
     if run.text.contains(PPTX_SOFT_LINE_BREAK_CHAR)
         || run.text.contains(HANGUL_KINSOKU_BREAK_CHAR)
         || run.text.contains(EAST_ASIAN_AUTO_SPACE_CHAR)
+        || run
+            .text
+            .contains([PAGE_NUMBER_FIELD_CHAR, TOTAL_PAGES_FIELD_CHAR])
     {
         write_run_with_break_markers(out, run, opens_line, seat_bottom_pt);
     } else {
@@ -6397,14 +6400,19 @@ fn generate_run_seated_with_metrics(
     }
 }
 
-/// Expands the PPTX in-text markers: a soft line break becomes
-/// `#linebreak()`, and a kinsoku break marker (issue #438) becomes an
+/// Expands the in-text markers. A PPTX soft line break becomes
+/// `#linebreak()`, and a PPTX kinsoku break marker (issue #438) becomes an
 /// empty `#box[]`. An inline frame is a Contingent Break in UAX #14
 /// (U+FFFC), so the line may end between a Hangul syllable and its
 /// trailing punctuation — which LB13 otherwise forbids. LB13 still glues
 /// the mark to the frame, so the two move to the next line together, and
 /// the zero-size frame neither disturbs line metrics nor leaves a
 /// zero-width space in the PDF text layer.
+///
+/// A DOCX East Asian auto space becomes [`east_asian_auto_space`]. A DOCX
+/// page field marker, [`PAGE_NUMBER_FIELD_CHAR`] or
+/// [`TOTAL_PAGES_FIELD_CHAR`], becomes the page counter, set in the run's
+/// own text properties as a header paragraph's field is (issue #2338).
 fn write_run_with_break_markers(
     out: &mut String,
     run: &Run,
@@ -6415,12 +6423,17 @@ fn write_run_with_break_markers(
 
     for (offset, ch) in run.text.char_indices() {
         let auto_space: String;
+        let page_field: String;
         let replacement: &str = match ch {
             PPTX_SOFT_LINE_BREAK_CHAR => "#linebreak()",
             HANGUL_KINSOKU_BREAK_CHAR => "#box[]",
             EAST_ASIAN_AUTO_SPACE_CHAR => {
                 auto_space = east_asian_auto_space(run);
                 &auto_space
+            }
+            PAGE_NUMBER_FIELD_CHAR | TOTAL_PAGES_FIELD_CHAR => {
+                page_field = page_field_markup(run, ch);
+                &page_field
             }
             _ => continue,
         };
@@ -6448,6 +6461,29 @@ fn write_run_with_break_markers(
             seat_bottom_pt,
         );
     }
+}
+
+/// The page counter a page field marker in `run` stands for, in the numeral
+/// format of the section whose story is being written. The page's own restart
+/// wins over the counter, which the page background reads before the body
+/// restarts it (see [`PAGE_RESTART_LABEL`]).
+fn page_field_markup(run: &Run, marker: char) -> String {
+    let field: String = if marker == TOTAL_PAGES_FIELD_CHAR {
+        "#context counter(page).final().first()".to_string()
+    } else {
+        let pattern: &str = PAGE_NUMBER_FORMAT
+            .with(std::cell::Cell::get)
+            .typst_pattern();
+        format!(
+            "#context {{ let restarts = query(<{PAGE_RESTART_LABEL}>).filter(restart => \
+             restart.location().page() == here().page()); if restarts.len() == 0 \
+             {{ counter(page).display(\"{pattern}\") }} else \
+             {{ numbering(\"{pattern}\", restarts.last().value) }} }}"
+        )
+    };
+    let mut markup: String = String::new();
+    super::write_hf_field(&mut markup, &run.style, &field);
+    markup
 }
 
 fn write_run_segment(
@@ -7242,6 +7278,11 @@ thread_local! {
     /// Whether run emission is currently inside a fixed PowerPoint page and
     /// should use the 1/8pt nominal-advance grid (issue #661).
     static POWERPOINT_ADVANCE_GRID: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    /// The numeral format of the section whose header and footer stories run
+    /// emission is writing, for the page field markers in their tables. See
+    /// [`with_page_number_format`].
+    static PAGE_NUMBER_FORMAT: std::cell::Cell<PageNumberFormat> =
+        const { std::cell::Cell::new(PageNumberFormat::Decimal) };
     /// The printed-to-declared scale while run emission is inside a
     /// spreadsheet coordinate system. `None` off a sheet; `Some(1.0)` on an
     /// unscaled sheet or inside a drawing that is scaled as a whole.
@@ -7598,6 +7639,24 @@ pub(super) fn with_drawingml_highlight<T>(operation: impl FnOnce() -> T) -> T {
         let previous = active.replace(true);
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(operation));
         active.set(previous);
+        match result {
+            Ok(value) => value,
+            Err(panic) => std::panic::resume_unwind(panic),
+        }
+    })
+}
+
+/// Run `operation` with page field markers counting in `format`, restoring
+/// the enclosing format even when generation panics. The markers sit in runs,
+/// whose emission has no [`super::GenCtx`] to read the section's format from.
+pub(super) fn with_page_number_format<T>(
+    format: PageNumberFormat,
+    operation: impl FnOnce() -> T,
+) -> T {
+    PAGE_NUMBER_FORMAT.with(|current| {
+        let previous = current.replace(format);
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(operation));
+        current.set(previous);
         match result {
             Ok(value) => value,
             Err(panic) => std::panic::resume_unwind(panic),
