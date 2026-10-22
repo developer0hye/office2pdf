@@ -1975,8 +1975,11 @@ fn convert_paragraph_blocks(
     // Set by the run carrying a `SEQ` field, so the finished paragraph can be
     // wrapped as the caption a `TOC \a` list collects (issue #576).
     let mut caption_identifier: Option<String> = None;
-    // Word's horizontal lines, which docx-rs drops from the runs (issue #2251).
+    // Word's horizontal lines, which docx-rs drops from the runs (issue #2251),
+    // in the stretch of the paragraph since its last page or column break.
+    // That stretch's blocks start at `fragment_block_start`.
     let mut horizontal_rules: Vec<HorizontalRule> = Vec::new();
+    let mut fragment_block_start: usize = out.len();
 
     for child in flatten_tracked_changes(&para.children) {
         match child {
@@ -1986,7 +1989,22 @@ fn convert_paragraph_blocks(
                 // Taken once per docx-rs run, before the run is split, so a
                 // note reference still keeps the paragraph's runs in step.
                 let scanned: RunScan<'_> = run_scan.next_run(run);
-                horizontal_rules.extend_from_slice(scanned.horizontal_rules);
+                let layout_parts: Vec<RunLayoutPart> = split_run_at_layout_breaks(run);
+                // The scan does not place a rule among its own run's children,
+                // so a rule in the run of a page or column break could be on
+                // either side of it.
+                if layout_parts.iter().any(|part| {
+                    matches!(part, RunLayoutPart::PageBreak | RunLayoutPart::ColumnBreak)
+                }) {
+                    if !scanned.horizontal_rules.is_empty() {
+                        tracing::debug!(
+                            rules = scanned.horizontal_rules.len(),
+                            "horizontal rule shares its run with a layout break; drawing none"
+                        );
+                    }
+                } else {
+                    horizontal_rules.extend_from_slice(scanned.horizontal_rules);
+                }
                 // The run's line breaks in order; its split parts keep that
                 // order.
                 let mut line_break_clears = scanned.line_break_clears.iter().copied();
@@ -2005,7 +2023,7 @@ fn convert_paragraph_blocks(
                     continue;
                 }
 
-                for part in split_run_at_layout_breaks(run)
+                for part in layout_parts
                     .into_iter()
                     .flat_map(split_content_at_inline_pictures)
                 {
@@ -2025,8 +2043,7 @@ fn convert_paragraph_blocks(
                                     out,
                                     &empty_break_fragment_indices,
                                 );
-                                push_paragraph_from_runs(
-                                    out,
+                                let mut fragment: Block = build_paragraph_block(
                                     para,
                                     resolved_style,
                                     style_map,
@@ -2034,8 +2051,27 @@ fn convert_paragraph_blocks(
                                     &mut runs,
                                     caption_identifier.as_deref(),
                                 );
+                                attach_horizontal_rule(&mut fragment, &horizontal_rules);
+                                out.push(fragment);
                                 emitted_paragraph = true;
                                 emitted_content_paragraph = true;
+                            } else if is_rule_line(
+                                &horizontal_rules,
+                                &runs,
+                                out,
+                                fragment_block_start,
+                            ) {
+                                let mut fragment: Block = build_paragraph_block(
+                                    para,
+                                    resolved_style,
+                                    style_map,
+                                    flow,
+                                    &mut runs,
+                                    caption_identifier.as_deref(),
+                                );
+                                attach_horizontal_rule(&mut fragment, &horizontal_rules);
+                                out.push(fragment);
+                                emitted_paragraph = true;
                             } else if !emitted_content_paragraph
                                 && !emitted_media_blocks
                                 && paragraph_has_visible_background(para, resolved_style, flow)
@@ -2081,6 +2117,8 @@ fn convert_paragraph_blocks(
                             });
                             emitted_layout_break = true;
                             layout_fragment += 1;
+                            horizontal_rules.clear();
+                            fragment_block_start = out.len();
                         }
                         RunLayoutPart::Content(run_segment) => {
                             let media = extract_run_children_media(
@@ -2242,8 +2280,13 @@ fn convert_paragraph_blocks(
         flow.contextual_spacing,
     );
 
+    // The paragraph's last stretch holds only a rule, which is the line that
+    // stretch lays out: after a break it is no mere break carrier.
+    let ends_on_rule_line: bool = is_rule_line(&horizontal_rules, &runs, out, fragment_block_start);
+
     if emitted_layout_break
         && runs.is_empty()
+        && !ends_on_rule_line
         && !emitted_content_paragraph
         && !emitted_media_blocks
         && paragraph_has_visible_background(para, resolved_style, flow)
@@ -2274,11 +2317,13 @@ fn convert_paragraph_blocks(
     // page or column break is a break carrier: Word uses it only to force the
     // break, so it must not add a line box on the new page. An empty paragraph
     // with no break is a deliberate blank line and is still kept.
-    let is_layout_break_carrier: bool = emitted_layout_break && runs.is_empty();
+    let is_layout_break_carrier: bool =
+        emitted_layout_break && runs.is_empty() && !ends_on_rule_line;
 
     if !is_layout_break_carrier
         && (!runs.is_empty()
             || !emitted_media_blocks
+            || ends_on_rule_line
             || (emitted_floating_anchor && !emitted_paragraph))
     {
         if !runs.is_empty() {
@@ -2310,8 +2355,25 @@ fn convert_paragraph_blocks(
     normalize_split_paragraph_styles(out, paragraph_block_start);
 }
 
-/// Give a paragraph whose only content is a horizontal rule that rule, which
-/// is drawn on the paragraph's line (issue #2251).
+/// Whether a stretch of a paragraph between its page and column breaks holds
+/// nothing but one horizontal rule: no runs, and no block emitted since the
+/// stretch began at `fragment_block_start`. That rule is the stretch's line,
+/// laid out as a rule-only paragraph's (issue #2251).
+///
+/// TODO(Word export of a rule beside a break): no Word export of such a
+/// paragraph is available yet to confirm where Word draws its rule.
+fn is_rule_line(
+    horizontal_rules: &[HorizontalRule],
+    runs: &[Run],
+    out: &[Block],
+    fragment_block_start: usize,
+) -> bool {
+    horizontal_rules.len() == 1 && runs.is_empty() && out.len() == fragment_block_start
+}
+
+/// Give a paragraph, or the stretch of one between its page and column
+/// breaks, whose only content is a horizontal rule that rule, which is drawn
+/// on the paragraph's line (issue #2251).
 ///
 /// TODO(rule beside text): Word gives a rule a line of its own inside a
 /// paragraph that also holds text or another rule. That line is not laid out,
@@ -2361,8 +2423,9 @@ fn clear_paragraph_fragment_border(blocks: &mut [Block], fragment_index: usize) 
 }
 
 /// Keep paragraph-wide spacing and first-line indentation on the paragraph's
-/// first text fragment. A hard layout break does not begin a new paragraph,
-/// so its continuation must not repeat those edges or its first-line indent.
+/// first text fragment, or rule line. A hard layout break does not begin a new
+/// paragraph, so its continuation must not repeat those edges or its
+/// first-line indent.
 fn normalize_split_paragraph_styles(blocks: &mut [Block], start: usize) {
     let fragments: Vec<usize> = blocks[start..]
         .iter()
@@ -2375,8 +2438,8 @@ fn normalize_split_paragraph_styles(blocks: &mut [Block], start: usize) {
         .iter()
         .copied()
         .filter(|index| match &blocks[*index] {
-            Block::Paragraph(paragraph) => !paragraph.runs.is_empty(),
-            Block::Caption(caption) => !caption.paragraph.runs.is_empty(),
+            Block::Paragraph(paragraph) => has_line_content(paragraph),
+            Block::Caption(caption) => has_line_content(&caption.paragraph),
             _ => false,
         })
         .collect();
@@ -2394,12 +2457,10 @@ fn normalize_split_paragraph_styles(blocks: &mut [Block], start: usize) {
         });
 
     for index in fragments {
-        let (style, has_content): (&mut ParagraphStyle, bool) = match &mut blocks[index] {
-            Block::Paragraph(paragraph) => (&mut paragraph.style, !paragraph.runs.is_empty()),
-            Block::Caption(caption) => (
-                &mut caption.paragraph.style,
-                !caption.paragraph.runs.is_empty(),
-            ),
+        let has_content: bool = content_fragments.contains(&index);
+        let style: &mut ParagraphStyle = match &mut blocks[index] {
+            Block::Paragraph(paragraph) => &mut paragraph.style,
+            Block::Caption(caption) => &mut caption.paragraph.style,
             _ => unreachable!("fragment indices only include paragraphs and captions"),
         };
         if !has_content {
@@ -2418,6 +2479,12 @@ fn normalize_split_paragraph_styles(blocks: &mut [Block], start: usize) {
             style.space_after = None;
         }
     }
+}
+
+/// Whether a paragraph fragment lays out a line of its own: its text, or a
+/// horizontal rule standing alone in its stretch (issue #2251).
+fn has_line_content(paragraph: &Paragraph) -> bool {
+    !paragraph.runs.is_empty() || paragraph.style.horizontal_rule.is_some()
 }
 
 fn is_empty_paragraph_block(block: &Block) -> bool {
