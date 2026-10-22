@@ -1784,6 +1784,27 @@ fn write_list_paragraph_runs(
     )
 }
 
+/// Opens a scope justifying one list paragraph whose own alignment asks for
+/// it, as a body paragraph's does, and reports whether it did; the caller
+/// closes it with `]` after the paragraph. The scope keeps the setting off the
+/// item's nested list, whose paragraphs declare their own alignment (issue
+/// #2336).
+///
+/// The lines break where an unjustified item's do, first-fit at natural
+/// width. On docxide-pdf's scraped `k4_regulations_synthesis_document` that
+/// keeps Word's break on every numbered line, where Typst's optimized breaker
+/// rewrapped 25 of page 1's 48 lines away from Word's.
+/// TODO(#2063): body paragraphs keep the optimized breaker; settle one rule
+/// for both with a native probe.
+fn write_list_paragraph_justification_open(out: &mut String, para: &Paragraph) -> bool {
+    if para.style.alignment != Some(Alignment::Justify) {
+        return false;
+    }
+    out.push_str("#[\n");
+    write_justification_settings(out, &para.runs, true);
+    true
+}
+
 /// The Typst binding [`write_word_numbering_suffix_advance`] leaves holding
 /// where the first body line starts, measured from the margin.
 const WORD_BODY_ORIGIN: &str = "word_body_origin";
@@ -2039,6 +2060,7 @@ fn generate_list_items(
         }
         let mut paragraphs = item.content.iter();
         if let Some(paragraph) = paragraphs.next() {
+            let justified = write_list_paragraph_justification_open(out, paragraph);
             // Word counts a body tab's stops from the margin, as in any
             // paragraph, so the body's tabs measure from where its first line
             // starts. A slide list keeps its own tab handling.
@@ -2087,9 +2109,16 @@ fn generate_list_items(
                     body_origin_pt.map(|origin| format!("{}pt", format_f64(origin)));
                 write_list_paragraph_runs(out, paragraph, eojeol_wrap, tab_origin.as_deref(), ctx)?;
             }
+            if justified {
+                out.push(']');
+            }
         }
         for paragraph in paragraphs {
+            let justified = write_list_paragraph_justification_open(out, paragraph);
             write_list_paragraph_runs(out, paragraph, eojeol_wrap, None, ctx)?;
+            if justified {
+                out.push(']');
+            }
         }
         if eojeol_wrap.baseline_snap.is_some() {
             out.push(']');

@@ -3803,15 +3803,26 @@ pub(super) fn write_par_settings(
         }
     }
     if matches!(style.alignment, Some(Alignment::Justify)) {
-        out.push_str("  #set par(justify: true)\n");
-        if justified_lines_use_first_fit_breaker(is_word_table_cell, runs) {
-            out.push_str("  #set par(linebreaks: \"simple\")\n");
-        }
-        write_east_asian_justification_limits(out, runs);
+        write_justification_settings(
+            out,
+            runs,
+            justified_lines_use_first_fit_breaker(is_word_table_cell, runs),
+        );
     }
     if matches!(style.direction, Some(TextDirection::Rtl)) {
         out.push_str("  #set text(dir: rtl)\n");
     }
+}
+
+/// Justify every line of a paragraph but its last, with the East Asian gap
+/// ceiling Word uses for these runs. `first_fit` keeps Typst's first-fit line
+/// breaker, which `justify` would otherwise swap for its optimized one.
+pub(super) fn write_justification_settings(out: &mut String, runs: &[Run], first_fit: bool) {
+    out.push_str("  #set par(justify: true)\n");
+    if first_fit {
+        out.push_str("  #set par(linebreaks: \"simple\")\n");
+    }
+    write_east_asian_justification_limits(out, runs);
 }
 
 /// State the ceiling Word puts on every expandable gap of a justified line
