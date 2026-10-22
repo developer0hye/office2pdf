@@ -150,6 +150,9 @@ pub(super) fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> Para
         // `<w:p>` is sized from its mark, and only
         // `push_paragraph_from_runs` can see that (issue #1700).
         paragraph_mark_text_style: None,
+        // Resolved from the paragraph mark once the paragraph is known to be
+        // numbered (issue #2337).
+        numbering_label_style: None,
         // Worksheet-cell-only (issue #1631); Word paragraphs never carry one.
         sheet_number_format_reserved_glyphs: None,
         sheet_number_format_accounting_leading_reserved_glyphs: None,

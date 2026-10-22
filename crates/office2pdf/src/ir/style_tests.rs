@@ -241,6 +241,7 @@ fn paragraph_style_merge_from_all_none_source_preserves_target() {
         holds_anchored_drawing: false,
         paragraph_mark_font_family: None,
         paragraph_mark_text_style: None,
+        numbering_label_style: None,
         sheet_number_format_reserved_glyphs: None,
         sheet_number_format_accounting_leading_reserved_glyphs: None,
     };
@@ -301,6 +302,7 @@ fn paragraph_style_merge_from_all_some_source_overwrites_target() {
         holds_anchored_drawing: false,
         paragraph_mark_font_family: None,
         paragraph_mark_text_style: None,
+        numbering_label_style: None,
         sheet_number_format_reserved_glyphs: None,
         sheet_number_format_accounting_leading_reserved_glyphs: None,
         tab_stops: Some(vec![TabStop {

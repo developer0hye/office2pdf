@@ -67,9 +67,10 @@ fn write_list_open(
     out: &mut String,
     prefix: &str,
     style: &EffectiveListStyle<'_>,
-    fallback_marker_style: Option<&TextStyle>,
+    labels: &LevelLabelStyles,
     options: ListOpenOptions,
 ) {
+    let fallback_marker_style: Option<&TextStyle> = labels.common.as_ref();
     let ListOpenOptions {
         indent,
         spacing_pt,
@@ -93,7 +94,13 @@ fn write_list_open(
 
     if style.kind == ListKind::Ordered {
         let marker_style = merge_marker_style(fallback_marker_style, style.marker_style);
+        let numbered_marker_styles: Vec<(u32, Option<TextStyle>)> = labels
+            .by_number
+            .iter()
+            .map(|(number, label)| (*number, merge_marker_style(Some(label), style.marker_style)))
+            .collect();
         if marker_style.as_ref().is_some_and(has_text_properties)
+            || !numbered_marker_styles.is_empty()
             || indent.is_some()
             || baseline_snap.is_some()
         {
@@ -101,6 +108,7 @@ fn write_list_open(
                 out,
                 style,
                 marker_style.as_ref(),
+                &numbered_marker_styles,
                 indent,
                 baseline_snap,
             );
@@ -150,10 +158,14 @@ fn write_list_open(
     out.push('\n');
 }
 
+/// `numbered_marker_styles` gives single items their own label formatting by
+/// the number Typst passes the function, the only thing it learns about the
+/// item; every other label takes `marker_style`.
 fn write_ordered_list_numbering_function(
     out: &mut String,
     style: &EffectiveListStyle<'_>,
     marker_style: Option<&TextStyle>,
+    numbered_marker_styles: &[(u32, Option<TextStyle>)],
     indent: Option<ListIndentGeometry>,
     baseline_snap: Option<PowerPointBaselineSnap>,
 ) {
@@ -164,6 +176,34 @@ fn write_ordered_list_numbering_function(
     if let Some(indent) = indent {
         write_marker_box_open(out, indent.marker_width_pt);
     }
+    if numbered_marker_styles.is_empty() {
+        write_ordered_list_label(out, style, marker_style);
+    } else {
+        out.push_str("#{ let number = nums.pos().last(); ");
+        for (number, numbered_style) in numbered_marker_styles {
+            let _ = write!(out, "if number == {number} [");
+            write_ordered_list_label(out, style, numbered_style.as_ref());
+            out.push_str("] else ");
+        }
+        out.push('[');
+        write_ordered_list_label(out, style, marker_style);
+        out.push_str("] }");
+    }
+    if indent.is_some() {
+        out.push_str("])");
+    }
+    if baseline_snap.is_some() {
+        out.push(']');
+    }
+    out.push(']');
+}
+
+/// Markup for one label of a numbering function, which binds `nums`.
+fn write_ordered_list_label(
+    out: &mut String,
+    style: &EffectiveListStyle<'_>,
+    marker_style: Option<&TextStyle>,
+) {
     if let Some(marker_style) = marker_style.filter(|style| has_text_properties(style)) {
         out.push_str("#text(");
         // The marker's text is `#numbering`'s result, which the engine
@@ -177,13 +217,6 @@ fn write_ordered_list_numbering_function(
     if marker_style.is_some_and(has_text_properties) {
         out.push(']');
     }
-    if indent.is_some() {
-        out.push_str("])");
-    }
-    if baseline_snap.is_some() {
-        out.push(']');
-    }
-    out.push(']');
 }
 
 /// The numbers a label formats: a numbering function's `..nums`, or values
@@ -591,7 +624,7 @@ pub(super) fn generate_list_with_spacing_model(
                 }));
     let root_level: u32 = list_root_level(list);
     let style = list_style_for_level(list, root_level);
-    let fallback_marker_style = common_list_level_text_style(&list.items, root_level);
+    let labels = level_label_styles(&list.items, root_level, style.kind);
     let indent = common_list_level_indent(&list.items, root_level, eojeol_wrap.hangs_into_margin);
     // Typst applies one root `spacing:` after every complete root item. In a
     // PowerPoint outline that item can end in a nested child, whose own
@@ -674,7 +707,7 @@ pub(super) fn generate_list_with_spacing_model(
         out,
         "#",
         &style,
-        fallback_marker_style.as_ref(),
+        &labels,
         ListOpenOptions {
             indent,
             spacing_pt,
@@ -1331,24 +1364,128 @@ fn intersect_text_style(left: &TextStyle, right: &TextStyle) -> TextStyle {
     }
 }
 
-fn common_list_level_text_style(items: &[crate::ir::ListItem], level: u32) -> Option<TextStyle> {
-    let mut visible_styles = items
-        .iter()
-        .filter(|item| item.level == level)
-        .flat_map(|item| item.content.iter())
-        .flat_map(|paragraph| paragraph.runs.iter())
-        .filter(|run| {
-            run.footnote.is_none()
-                && !run.text.is_empty()
-                && run.text != PPTX_BLANK_LIST_ITEM_SENTINEL
+/// The formatting one list level's labels take before the level's own run
+/// properties.
+struct LevelLabelStyles {
+    /// What every label at the level shares.
+    common: Option<TextStyle>,
+    /// Each ordered item's own formatting by the number Typst gives it, when
+    /// the level's Word paragraph marks disagree (issue #2337); empty
+    /// otherwise.
+    by_number: Vec<(u32, TextStyle)>,
+}
+
+impl LevelLabelStyles {
+    /// The formatting the label numbered `number` takes.
+    fn for_number(&self, number: u32) -> Option<&TextStyle> {
+        self.by_number
+            .iter()
+            .find(|(label_number, _)| *label_number == number)
+            .map(|(_, style)| style)
+            .or(self.common.as_ref())
+    }
+}
+
+/// The label formatting of `items` at `level`.
+///
+/// Typst gives a list level one numbering function, which learns only each
+/// item's number, so an ordered level whose items' Word marks disagree keys
+/// each mark's formatting by that number.
+fn level_label_styles(
+    items: &[crate::ir::ListItem],
+    level: u32,
+    kind: ListKind,
+) -> LevelLabelStyles {
+    let level_items: Vec<&crate::ir::ListItem> =
+        items.iter().filter(|item| item.level == level).collect();
+    // TODO(native bullet probe): Word labels a bullet with its mark's face
+    // but not, on docxide-pdf's `alfies_arc_adult_safeguarding_policy` and
+    // `streamnet_steering_committee_meeting`, with the mark's bold. Until a
+    // probe settles which mark properties a bullet takes, bullets keep the
+    // formatting their runs share.
+    let marks: Option<Vec<&TextStyle>> = (kind == ListKind::Ordered)
+        .then(|| {
+            level_items
+                .iter()
+                .map(|item| {
+                    item.content
+                        .first()
+                        .and_then(|paragraph| paragraph.style.numbering_label_style.as_deref())
+                })
+                .collect::<Option<Vec<&TextStyle>>>()
         })
-        .map(|run| &run.style);
-    let first_style = visible_styles.next()?.clone();
-    let common_style = visible_styles.fold(first_style, |common, style| {
+        .flatten()
+        .filter(|marks| !marks.is_empty());
+    let Some(marks) = marks else {
+        return LevelLabelStyles {
+            common: common_list_level_text_style(level_items.iter().copied()),
+            by_number: Vec::new(),
+        };
+    };
+    let common: Option<TextStyle> = intersect_label_styles(marks.iter().copied());
+    // Compared as `intersect_text_style` keeps them: properties no label
+    // shares are not worth a branch per item.
+    let agree = marks.windows(2).all(|pair| {
+        intersect_text_style(pair[0], pair[0]) == intersect_text_style(pair[1], pair[1])
+    });
+    if agree {
+        return LevelLabelStyles {
+            common,
+            by_number: Vec::new(),
+        };
+    }
+    // Typst numbers the first item from the list's `start`, an item with its
+    // own start from that, and every other item one past the previous.
+    let mut by_number: Vec<(u32, TextStyle)> = Vec::new();
+    let mut number: u32 = level_items
+        .first()
+        .and_then(|item| item.start_at)
+        .unwrap_or(1);
+    for (item, mark) in level_items.iter().zip(marks) {
+        number = item.start_at.unwrap_or(number);
+        match by_number
+            .iter_mut()
+            .find(|(label_number, _)| *label_number == number)
+        {
+            // A restart onto a number already used: the function cannot tell
+            // the two labels apart, so they keep what they share.
+            Some((_, shared)) => {
+                tracing::debug!(number, level, "List label number repeats within one level");
+                *shared = intersect_text_style(shared, mark);
+            }
+            None => by_number.push((number, mark.clone())),
+        }
+        number = number.saturating_add(1);
+    }
+    LevelLabelStyles { common, by_number }
+}
+
+/// What `styles` share, or `None` when that is nothing a label can show.
+fn intersect_label_styles<'a>(
+    mut styles: impl Iterator<Item = &'a TextStyle>,
+) -> Option<TextStyle> {
+    let first_style = styles.next()?.clone();
+    let common_style = styles.fold(first_style, |common, style| {
         intersect_text_style(&common, style)
     });
-
     has_text_properties(&common_style).then_some(common_style)
+}
+
+/// The formatting the visible runs of a level's `items` agree on.
+fn common_list_level_text_style<'a>(
+    items: impl Iterator<Item = &'a crate::ir::ListItem>,
+) -> Option<TextStyle> {
+    intersect_label_styles(
+        items
+            .flat_map(|item| item.content.iter())
+            .flat_map(|paragraph| paragraph.runs.iter())
+            .filter(|run| {
+                run.footnote.is_none()
+                    && !run.text.is_empty()
+                    && run.text != PPTX_BLANK_LIST_ITEM_SENTINEL
+            })
+            .map(|run| &run.style),
+    )
 }
 
 fn merge_marker_style(
@@ -2012,7 +2149,7 @@ fn generate_list_items(
 ) -> Result<(), ConvertError> {
     let style = list_style_for_level(list, base_level);
     let (_, item_func) = list_funcs(style.kind);
-    let marker_fallback = common_list_level_text_style(items, base_level);
+    let labels = level_label_styles(items, base_level, style.kind);
     let uses_word_suffixes = eojeol_wrap.breaks_hangul_at_eojeol
         && common_list_level_indent(items, base_level, eojeol_wrap.hangs_into_margin).is_some()
         && items
@@ -2094,7 +2231,7 @@ fn generate_list_items(
                 write_word_numbering_suffix_advance(
                     out,
                     &style,
-                    marker_fallback.as_ref(),
+                    labels.for_number(number),
                     &paragraph.style,
                     &item_numbers,
                     ctx.default_tab_width_pt,
@@ -2166,8 +2303,11 @@ fn generate_list_items(
                         );
                     }
                     let nested_style = list_style_for_level(list, child_level);
-                    let fallback_marker_style =
-                        common_list_level_text_style(&items[child_start..child_end], child_level);
+                    let nested_labels = level_label_styles(
+                        &items[child_start..child_end],
+                        child_level,
+                        nested_style.kind,
+                    );
                     // Word indents are absolute from the margin, but a nested
                     // Typst list is laid out inside the parent item's body:
                     // subtract the parent's text origin so the child marker
@@ -2218,7 +2358,7 @@ fn generate_list_items(
                         out,
                         if nested_gap.is_some() { "#" } else { " #" },
                         &nested_style,
-                        fallback_marker_style.as_ref(),
+                        &nested_labels,
                         ListOpenOptions {
                             indent,
                             spacing_pt,

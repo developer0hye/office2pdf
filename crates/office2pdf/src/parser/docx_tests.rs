@@ -1570,6 +1570,8 @@ mod hidden_drawing_tests;
 mod horizontal_rule_tests;
 #[path = "docx_layout_rtl_tests.rs"]
 mod layout_rtl_tests;
+#[path = "docx_list_label_tests.rs"]
+mod list_label_tests;
 #[path = "docx_math_chart_metadata_tests.rs"]
 mod math_chart_metadata_tests;
 #[path = "docx_paragraph_cursor_tests.rs"]

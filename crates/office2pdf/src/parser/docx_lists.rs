@@ -803,10 +803,14 @@ pub(super) fn group_into_lists(
                         resolved_numbering.expect("ordered numbering must be resolved"),
                         series_counters,
                     );
+                    // The paragraph mark formats the number, not the first
+                    // run (issue #2337).
                     let mut prefix_style = paragraph
-                        .runs
-                        .first()
-                        .map(|run| run.style.clone())
+                        .style
+                        .numbering_label_style
+                        .as_deref()
+                        .or_else(|| paragraph.runs.first().map(|run| &run.style))
+                        .cloned()
                         .unwrap_or_default();
                     if let Some(marker_style) = &level.style.marker_style {
                         prefix_style.merge_from(marker_style);

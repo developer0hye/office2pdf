@@ -220,6 +220,18 @@ pub struct ParagraphStyle {
     /// `None` when visible runs size the paragraph or the format does not use
     /// its mark to size a blank line.
     pub paragraph_mark_text_style: Option<Box<TextStyle>>,
+    /// Formatting a numbered paragraph's list label takes before its level's
+    /// own run properties.
+    ///
+    /// Word formats the label with the paragraph mark's run properties,
+    /// resolved over the paragraph style and document defaults, whatever the
+    /// item's runs state (issue #2337). The renderer formats numbers with it;
+    /// bullets keep the formatting their runs share until a native probe
+    /// settles which mark properties Word gives them. Boxed as
+    /// `paragraph_mark_text_style` is. `None` for a paragraph without Word
+    /// numbering, and for a format whose labels take the item's run
+    /// formatting.
+    pub numbering_label_style: Option<Box<TextStyle>>,
     /// The glyphs a worksheet cell's selected number-format section reserves
     /// space for without painting them — e.g. the `)` a `_)`-padded positive
     /// section holds room for beside a parenthesised negative section.
