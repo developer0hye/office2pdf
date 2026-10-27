@@ -6491,7 +6491,8 @@ fn a_taller_first_page_header_also_grows_the_margin() {
 /// 0.65em default on top of Typst's cap-height edge — 10.9305pt for 8pt Arial
 /// against Word's 9.1992pt. The leading is stated once for the story; a story
 /// of several paragraphs also states it as `par(spacing:)`, so a paragraph
-/// break advances by the same pitch (issue #2222).
+/// break between lines of one face and size advances by the same pitch (issue
+/// #2222). A paragraph of another face or size states its own (issue #2328).
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn a_header_line_advances_by_words_pitch() {
@@ -6864,6 +6865,215 @@ fn a_pinned_footer_line_advances_by_words_pitch() {
                  Word's {word_pitch}pt ({wrapped:?})"
             );
         }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// The runs a one-run story paragraph of `text` in `style` is measured by.
+fn story_runs(text: &str, style: &TextStyle) -> Vec<Run> {
+    vec![Run {
+        text: text.to_string(),
+        style: style.clone(),
+        href: None,
+        footnote: None,
+        inline_box: None,
+    }]
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// A header line advances from the paragraph above it by that paragraph's
+/// Word descent plus its own Word ascent, whatever their faces and sizes.
+///
+/// Word stacks the paragraphs' own line boxes. The story stated one leading,
+/// its first paragraph's, as the gap after every paragraph, so a line set
+/// larger than the first advanced by the first line's leading plus its own
+/// cap height, and sat high (issue #2328). One story steps down and back up
+/// and the other up and back down, so a gap carried over from either
+/// neighbour would show. The first baseline stays where a story of that line
+/// alone seats it, and a wrapped later paragraph advances by its own line, not
+/// by the first one's.
+#[test]
+fn header_paragraphs_of_different_sizes_advance_by_their_own_line_boxes() {
+    let texts: [&str; 3] = ["First", "Second", "Third"];
+    let stories: [(&str, [TextStyle; 3]); 2] = [
+        ("Arial 16/11/16", [arial(16.0), arial(11.0), arial(16.0)]),
+        (
+            "Times 12 / Arial 20 / Times 9",
+            [times(12.0), arial(20.0), times(9.0)],
+        ),
+    ];
+    'stories: for (label, styles) in stories {
+        let mut line_boxes: Vec<(f64, f64)> = Vec::new();
+        for (text, style) in texts.iter().zip(&styles) {
+            let Some(line_box) =
+                crate::render::typst_gen::text::word_header_line_box_pt(&story_runs(text, style))
+            else {
+                continue 'stories; // a face is unavailable on this runner
+            };
+            line_boxes.push(line_box);
+        }
+        let paragraphs: Vec<crate::ir::HeaderFooterParagraph> = texts
+            .iter()
+            .zip(&styles)
+            .map(|(text, style)| header_text_paragraph(text, style.clone()))
+            .collect();
+        // A 108pt band holds every story here, so no growth or cap is involved.
+        let doc = doc_with_header(Some(36.0), 144.0, paragraphs.clone());
+        let baselines: Vec<f64> = texts
+            .iter()
+            .map(|text| baselines_of(&doc, text)[0])
+            .collect();
+        for index in 1..texts.len() {
+            let pitch: f64 = baselines[index] - baselines[index - 1];
+            let word_pitch: f64 = line_boxes[index - 1].1 + line_boxes[index].0;
+            assert!(
+                (pitch - word_pitch).abs() < 0.01,
+                "{label}: header line {index} advances {pitch}pt, not Word's \
+                 {word_pitch}pt ({baselines:?})"
+            );
+        }
+        let alone: f64 = baselines_of(
+            &doc_with_header(Some(36.0), 144.0, vec![paragraphs[0].clone()]),
+            "First",
+        )[0];
+        assert!(
+            (baselines[0] - alone).abs() < 0.01,
+            "{label}: the first header line moved from {alone}pt to {}pt",
+            baselines[0]
+        );
+    }
+
+    let wrapped_style: TextStyle = arial(16.0);
+    let Some(word_pitch) = crate::render::typst_gen::text::word_line_advance_pt(&story_runs(
+        "Wrapped",
+        &wrapped_style,
+    )) else {
+        return; // the face is unavailable on this runner
+    };
+    let doc = doc_with_header(
+        Some(36.0),
+        144.0,
+        vec![
+            header_text_paragraph("Upper", arial(11.0)),
+            header_text_paragraph(&"Wrapped ".repeat(40), wrapped_style),
+        ],
+    );
+    let wrapped: Vec<f64> = baselines_of(&doc, "Wrapped");
+    assert!(
+        wrapped.len() >= 2,
+        "the long header paragraph must wrap, got {wrapped:?}"
+    );
+    for pair in wrapped.windows(2) {
+        let pitch: f64 = pair[1] - pair[0];
+        assert!(
+            (pitch - word_pitch).abs() < 0.01,
+            "a wrapped 16pt header line under an 11pt one advances {pitch}pt, \
+             not Word's {word_pitch}pt ({wrapped:?})"
+        );
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// A pinned footer line advances from the paragraph above it by that
+/// paragraph's Word descent plus its own Word ascent, whatever their sizes.
+///
+/// The band's bottom edge is the last line's descent share, which Typst
+/// resolves at each line's own size, so the gap above a line of another size
+/// has to leave room for the edge at the size above it (issues #2326, #2328).
+/// The band anchors the last line, so it stays where a story of that line
+/// alone puts it.
+#[test]
+fn pinned_footer_paragraphs_of_different_sizes_advance_by_their_own_line_boxes() {
+    let paragraph = |text: &str, style: &TextStyle| {
+        footer_paragraph(
+            ParagraphStyle::default(),
+            vec![crate::ir::HFInline::Run(story_runs(text, style).remove(0))],
+        )
+    };
+    let stories: [(&str, TextStyle, TextStyle); 3] = [
+        ("Arial 16 over Arial 11", arial(16.0), arial(11.0)),
+        ("Arial 11 over Arial 16", arial(11.0), arial(16.0)),
+        ("Arial 11 over Times 16", arial(11.0), times(16.0)),
+    ];
+    for (label, upper, lower) in stories {
+        let line_box = |text: &str, style: &TextStyle| {
+            crate::render::typst_gen::text::word_header_line_box_pt(&story_runs(text, style))
+        };
+        let (Some((_, upper_descent)), Some((lower_ascent, _))) =
+            (line_box("Upper", &upper), line_box("Lower", &lower))
+        else {
+            continue; // a face is unavailable on this runner
+        };
+        let word_pitch: f64 = upper_descent + lower_ascent;
+        let pitch: f64 = footer_pitch(paragraph("Upper", &upper), paragraph("Lower", &lower));
+        assert!(
+            (pitch - word_pitch).abs() < 0.01,
+            "{label}: the pinned footer lines advance {pitch}pt, not Word's \
+             {word_pitch}pt"
+        );
+        let in_story: f64 = baselines_of(
+            &doc_with_footer(vec![paragraph("Upper", &upper), paragraph("Lower", &lower)]),
+            "Lower",
+        )[0];
+        let alone: f64 =
+            baselines_of(&doc_with_footer(vec![paragraph("Lower", &lower)]), "Lower")[0];
+        assert!(
+            (in_story - alone).abs() < 0.01,
+            "{label}: the last footer line moved from {alone}pt to {in_story}pt"
+        );
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// A footer under a negative `w:bottom` still advances each line by Word's
+/// line boxes, downward from the one above it.
+///
+/// Such a margin leaves the footer a region of negative height, which a
+/// paragraph overflows. A block per paragraph stating its gap does not fit
+/// one, and Typst laid each line out a region apart, every line above the
+/// last: the eight one-face footer lines of a LibreOffice negative-margin
+/// fixture came out 37.27pt apart, upward (issue #2328).
+#[test]
+fn a_footer_in_a_region_of_negative_height_advances_downward_by_words_line_boxes() {
+    let texts: [&str; 3] = ["First", "Second", "Third"];
+    let styles: [TextStyle; 3] = [arial(11.0), arial(16.0), arial(11.0)];
+    let mut line_boxes: Vec<(f64, f64)> = Vec::new();
+    for (text, style) in texts.iter().zip(&styles) {
+        let Some(line_box) =
+            crate::render::typst_gen::text::word_header_line_box_pt(&story_runs(text, style))
+        else {
+            return; // the face is unavailable on this runner
+        };
+        line_boxes.push(line_box);
+    }
+    let mut doc = doc_with_footer(
+        texts
+            .iter()
+            .zip(&styles)
+            .map(|(text, style)| {
+                footer_paragraph(
+                    ParagraphStyle::default(),
+                    vec![crate::ir::HFInline::Run(story_runs(text, style).remove(0))],
+                )
+            })
+            .collect(),
+    );
+    let Some(Page::Flow(page)) = doc.pages.first_mut() else {
+        panic!("the fixture is a flow page");
+    };
+    page.margins.bottom = -62.35;
+    let baselines: Vec<f64> = texts
+        .iter()
+        .map(|text| baselines_of(&doc, text)[0])
+        .collect();
+    for index in 1..texts.len() {
+        let pitch: f64 = baselines[index] - baselines[index - 1];
+        let word_pitch: f64 = line_boxes[index - 1].1 + line_boxes[index].0;
+        assert!(
+            (pitch - word_pitch).abs() < 0.01,
+            "footer line {index} advances {pitch}pt, not Word's {word_pitch}pt \
+             ({baselines:?})"
+        );
     }
 }
 
