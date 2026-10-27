@@ -27,5 +27,5 @@ rayon = "1"
 tiny_http = { version = "0.12", optional = true }
 
 [dev-dependencies]
-docx-rs = { package = "office2pdf-docx-rs", version = "0.1.0" }
+docx-rs = { package = "office2pdf-docx-rs", version = "0.2.0" }
 lopdf = "0.45"

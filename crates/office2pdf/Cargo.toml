@@ -39,7 +39,7 @@ comemo = "0.5"
 ttf-parser = "0.25"
 # Published forks carrying reader fixes upstream has not released; a
 # [patch.crates-io] entry would not reach crates.io users (RELEASING.md).
-docx-rs = { package = "office2pdf-docx-rs", version = "0.1.0" }
+docx-rs = { package = "office2pdf-docx-rs", version = "0.2.0" }
 serde = "1"
 serde_json = "1"
 zip = { version = "9.0.5", default-features = false, features = ["deflate"] }
@@ -50,7 +50,7 @@ html5ever = "0.39"
 markup5ever_rcdom = "0.39"
 # MHTML requires MIME header unfolding, transfer decoding and charset handling.
 mailparse = "0.18"
-umya-spreadsheet = { package = "office2pdf-umya-spreadsheet", version = "0.1.0" }
+umya-spreadsheet = { package = "office2pdf-umya-spreadsheet", version = "0.2.0" }
 unicode-normalization = "0.1"
 image = "0.25"
 # Access partial frames when damaged DOCX pictures cannot be fully decoded.
