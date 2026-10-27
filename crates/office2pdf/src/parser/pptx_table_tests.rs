@@ -806,6 +806,71 @@ fn a_cell_run_declaring_its_own_east_asian_typeface_overrides_the_list_style_fac
     );
 }
 
+/// A cell paragraph's own `<a:pPr>/<a:defRPr>` outranks its list style for
+/// every run that leaves the property out, exactly as in a text box (issue
+/// #2157). Native PowerPoint draws such a cell run at the paragraph's 12pt
+/// and in its Arial although the cell's list style says 24pt Times New Roman
+/// (`scripts/probes/issue-2157-table-cell-paragraph-default.json`).
+#[test]
+fn a_cell_paragraph_default_outranks_the_list_style_for_runs_that_omit_it() {
+    let cell = concat!(
+        r#"<a:tc><a:txBody><a:bodyPr/>"#,
+        r#"<a:lstStyle><a:lvl1pPr><a:defRPr sz="2400">"#,
+        r#"<a:solidFill><a:srgbClr val="000000"/></a:solidFill>"#,
+        r#"<a:latin typeface="Times New Roman"/>"#,
+        r#"</a:defRPr></a:lvl1pPr></a:lstStyle>"#,
+        r#"<a:p><a:pPr algn="l"><a:defRPr sz="1200" b="1">"#,
+        r#"<a:solidFill><a:srgbClr val="C00000"/></a:solidFill>"#,
+        r#"<a:latin typeface="Arial"/></a:defRPr></a:pPr>"#,
+        r#"<a:r><a:rPr lang="en-US"/><a:t>Inherits </a:t></a:r>"#,
+        r#"<a:r><a:rPr lang="en-US" sz="1600"><a:latin typeface="Verdana"/></a:rPr>"#,
+        r#"<a:t>overrides</a:t></a:r></a:p>"#,
+        r#"</a:txBody><a:tcPr/></a:tc>"#,
+    );
+    let para = only_cell_paragraph(cell);
+
+    let inherits = &para.runs[0].style;
+    assert_eq!(inherits.font_size, Some(12.0));
+    assert_eq!(inherits.bold, Some(true));
+    assert_eq!(inherits.color, Some(Color::new(0xC0, 0x00, 0x00)));
+    assert_eq!(inherits.font_family.as_deref(), Some("Arial"));
+
+    let overrides = &para.runs[1].style;
+    assert_eq!(overrides.font_size, Some(16.0));
+    assert_eq!(overrides.bold, Some(true));
+    assert_eq!(overrides.font_family.as_deref(), Some("Verdana"));
+}
+
+/// Triangulation for the rule above with the self-closing form, and a sibling
+/// paragraph with no `<a:defRPr>` of its own keeps the list style's size.
+#[test]
+fn a_cell_paragraph_default_stays_inside_its_own_paragraph() {
+    let cell = concat!(
+        r#"<a:tc><a:txBody><a:bodyPr/>"#,
+        r#"<a:lstStyle><a:lvl1pPr><a:defRPr sz="2400"/></a:lvl1pPr></a:lstStyle>"#,
+        r#"<a:p><a:pPr><a:defRPr sz="900"/></a:pPr>"#,
+        r#"<a:r><a:rPr lang="en-US"/><a:t>Small</a:t></a:r></a:p>"#,
+        r#"<a:p><a:r><a:rPr lang="en-US"/><a:t>List style</a:t></a:r></a:p>"#,
+        r#"</a:txBody><a:tcPr/></a:tc>"#,
+    );
+    let rows_xml = format!(r#"<a:tr h="370840">{cell}</a:tr>"#);
+    let table_frame =
+        make_table_graphic_frame(914400, 914400, 1828800, 370840, &[1828800], &rows_xml);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[make_slide_xml(&[table_frame])]);
+    let (doc, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let table = table_element(&first_fixed_page(&doc).elements[0]);
+
+    let sizes: Vec<Option<f64>> = table.rows[0].cells[0]
+        .content
+        .iter()
+        .map(|block| match block {
+            Block::Paragraph(para) => para.runs[0].style.font_size,
+            other => panic!("Expected a paragraph in the cell, got {other:?}"),
+        })
+        .collect();
+    assert_eq!(sizes, vec![Some(9.0), Some(24.0)]);
+}
+
 /// A cell run that declares no typeface at all still inherits the list
 /// style's face — the override is keyed on the run's own declaration, not on
 /// entering `<a:rPr>` (issue #1838).

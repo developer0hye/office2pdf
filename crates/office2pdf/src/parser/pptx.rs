@@ -136,8 +136,11 @@ enum SolidFillCtx {
     RunFill,
     /// Paragraph end-run color (inside `<a:endParaRPr>`).
     EndParaFill,
+    /// Paragraph default run color (inside `<a:pPr>/<a:defRPr>`).
+    ParagraphDefaultFill,
     RunHighlight,
     EndParaHighlight,
+    ParagraphDefaultHighlight,
     /// Bullet marker color (inside `<a:buClr>`).
     BulletFill,
     /// Picture border color (inside `<p:pic>/<p:spPr>/<a:ln>`).

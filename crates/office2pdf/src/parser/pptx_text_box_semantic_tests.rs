@@ -801,6 +801,123 @@ fn test_text_box_lst_style_default_run_props_are_applied_to_runs() {
     assert_eq!(run.style.color, Some(Color::new(0x03, 0x25, 0x43)));
 }
 
+/// Parse one text box whose list style sets 18pt and return its paragraphs.
+fn paragraphs_under_an_18pt_list_style(paragraphs_xml: &str) -> Vec<Paragraph> {
+    let body = format!(
+        r#"<a:lstStyle><a:lvl1pPr><a:defRPr sz="1800"/></a:lvl1pPr></a:lstStyle>{paragraphs_xml}"#
+    );
+    let shape = make_multi_para_text_box(0, 0, 4_000_000, 2_000_000, &body);
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[make_slide_xml(&[shape])]);
+    let (doc, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    text_box_blocks(&first_fixed_page(&doc).elements[0])
+        .iter()
+        .map(|block| match block {
+            Block::Paragraph(paragraph) => paragraph.clone(),
+            other => panic!("Expected Paragraph block, got {other:?}"),
+        })
+        .collect()
+}
+
+/// A paragraph's own `<a:pPr>/<a:defRPr>` is the default every run of that
+/// paragraph starts from, ahead of the list style (issue #2157).
+///
+/// Native PowerPoint exports of the issue's deck draw each `sz`-less run at the
+/// paragraph's `sz="2400"`, at 18pt once the `<a:defRPr>` is deleted and at
+/// 12pt once it says `sz="1200"`
+/// (`scripts/probes/issue-2157-paragraph-default-run-props.json`).
+#[test]
+fn test_text_box_paragraph_default_run_props_size_reaches_runs_without_size() {
+    let paragraphs = paragraphs_under_an_18pt_list_style(concat!(
+        r#"<a:p><a:pPr><a:defRPr sz="2400"/></a:pPr>"#,
+        r#"<a:r><a:rPr dirty="0"/><a:t>Inherits </a:t></a:r>"#,
+        r#"<a:r><a:rPr sz="1400"/><a:t>own size</a:t></a:r></a:p>"#,
+        r#"<a:p><a:pPr algn="ctr"><a:defRPr sz="3000"></a:defRPr></a:pPr>"#,
+        r#"<a:r><a:t>Start form</a:t></a:r></a:p>"#,
+        r#"<a:p><a:r><a:t>List style</a:t></a:r></a:p>"#,
+    ));
+
+    let sizes: Vec<(&str, Option<f64>)> = paragraphs
+        .iter()
+        .flat_map(|paragraph| &paragraph.runs)
+        .map(|run| (run.text.as_str(), run.style.font_size))
+        .collect();
+    assert_eq!(
+        sizes,
+        vec![
+            ("Inherits ", Some(24.0)),
+            ("own size", Some(14.0)),
+            ("Start form", Some(30.0)),
+            ("List style", Some(18.0)),
+        ],
+        "a run without sz takes its own paragraph's default, a run's sz still wins, \
+         and the default stays inside its paragraph"
+    );
+}
+
+/// The paragraph default carries every run property, not just the size: the
+/// same native probe paints the runs bold, red and in Arial when the
+/// `<a:defRPr>` adds `b="1"`, a `<a:solidFill>` or an `<a:latin>`.
+#[test]
+fn test_text_box_paragraph_default_run_props_carry_weight_fill_and_face() {
+    let paragraphs = paragraphs_under_an_18pt_list_style(concat!(
+        r#"<a:p><a:pPr><a:defRPr sz="2000" b="1">"#,
+        r#"<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>"#,
+        r#"<a:latin typeface="Arial"/></a:defRPr></a:pPr>"#,
+        r#"<a:r><a:rPr lang="fr-FR"/><a:t>Inherits</a:t></a:r>"#,
+        r#"<a:r><a:rPr b="0"><a:solidFill><a:srgbClr val="0000FF"/></a:solidFill>"#,
+        r#"<a:latin typeface="Georgia"/></a:rPr><a:t>Overrides</a:t></a:r></a:p>"#,
+    ));
+
+    let runs = &paragraphs[0].runs;
+    assert_eq!(runs[0].text, "Inherits");
+    assert_eq!(runs[0].style.font_size, Some(20.0));
+    assert_eq!(runs[0].style.bold, Some(true));
+    assert_eq!(runs[0].style.color, Some(Color::new(0xFF, 0x00, 0x00)));
+    assert_eq!(runs[0].style.font_family.as_deref(), Some("Arial"));
+
+    assert_eq!(runs[1].text, "Overrides");
+    assert_eq!(runs[1].style.font_size, Some(20.0));
+    assert_eq!(runs[1].style.bold, Some(false));
+    assert_eq!(runs[1].style.color, Some(Color::new(0x00, 0x00, 0xFF)));
+    assert_eq!(runs[1].style.font_family.as_deref(), Some("Georgia"));
+}
+
+/// A blank paragraph's mark starts from the paragraph default too: raising
+/// one emptied paragraph's `<a:defRPr sz>` from 24 to 48pt pushes every later
+/// native baseline down 29.04pt, one 1.2 x 24pt line plus dither.
+#[test]
+fn test_text_box_blank_paragraph_mark_takes_the_paragraph_default_size() {
+    let paragraphs = paragraphs_under_an_18pt_list_style(concat!(
+        r#"<a:p><a:r><a:t>Caption</a:t></a:r></a:p>"#,
+        r#"<a:p><a:pPr><a:defRPr sz="4800"/></a:pPr><a:endParaRPr dirty="0"/></a:p>"#,
+        r#"<a:p><a:pPr><a:defRPr sz="4800"/></a:pPr><a:endParaRPr sz="1000"/></a:p>"#,
+        // No `<a:endParaRPr>`: the mark still has the paragraph default's size,
+        // which is what a percentage paragraph gap resolves against.
+        r#"<a:p><a:pPr><a:spcBef><a:spcPct val="100000"/></a:spcBef>"#,
+        r#"<a:defRPr sz="4800"/></a:pPr></a:p>"#,
+        r#"<a:p><a:r><a:t>Row</a:t></a:r></a:p>"#,
+    ));
+
+    let mark_size = |paragraph: &Paragraph| {
+        paragraph
+            .style
+            .paragraph_mark_text_style
+            .as_deref()
+            .and_then(|style| style.font_size)
+    };
+    assert_eq!(mark_size(&paragraphs[1]), Some(48.0));
+    assert_eq!(
+        mark_size(&paragraphs[2]),
+        Some(10.0),
+        "the mark's own sz still outranks the paragraph default"
+    );
+    let space_before: f64 = paragraphs[3].style.space_before.expect("spcBef resolves");
+    assert!(
+        (space_before - 1.2 * 48.0).abs() < 1e-9,
+        "a 100% gap is one 1.2em line of the 48pt mark, got {space_before}"
+    );
+}
+
 #[test]
 fn test_text_box_font_ref_default_color_is_not_overridden_by_run_line_fill() {
     let slide_shape = concat!(

@@ -1,0 +1,53 @@
+{
+  "name": "issue-2157-paragraph-default-run-props",
+  "base": "../../tests/fixtures/pptx/issue_2157_paragraph_default_size.pptx",
+  "part": "ppt/slides/slide11.xml",
+  "factor": "the paragraph's own <a:pPr>/<a:defRPr>, read by runs whose <a:rPr> omits the property",
+  "page": 1,
+  "variants": [
+    {
+      "value": "no-defrpr",
+      "find": "<a:defRPr sz=\"2400\"/>",
+      "replace": "",
+      "count": 6
+    },
+    {
+      "value": "size-1200",
+      "find": "<a:defRPr sz=\"2400\"/>",
+      "replace": "<a:defRPr sz=\"1200\"/>",
+      "count": 6
+    },
+    {
+      "value": "bold",
+      "find": "<a:defRPr sz=\"2400\"/>",
+      "replace": "<a:defRPr sz=\"2400\" b=\"1\"/>",
+      "count": 6
+    },
+    {
+      "value": "fill-red",
+      "find": "<a:defRPr sz=\"2400\"/>",
+      "replace": "<a:defRPr sz=\"2400\"><a:solidFill><a:srgbClr val=\"FF0000\"/></a:solidFill></a:defRPr>",
+      "count": 6
+    },
+    {
+      "value": "latin-arial",
+      "find": "<a:defRPr sz=\"2400\"/>",
+      "replace": "<a:defRPr sz=\"2400\"><a:latin typeface=\"Arial\"/></a:defRPr>",
+      "count": 6
+    },
+    {
+      "value": "blank-p2",
+      "find": "(<a:defRPr sz=\"2400\"/></a:pPr>)<a:r><a:rPr dirty=\"0\"/><a:t>Ligne 2 : .*?(<a:endParaRPr dirty=\"0\"/>)",
+      "replace": "\\1\\2",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "blank-p2-4800",
+      "find": "<a:defRPr sz=\"2400\"/></a:pPr><a:r><a:rPr dirty=\"0\"/><a:t>Ligne 2 : .*?(<a:endParaRPr dirty=\"0\"/>)",
+      "replace": "<a:defRPr sz=\"4800\"/></a:pPr>\\1",
+      "regex": true,
+      "count": 1
+    }
+  ]
+}

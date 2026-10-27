@@ -84,8 +84,9 @@ pub(super) struct PptxRunPropertyTypefaces {
 }
 
 impl PptxRunPropertyTypefaces {
-    /// Call when an `<a:rPr>` or `<a:endParaRPr>` element opens, so the next
-    /// declaration in each slot is recognised as that element's own.
+    /// Call when an `<a:rPr>`, `<a:endParaRPr>` or paragraph `<a:pPr>/<a:defRPr>`
+    /// element opens, so the next declaration in each slot is recognised as
+    /// that element's own.
     pub(super) fn enter_run_properties(&mut self) {
         self.latin_applied = false;
         self.east_asian_applied = false;
