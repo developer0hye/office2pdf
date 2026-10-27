@@ -16,12 +16,4 @@ ignore = [
   { id = "RUSTSEC-2026-0187", reason = "lopdf 0.38 is a dev-dependency (tests parse repository fixtures only); fixed in lopdf >=0.42" },
   { id = "RUSTSEC-2026-0194", reason = "quick-xml 0.38 comes only via typst's citationberg 0.7 (bundled CSL styles, not user documents); needs a typst/citationberg release on quick-xml >=0.41" },
   { id = "RUSTSEC-2026-0195", reason = "quick-xml 0.38 comes only via typst's citationberg 0.7 (bundled CSL styles, not user documents); needs a typst/citationberg release on quick-xml >=0.41" },
-  # Published 2026-10-09/10; failing on main from 2026-10-16 (#2179). All three affect
-  # only extraction to disk (ZipArchive::extract / ZipStreamReader::extract). No crate
-  # in the graph calls either: office2pdf and ooxml-package (zip 0.6), the docx-rs
-  # fork (zip 8) and the umya-spreadsheet fork (zip 2) read entries in memory.
-  # Remove once every path locks zip >=9.
-  { id = "RUSTSEC-2026-0367", reason = "zip SUID/SGID bits kept by extract(); no crate in the graph extracts archives to disk; fixed in zip >=9" },
-  { id = "RUSTSEC-2026-0368", reason = "zip extract() writes symlinks outside the destination; no crate in the graph extracts archives to disk; fixed in zip >=9" },
-  { id = "RUSTSEC-2026-0369", reason = "zip extract() applies permissions through symlinks; no crate in the graph extracts archives to disk; fixed in zip >=9" },
 ]

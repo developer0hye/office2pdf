@@ -188,9 +188,6 @@ name = "arbitrary"
 version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3d036a3c4ab069c7b410a2ce876bd74808d2d0888a82667669f8e783a898bf1"
-dependencies = [
- "derive_arbitrary",
-]
 
 [[package]]
 name = "arg_enum_proc_macro"
@@ -926,17 +923,6 @@ name = "deranged"
 version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7cd812cc2bc1d69d4764bd80df88b4317eaef9e773c75226407d9bc0876b211c"
-
-[[package]]
-name = "derive_arbitrary"
-version = "1.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e567bd82dcff979e4b03460c307b3cdc9e96fde3d73bed1496d2bc75d9dd62a"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.118",
-]
 
 [[package]]
 name = "digest"
@@ -2510,7 +2496,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-test",
  "web-time",
- "zip 9.0.5",
+ "zip",
 ]
 
 [[package]]
@@ -2528,9 +2514,9 @@ dependencies = [
 
 [[package]]
 name = "office2pdf-docx-rs"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e150763928e42b066e9c510eff540f51688f7f28ac476adc818063cf718f8d85"
+checksum = "67aed8f6a216ab3ce5ebf8eb94997dbdb26f63f288fb773b30873362eb3edea5"
 dependencies = [
  "base64",
  "crc32fast",
@@ -2540,14 +2526,14 @@ dependencies = [
  "serde_json",
  "smallvec",
  "thiserror 2.0.18",
- "zip 8.6.0",
+ "zip",
 ]
 
 [[package]]
 name = "office2pdf-umya-spreadsheet"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0017a17477eb5cf3095fd4dd7a2b26068788be4956a96cdd7fb22db34196a8d6"
+checksum = "86a43845ff7fcc646f7b69d1d252203c9eb7403201854661856275f78c990c65"
 dependencies = [
  "aes 0.8.4",
  "ahash",
@@ -2569,7 +2555,7 @@ dependencies = [
  "sha2 0.10.9",
  "thin-vec",
  "thousands",
- "zip 2.4.2",
+ "zip",
 ]
 
 [[package]]
@@ -2597,7 +2583,7 @@ dependencies = [
  "quick-xml 0.41.0",
  "thiserror 2.0.18",
  "tracing",
- "zip 9.0.5",
+ "zip",
 ]
 
 [[package]]
@@ -2948,7 +2934,7 @@ dependencies = [
  "quick-xml 0.41.0",
  "thiserror 2.0.18",
  "tracing",
- "zip 9.0.5",
+ "zip",
 ]
 
 [[package]]
@@ -5369,37 +5355,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.5",
-]
-
-[[package]]
-name = "zip"
-version = "2.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fabe6324e908f85a1c52063ce7aa26b68dcb7eb6dbc83a2d148403c9bc3eba50"
-dependencies = [
- "arbitrary",
- "crc32fast",
- "crossbeam-utils",
- "displaydoc",
- "flate2",
- "indexmap",
- "memchr",
- "thiserror 2.0.18",
- "zopfli",
-]
-
-[[package]]
-name = "zip"
-version = "8.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b"
-dependencies = [
- "crc32fast",
- "flate2",
- "indexmap",
- "memchr",
- "typed-path",
- "zopfli",
 ]
 
 [[package]]
