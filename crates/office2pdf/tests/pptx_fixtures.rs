@@ -1849,3 +1849,55 @@ fn structure_table_cell_run_keeps_the_typeface_it_declares() {
          style's"
     );
 }
+
+// ---------------------------------------------------------------------------
+// issue_2157_paragraph_default_size.pptx — the issue's one-slide deck. Shape 3
+// holds six paragraphs that each declare `<a:pPr><a:defRPr sz="2400"/>` while
+// none of their runs states a size; the deck's `p:defaultTextStyle` says 18pt
+// (issue #2157). The native PowerPoint export draws those runs at 24pt, and
+// `scripts/probes/issue-2157-paragraph-default-run-props.json` varies the
+// `<a:defRPr>` one factor at a time against it.
+// ---------------------------------------------------------------------------
+
+/// Every `sz`-less run of shape 3 reaches the compiled Typst at its
+/// paragraph's 24pt default, not the deck's 18pt, and the 22pt heading keeps
+/// its own size.
+#[test]
+fn issue_2157_paragraph_default_size_reaches_the_compiled_runs() {
+    let data = load_fixture("issue_2157_paragraph_default_size.pptx");
+    let (document, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let source = generate_typst(&document).unwrap().source;
+
+    // A run's text, or one word of it, follows the `#text(...)` call that sets
+    // its size on the same line.
+    let size_before = |text: &str| -> Option<String> {
+        let line: &str = source.lines().find(|line| line.contains(text))?;
+        let prefix: &str = &line[..line.find(text)?];
+        let start: usize = prefix.rfind("size: ")? + "size: ".len();
+        let end: usize = start + prefix[start..].find("pt")?;
+        Some(prefix[start..end].to_string())
+    };
+
+    for line in [
+        "Ligne 0 : visible ",
+        "Ligne 1 : ",
+        "Ligne 4 : ",
+        " with previous sans ",
+    ] {
+        assert_eq!(
+            size_before(line).as_deref(),
+            Some("24"),
+            "{line:?} takes its paragraph's <a:defRPr sz=\"2400\">"
+        );
+    }
+    assert_eq!(
+        size_before("paragraphes").as_deref(),
+        Some("22"),
+        "the heading run states its own 22pt"
+    );
+}
+
+#[test]
+fn issue_2157_paragraph_default_size_smoke() {
+    assert_produces_valid_pdf("issue_2157_paragraph_default_size.pptx");
+}
