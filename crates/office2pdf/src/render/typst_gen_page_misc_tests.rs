@@ -5786,14 +5786,12 @@ fn spaced_arial_header_lines(gaps: &[(f64, f64)]) -> Vec<crate::ir::HeaderFooter
 
 /// A header's paragraph spacing grows the margin as Word's story lays it out.
 ///
-/// A native Word probe on the #2057 fixture (`assets/bugfixes/issue-2056/README.md`
-/// at `83c2060d`) showed the first header paragraph keeping its `w:before` and
-/// an adjacent `w:after`/`w:before` pair collapsing. Taking the larger of the
-/// pair, as the body flow does, is the working rule; the probe did not measure
-/// it. The last paragraph's `w:after` stays below its line by analogy to the
-/// footer's (issue #1195), which no native header export verifies yet. Every
-/// gap here exceeds the drawn story's band shift, so the margin is Word's
-/// reach exactly.
+/// Word for Mac keeps the first header paragraph's `w:before`, collapses each
+/// adjacent `w:after`/`w:before` pair to the larger gap, and keeps the last
+/// paragraph's `w:after` below its line; the native probes are pinned by
+/// [`header_spacing_probe_variants_start_the_body_where_word_does`]. Every gap
+/// here exceeds the drawn story's band shift, so the margin is Word's reach
+/// exactly.
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn header_paragraph_spacing_grows_the_margin_as_word_lays_it_out() {
@@ -5835,7 +5833,8 @@ fn header_paragraph_spacing_inside_its_band_leaves_the_margin() {
 /// natural line, as `w:lineRule="auto"` scales a body line.
 ///
 /// Every line a paragraph wraps to takes the multiple, and so does an empty
-/// paragraph's mark line.
+/// paragraph's mark line, as the native probes in
+/// [`header_multiple_probe_variants_start_the_body_where_word_does`] show.
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn a_proportional_header_line_grows_the_margin_by_its_multiple() {
@@ -5907,6 +5906,203 @@ fn header_paragraph_spacing_lowers_the_compiled_body() {
         (eighteen_pt - twelve_pt - 18.0).abs() < 0.01,
         "6pt more after each of three header paragraphs must lower the body by \
          18pt: {twelve_pt}pt then {eighteen_pt}pt"
+    );
+}
+
+/// The first body baseline of a native Word probe's base fixture, with its
+/// header paragraphs varied by `vary` as the probe's one-factor XML patch
+/// varies them, or `None` where Arial does not shape the body.
+#[cfg(not(target_arch = "wasm32"))]
+fn probe_body_baseline_pt(
+    fixture: &[u8],
+    vary: impl FnOnce(&mut [crate::ir::HeaderFooterParagraph]),
+) -> Option<f64> {
+    let (mut document, _warnings) = crate::parser::Parser::parse(
+        &crate::parser::docx::DocxParser,
+        fixture,
+        &crate::config::ConvertOptions::default(),
+    )
+    .expect("the probe base fixture should parse");
+    let Page::Flow(page) = &mut document.pages[0] else {
+        panic!("the probe base fixture is a flow document");
+    };
+    vary(
+        &mut page
+            .header
+            .as_mut()
+            .expect("the probe base fixture has a default header")
+            .paragraphs,
+    );
+    if !shaped_by(&document, "Body", &["Arial"]) {
+        return None; // the face is unavailable on this runner
+    }
+    baselines_of(&document, "Body").first().copied()
+}
+
+/// Word for Mac 16.114 exports of `scripts/probes/issue-2056-header-spacing.json`:
+/// three single-spaced Arial 12pt header paragraphs, 36pt below the page top
+/// over a 72pt `w:top`, with one paragraph's `w:spacing` varied per export
+/// (issue #2056). Word puts the body's first baseline on its 0.24pt grid, so
+/// each must land within one grid step.
+///
+/// The variants settle the spacing rule: the first `w:before` is kept, an
+/// adjacent 12pt `w:after` against a 6, 12 or 18pt `w:before` gives 12, 12 and
+/// 18pt (never their sum), and the last paragraph's `w:after` is reserved below
+/// it. A 1.5 multiple on every paragraph scales each 13.8pt line. The
+/// zero-spacing control sits 2.75pt low through issue #2065, and a 0.5
+/// multiple, which lets Word's story fit its band, through the drawn story's
+/// natural lines (issue #2062); neither is listed.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn header_spacing_probe_variants_start_the_body_where_word_does() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/issue-2056-header-spacing.docx");
+    type Vary = fn(&mut [crate::ir::HeaderFooterParagraph]);
+    let variants: [(&str, Vary, f64); 9] = [
+        (
+            "first-before-120",
+            |p| p[0].style.space_before = Some(6.0),
+            94.56,
+        ),
+        (
+            "first-after-240",
+            |p| p[0].style.space_after = Some(12.0),
+            100.56,
+        ),
+        (
+            "second-before-240",
+            |p| p[1].style.space_before = Some(12.0),
+            100.56,
+        ),
+        (
+            "last-after-240",
+            |p| p[2].style.space_after = Some(12.0),
+            100.56,
+        ),
+        (
+            "last-after-480",
+            |p| p[2].style.space_after = Some(24.0),
+            112.56,
+        ),
+        (
+            "first-after-240-second-before-120",
+            |p| {
+                p[0].style.space_after = Some(12.0);
+                p[1].style.space_before = Some(6.0);
+            },
+            100.56,
+        ),
+        (
+            "first-after-240-second-before-240",
+            |p| {
+                p[0].style.space_after = Some(12.0);
+                p[1].style.space_before = Some(12.0);
+            },
+            100.56,
+        ),
+        (
+            "first-after-240-second-before-360",
+            |p| {
+                p[0].style.space_after = Some(12.0);
+                p[1].style.space_before = Some(18.0);
+            },
+            106.56,
+        ),
+        (
+            "line-360-auto",
+            |p| {
+                for paragraph in p {
+                    paragraph.style.line_spacing = Some(crate::ir::LineSpacing::Proportional(1.5));
+                }
+            },
+            109.44,
+        ),
+    ];
+    for (name, vary, word_pt) in variants {
+        let Some(baseline_pt) = probe_body_baseline_pt(fixture, vary) else {
+            return;
+        };
+        assert!(
+            (baseline_pt - word_pt).abs() < 0.25,
+            "{name}: Word puts the body's first baseline at {word_pt}pt, got {baseline_pt}pt"
+        );
+    }
+}
+
+/// Word for Mac 16.114 exports of `scripts/probes/issue-2056-header-multiples.json`:
+/// an Arial 12pt header paragraph wrapping to three lines, two empty
+/// paragraphs and a `Last` line, 36pt below the page top over a 72pt `w:top`
+/// (issue #2056). A `w:lineRule="auto"` multiple scales every wrapped line and
+/// each empty paragraph's mark line, below 1 as well as above, and an empty
+/// paragraph keeps its `w:after`. Each first body baseline must land within one
+/// step of Word's 0.24pt grid.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn header_multiple_probe_variants_start_the_body_where_word_does() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/issue-2056-header-multiples.docx");
+    type Vary = fn(&mut [crate::ir::HeaderFooterParagraph]);
+    fn scale(paragraph: &mut crate::ir::HeaderFooterParagraph, factor: f64) {
+        paragraph.style.line_spacing = Some(crate::ir::LineSpacing::Proportional(factor));
+    }
+    let variants: [(&str, Vary, f64); 7] = [
+        ("control", |_| {}, 130.08),
+        ("wrapped-line-360-auto", |p| scale(&mut p[0], 1.5), 150.72),
+        ("wrapped-line-120-auto", |p| scale(&mut p[0], 0.5), 109.44),
+        (
+            "empty-line-360-auto",
+            |p| {
+                p[1..3]
+                    .iter_mut()
+                    .for_each(|paragraph| scale(paragraph, 1.5))
+            },
+            143.76,
+        ),
+        (
+            "empty-line-120-auto",
+            |p| {
+                p[1..3]
+                    .iter_mut()
+                    .for_each(|paragraph| scale(paragraph, 0.5))
+            },
+            116.16,
+        ),
+        (
+            "empty-after-240",
+            |p| {
+                p[1..3]
+                    .iter_mut()
+                    .for_each(|paragraph| paragraph.style.space_after = Some(12.0));
+            },
+            154.08,
+        ),
+        ("last-line-360-auto", |p| scale(&mut p[3], 1.5), 137.04),
+    ];
+    for (name, vary, word_pt) in variants {
+        let Some(baseline_pt) = probe_body_baseline_pt(fixture, vary) else {
+            return;
+        };
+        assert!(
+            (baseline_pt - word_pt).abs() < 0.25,
+            "{name}: Word puts the body's first baseline at {word_pt}pt, got {baseline_pt}pt"
+        );
+    }
+}
+
+/// The tracked `last-after-480` probe export, unmodified: Word keeps the last
+/// header paragraph's 24pt `w:after` above the body and puts its first
+/// baseline at 112.56pt, where main left it at 91.31pt (issue #2056).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_last_header_paragraphs_space_after_lowers_the_body_as_word_does() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/issue-2056-header-last-after.docx");
+    let Some(baseline_pt) = probe_body_baseline_pt(fixture, |_| {}) else {
+        return;
+    };
+    assert!(
+        (baseline_pt - 112.56).abs() < 0.25,
+        "Word puts the body's first baseline at 112.56pt, got {baseline_pt}pt"
     );
 }
 

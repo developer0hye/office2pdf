@@ -1,0 +1,42 @@
+{
+  "name": "issue-2056-header-multiples",
+  "base": "../../tests/fixtures/docx/issue-2056-header-multiples.docx",
+  "part": "word/header1.xml",
+  "factor": "the w:line multiple of a header paragraph that wraps to three lines, or of two empty header paragraphs, or the empty paragraphs' w:after, or the last paragraph's multiple, under a header that already overflows its 36pt band",
+  "page": 1,
+  "variants": [
+    {
+      "value": "wrapped-line-360-auto",
+      "find": "w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Header ",
+      "replace": "w:line=\"360\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Header "
+    },
+    {
+      "value": "wrapped-line-120-auto",
+      "find": "w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Header ",
+      "replace": "w:line=\"120\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Header "
+    },
+    {
+      "value": "empty-line-360-auto",
+      "find": "w:line=\"240\" w:lineRule=\"auto\"/></w:pPr></w:p>",
+      "replace": "w:line=\"360\" w:lineRule=\"auto\"/></w:pPr></w:p>",
+      "count": 2
+    },
+    {
+      "value": "empty-line-120-auto",
+      "find": "w:line=\"240\" w:lineRule=\"auto\"/></w:pPr></w:p>",
+      "replace": "w:line=\"120\" w:lineRule=\"auto\"/></w:pPr></w:p>",
+      "count": 2
+    },
+    {
+      "value": "empty-after-240",
+      "find": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr></w:p>",
+      "replace": "<w:spacing w:before=\"0\" w:after=\"240\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr></w:p>",
+      "count": 2
+    },
+    {
+      "value": "last-line-360-auto",
+      "find": "w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Last<",
+      "replace": "w:line=\"360\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Last<"
+    }
+  ]
+}
