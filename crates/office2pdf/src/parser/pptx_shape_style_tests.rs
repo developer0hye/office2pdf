@@ -353,6 +353,193 @@ fn shape_fill_ref_selects_theme_gradient_and_resolves_placeholder_color() {
     assert_ne!(gradient.stops[0].color, Color::new(0x44, 0x72, 0xC4));
 }
 
+// ── Style-reference alpha (issue #2159) ─────────────────────────────
+
+/// The fill-style theme above, plus one theme line so `<a:lnRef idx="1">`
+/// resolves an outline.
+fn make_theme_xml_with_shape_fill_and_line_styles() -> String {
+    make_theme_xml_with_shape_fill_styles().replacen(
+        "<a:lnStyleLst/>",
+        r#"<a:lnStyleLst><a:ln w="9525"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst>"#,
+        1,
+    )
+}
+
+/// One 72pt ellipse at `y_emu` whose paint comes from `<p:style>`, with the
+/// given `spPr` paint and reference colours spliced in.
+fn styled_shape_xml(
+    id: u32,
+    y_emu: i64,
+    sp_pr_paint: &str,
+    fill_ref: &str,
+    ln_ref_color: &str,
+) -> String {
+    format!(
+        concat!(
+            r#"<p:sp><p:nvSpPr><p:cNvPr id="{id}" name="Styled {id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>"#,
+            r#"<p:spPr><a:xfrm><a:off x="914400" y="{y}"/><a:ext cx="914400" cy="914400"/></a:xfrm><a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom>{paint}</p:spPr>"#,
+            r#"<p:style><a:lnRef idx="1">{ln}</a:lnRef>{fill}<a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style>"#,
+            r#"</p:sp>"#,
+        ),
+        id = id,
+        y = y_emu,
+        paint = sp_pr_paint,
+        ln = ln_ref_color,
+        fill = fill_ref,
+    )
+}
+
+fn parse_styled_shapes(shapes: Vec<String>) -> Vec<Shape> {
+    let slide_xml = make_slide_xml(&shapes);
+    let data = build_test_pptx_with_theme(
+        SLIDE_CX,
+        SLIDE_CY,
+        &[slide_xml],
+        &make_theme_xml_with_shape_fill_and_line_styles(),
+    );
+    let (document, _warnings) = PptxParser
+        .parse(&data, &ConvertOptions::default())
+        .expect("the style-reference alpha probe parses");
+    first_fixed_page(&document)
+        .elements
+        .iter()
+        .map(|element| get_shape(element).clone())
+        .collect()
+}
+
+/// A `<p:style>` reference colour's `<a:alpha>` paints with the theme fill and
+/// line it selects. PowerPoint's export of the issue deck masks the whole
+/// resolved theme gradient with one uniform 50% soft mask and strokes the
+/// outline at `/CA 0.502`; we used to print both opaque.
+#[test]
+fn style_reference_alpha_paints_with_the_theme_gradient_and_outline() {
+    let shapes = parse_styled_shapes(vec![
+        styled_shape_xml(
+            2,
+            0,
+            "",
+            r#"<a:fillRef idx="3"><a:schemeClr val="accent1"><a:alpha val="50000"/></a:schemeClr></a:fillRef>"#,
+            r#"<a:schemeClr val="accent1"><a:alpha val="50000"/></a:schemeClr>"#,
+        ),
+        styled_shape_xml(
+            3,
+            1_828_800,
+            "",
+            r#"<a:fillRef idx="3"><a:schemeClr val="accent1"/></a:fillRef>"#,
+            r#"<a:schemeClr val="accent1"/>"#,
+        ),
+    ]);
+
+    assert!(
+        shapes[0].gradient_fill.is_some(),
+        "fillRef idx=3 selects the theme gradient"
+    );
+    assert_eq!(shapes[0].opacity, Some(0.5), "the gradient takes the alpha");
+    assert_eq!(shapes[0].stroke_opacity, Some(0.5), "the outline takes it");
+    assert_eq!(shapes[1].opacity, None, "no alpha keeps the fill opaque");
+    assert_eq!(shapes[1].stroke_opacity, None, "and the outline opaque");
+}
+
+/// A flat theme fill (`fillStyleLst` entry 1) carries the reference alpha
+/// the same way, at whatever value the reference states.
+#[test]
+fn style_reference_alpha_paints_with_a_flat_theme_fill() {
+    let shapes = parse_styled_shapes(vec![styled_shape_xml(
+        2,
+        0,
+        "",
+        r#"<a:fillRef idx="1"><a:schemeClr val="accent1"><a:alpha val="30000"/></a:schemeClr></a:fillRef>"#,
+        r#"<a:schemeClr val="accent1"><a:alpha val="75000"/></a:schemeClr>"#,
+    )]);
+
+    assert!(shapes[0].fill.is_some() && shapes[0].gradient_fill.is_none());
+    assert_eq!(shapes[0].opacity, Some(0.3));
+    assert_eq!(shapes[0].stroke_opacity, Some(0.75));
+}
+
+/// The reference alpha belongs to the reference colour. A fill or line the
+/// shape declares itself wins with its own alpha, or with none.
+#[test]
+fn declared_paint_keeps_its_own_alpha_over_the_style_reference() {
+    let alpha_fill_ref: &str = r#"<a:fillRef idx="3"><a:schemeClr val="accent1"><a:alpha val="50000"/></a:schemeClr></a:fillRef>"#;
+    let alpha_ln_ref: &str = r#"<a:schemeClr val="accent1"><a:alpha val="50000"/></a:schemeClr>"#;
+    let shapes = parse_styled_shapes(vec![
+        styled_shape_xml(
+            2,
+            0,
+            concat!(
+                r#"<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>"#,
+                r#"<a:ln><a:solidFill><a:srgbClr val="00FF00"><a:alpha val="25000"/></a:srgbClr></a:solidFill></a:ln>"#,
+            ),
+            alpha_fill_ref,
+            alpha_ln_ref,
+        ),
+        styled_shape_xml(
+            3,
+            1_828_800,
+            concat!(
+                r#"<a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="FF0000"/></a:gs><a:gs pos="100000"><a:srgbClr val="0000FF"/></a:gs></a:gsLst><a:lin ang="0"/></a:gradFill>"#,
+                r#"<a:ln><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill></a:ln>"#,
+            ),
+            alpha_fill_ref,
+            alpha_ln_ref,
+        ),
+    ]);
+
+    assert_eq!(shapes[0].fill, Some(Color::new(0xFF, 0, 0)));
+    assert_eq!(shapes[0].opacity, None, "the declared solid fill is opaque");
+    assert_eq!(
+        shapes[0].stroke_opacity,
+        Some(0.25),
+        "the declared line keeps its own alpha"
+    );
+    assert_eq!(
+        shapes[1].gradient_fill.as_ref().map(|g| g.stops[0].color),
+        Some(Color::new(0xFF, 0, 0))
+    );
+    assert_eq!(shapes[1].opacity, None, "the declared gradient is opaque");
+    assert_eq!(
+        shapes[1].stroke_opacity, None,
+        "the declared line is opaque"
+    );
+}
+
+/// A plain rectangle with text is otherwise drawn as a text box, which has no
+/// way to paint a translucent outline; one that needs it goes through the
+/// shape renderer behind a transparent text overlay instead.
+#[test]
+fn translucent_style_outline_on_a_text_rectangle_reaches_the_shape_renderer() {
+    let shape_xml = concat!(
+        r#"<p:sp><p:nvSpPr><p:cNvPr id="2" name="Text"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>"#,
+        r#"<p:spPr><a:xfrm><a:off x="914400" y="914400"/><a:ext cx="2743200" cy="914400"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>"#,
+        r#"<p:style><a:lnRef idx="1"><a:schemeClr val="accent1"><a:alpha val="50000"/></a:schemeClr></a:lnRef><a:fillRef idx="1"><a:schemeClr val="accent1"><a:alpha val="50000"/></a:schemeClr></a:fillRef><a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style>"#,
+        r#"<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Label</a:t></a:r></a:p></p:txBody></p:sp>"#,
+    )
+    .to_string();
+    let slide_xml = make_slide_xml(&[shape_xml]);
+    let data = build_test_pptx_with_theme(
+        SLIDE_CX,
+        SLIDE_CY,
+        &[slide_xml],
+        &make_theme_xml_with_shape_fill_and_line_styles(),
+    );
+    let (document, _warnings) = PptxParser
+        .parse(&data, &ConvertOptions::default())
+        .expect("the styled text rectangle parses");
+    let page = first_fixed_page(&document);
+
+    assert_eq!(page.elements.len(), 2, "background plus text overlay");
+    let background = get_shape(&page.elements[0]);
+    assert_eq!(background.opacity, Some(0.5));
+    assert_eq!(background.stroke_opacity, Some(0.5));
+    match &page.elements[1].kind {
+        FixedElementKind::TextBox(text_box) => {
+            assert!(text_box.fill.is_none() && text_box.stroke.is_none());
+        }
+        other => panic!("expected transparent text overlay, got {other:?}"),
+    }
+}
+
 #[test]
 fn theme_gradient_fill_on_text_rectangle_is_rendered_behind_its_text() {
     let shape_xml = concat!(

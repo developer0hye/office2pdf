@@ -875,13 +875,22 @@ struct ShapeState {
     adj_values: Vec<f64>,
     /// Fallback line color from `<p:style><a:lnRef>` scheme reference.
     style_ln_color: Option<Color>,
+    /// `<a:alpha>` on that reference colour. It paints only with the line
+    /// the reference colour paints (issue #2159).
+    style_ln_alpha: Option<f64>,
     /// `<a:lnRef idx>` (1-based) into the theme line style list, for the
     /// fallback outline width when no explicit `<a:ln w>` is present.
     style_ln_idx: Option<usize>,
     /// Fallback fill color from `<p:style><a:fillRef>` scheme reference.
     style_fill_color: Option<Color>,
+    /// `<a:alpha>` on that reference colour. It paints only with the fill the
+    /// reference selects, flat or gradient (issue #2159).
+    style_fill_alpha: Option<f64>,
     /// 1-based theme `fillStyleLst` entry named by `<a:fillRef idx>`.
     style_fill_idx: Option<usize>,
+    /// `gradient_fill` is the theme entry `<a:fillRef>` selected rather than
+    /// one `<p:spPr>` declared.
+    gradient_fill_from_style: bool,
     /// The shape uses the slide background instead of its own fill.
     use_bg_fill: bool,
     /// Fallback text color from `<p:style><a:fontRef>` scheme reference.
@@ -943,9 +952,12 @@ impl Default for ShapeState {
             tail_end: ArrowHead::None,
             adj_values: Vec::new(),
             style_ln_color: None,
+            style_ln_alpha: None,
             style_ln_idx: None,
             style_fill_color: None,
+            style_fill_alpha: None,
             style_fill_idx: None,
+            gradient_fill_from_style: false,
             use_bg_fill: false,
             style_font_color: None,
             style_font_family: None,
@@ -1027,6 +1039,21 @@ fn finalize_shape(
     } else {
         shape.pattern_fill.clone()
     };
+    // A `<p:style>` reference colour's `<a:alpha>` travels with the fill that
+    // colour paints, the theme gradient included: PowerPoint masks the whole
+    // resolved gradient with that one alpha. A fill the shape declares keeps
+    // its own (issue #2159).
+    let paints_style_fill: bool = !shape.use_bg_fill
+        && shape.fill.is_none()
+        && !shape.explicit_no_fill
+        && shape.blip_embed.is_none()
+        && shape.pattern_fill.is_none()
+        && (shape.gradient_fill.is_none() || shape.gradient_fill_from_style);
+    let effective_opacity: Option<f64> = if paints_style_fill {
+        shape.style_fill_alpha
+    } else {
+        shape.opacity
+    };
 
     // The outline is shared by solid/gradient shape paint and by an ordinary
     // shape's picture fill. Building it once also lets the picture reuse the
@@ -1036,6 +1063,14 @@ fn finalize_shape(
         None
     } else {
         shape.ln_color.or(shape.style_ln_color)
+    };
+    // The line's alpha pairs with whichever colour won it (issue #2159).
+    let effective_ln_alpha: Option<f64> = if shape.explicit_no_line {
+        None
+    } else if shape.ln_color.is_some() {
+        shape.ln_alpha
+    } else {
+        shape.style_ln_color.and(shape.style_ln_alpha)
     };
     let stroke: Option<BorderSide> = if shape.explicit_no_line {
         Some(BorderSide {
@@ -1073,7 +1108,7 @@ fn finalize_shape(
             flip_v: shape.flip_v,
             ln_width_emu: effective_ln_width_emu,
             ln_color: effective_ln_color,
-            ln_alpha: shape.ln_alpha,
+            ln_alpha: effective_ln_alpha,
             ln_dash_style: shape.ln_dash_style,
             ln_join: Some(effective_ln_join),
             ln_cap: Some(effective_ln_cap),
@@ -1112,7 +1147,8 @@ fn finalize_shape(
             || effective_pattern_fill.is_some()
             || picture_fill.is_some()
             || shape.shadow.is_some()
-            || shape.top_bevel.is_some();
+            || shape.top_bevel.is_some()
+            || effective_ln_alpha.is_some_and(|alpha| alpha < 1.0);
         let shape_width = emu_to_pt(shape.cx);
         let shape_height = emu_to_pt(shape.cy);
         let has_geometry_text_rect = shape.custom_text_rect.is_some()
@@ -1163,7 +1199,8 @@ fn finalize_shape(
                         pattern_fill: effective_pattern_fill.clone(),
                         stroke: stroke.clone(),
                         rotation_deg: shape.rotation_deg,
-                        opacity: shape.opacity,
+                        opacity: effective_opacity,
+                        stroke_opacity: effective_ln_alpha,
                         shadow: shape.shadow.take(),
                         top_bevel: shape.top_bevel.take(),
                     }),
@@ -1271,7 +1308,7 @@ fn finalize_shape(
                     padding: text_box.padding,
                     vertical_align: text_box.vertical_align,
                     fill: effective_fill,
-                    opacity: shape.opacity,
+                    opacity: effective_opacity,
                     stroke,
                     shape_kind: None,
                     no_wrap: text_box.no_wrap,
@@ -1313,7 +1350,8 @@ fn finalize_shape(
                 pattern_fill: effective_pattern_fill,
                 stroke,
                 rotation_deg: shape.rotation_deg,
-                opacity: shape.opacity,
+                opacity: effective_opacity,
+                stroke_opacity: effective_ln_alpha,
                 shadow: shape.shadow.take(),
                 top_bevel: shape.top_bevel.take(),
             }),
@@ -2635,10 +2673,12 @@ impl<'a> SlideXmlParser<'a> {
             b"srgbClr" | b"schemeClr" | b"sysClr" if self.in_style_ln_ref => {
                 let parsed = parse_color_from_start(reader, e, self.ctx.theme, self.ctx.color_map);
                 self.shape.style_ln_color = parsed.color;
+                self.shape.style_ln_alpha = parsed.alpha;
             }
             b"srgbClr" | b"schemeClr" | b"sysClr" if self.in_style_fill_ref => {
                 let parsed = parse_color_from_start(reader, e, self.ctx.theme, self.ctx.color_map);
                 self.shape.style_fill_color = parsed.color;
+                self.shape.style_fill_alpha = parsed.alpha;
             }
             b"srgbClr" | b"schemeClr" | b"sysClr" if self.in_style_font_ref => {
                 let parsed = parse_color_from_start(reader, e, self.ctx.theme, self.ctx.color_map);
@@ -2992,10 +3032,12 @@ impl<'a> SlideXmlParser<'a> {
             b"srgbClr" | b"schemeClr" | b"sysClr" if self.in_style_fill_ref => {
                 let parsed = parse_color_from_empty(e, self.ctx.theme, self.ctx.color_map);
                 self.shape.style_fill_color = parsed.color;
+                self.shape.style_fill_alpha = parsed.alpha;
             }
             b"srgbClr" | b"schemeClr" | b"sysClr" if self.in_style_ln_ref => {
                 let parsed = parse_color_from_empty(e, self.ctx.theme, self.ctx.color_map);
                 self.shape.style_ln_color = parsed.color;
+                self.shape.style_ln_alpha = parsed.alpha;
             }
             b"srgbClr" | b"schemeClr" | b"sysClr" if self.in_style_effect_ref => {
                 let parsed = parse_color_from_empty(e, self.ctx.theme, self.ctx.color_map);
@@ -3247,6 +3289,7 @@ impl<'a> SlideXmlParser<'a> {
                         )
                     {
                         self.shape.style_fill_color = color.or(self.shape.style_fill_color);
+                        self.shape.gradient_fill_from_style = gradient.is_some();
                         self.shape.gradient_fill = gradient;
                     }
                     // A slide placeholder inherits its shape properties from

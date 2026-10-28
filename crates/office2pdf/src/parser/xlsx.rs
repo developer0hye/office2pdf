@@ -730,6 +730,7 @@ fn anchored_line_shape(
             stroke: Some(anchor.stroke),
             rotation_deg: None,
             opacity: None,
+            stroke_opacity: None,
             shadow: None,
             top_bevel: None,
         },

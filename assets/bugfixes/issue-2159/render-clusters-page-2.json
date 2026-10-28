@@ -1,0 +1,74 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 4855.2192,
+      "bbox_pt": {
+        "height": 68.64,
+        "width": 71.04,
+        "x": 351.84,
+        "y": 129.12
+      },
+      "disposition": {
+        "issue": "#2158",
+        "kind": "issue",
+        "note": "Both 50%-alpha shape interiors read ~20 levels darker than GT because our theme outerShdw is cast at its full 35% under a translucent fill, while PowerPoint attenuates the shadow by the fill's alpha (GT shadow SMask max 89 on slide 1, 45 on slide 2). Halving the theme shadow alpha in a counterfactual copy brings these pixels within 5 levels of GT. Same shadow-follows-painted-alpha rule as #2158 (its alpha-0 case)."
+      },
+      "id": "p2-19eee07bdefa",
+      "region": "top"
+    },
+    {
+      "area_pt2": 4104.1152,
+      "bbox_pt": {
+        "height": 72.48,
+        "width": 72.48,
+        "x": 278.88,
+        "y": 129.12
+      },
+      "disposition": {
+        "issue": "#2158",
+        "kind": "issue",
+        "note": "Both 50%-alpha shape interiors read ~20 levels darker than GT because our theme outerShdw is cast at its full 35% under a translucent fill, while PowerPoint attenuates the shadow by the fill's alpha (GT shadow SMask max 89 on slide 1, 45 on slide 2). Halving the theme shadow alpha in a counterfactual copy brings these pixels within 5 levels of GT. Same shadow-follows-painted-alpha rule as #2158 (its alpha-0 case)."
+      },
+      "id": "p2-2d162e38c6fd",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 312.6528,
+      "bbox_pt": {
+        "height": 72.96,
+        "width": 74.4,
+        "x": 350.4,
+        "y": 128.64
+      },
+      "disposition": {
+        "issues": [
+          "#2158",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "Rectangle edge/halo band: the unattenuated shadow under the translucent fill (#2158) overlaps the darker theme-shadow halo also present on opaque slide 1 (#1874)."
+      },
+      "id": "p2-cd0077c95b62",
+      "region": "center"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 3,
+    "duplicate": 0,
+    "total": 3,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

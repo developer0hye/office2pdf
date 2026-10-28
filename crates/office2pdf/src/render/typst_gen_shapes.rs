@@ -69,16 +69,28 @@ pub(super) fn generate_shape(
                 format_f64(end_x),
                 format_f64(end_y),
             );
-            write_shape_stroke(out, &shape.stroke);
+            write_translucent_shape_stroke(out, &shape.stroke, shape.stroke_opacity);
             out.push_str(")\n");
             if has_arrowheads {
                 out.push_str("]\n");
             }
             if *tail_end != ArrowHead::None {
-                write_arrowhead_at(out, &shape.stroke, (start_x, start_y), (end_x, end_y));
+                write_arrowhead_at(
+                    out,
+                    &shape.stroke,
+                    shape.stroke_opacity,
+                    (start_x, start_y),
+                    (end_x, end_y),
+                );
             }
             if *head_end != ArrowHead::None {
-                write_arrowhead_at(out, &shape.stroke, (end_x, end_y), (start_x, start_y));
+                write_arrowhead_at(
+                    out,
+                    &shape.stroke,
+                    shape.stroke_opacity,
+                    (end_x, end_y),
+                    (start_x, start_y),
+                );
             }
         }
         ShapeKind::Polyline {
@@ -88,17 +100,17 @@ pub(super) fn generate_shape(
         } => {
             let rotated_points: Vec<(f64, f64)> =
                 rotate_points(points, width, height, shape.rotation_deg);
-            write_polyline(out, &shape.stroke, &rotated_points);
+            write_polyline(out, &shape.stroke, shape.stroke_opacity, &rotated_points);
             if rotated_points.len() >= 2 {
                 if *tail_end != ArrowHead::None {
                     let last = rotated_points[rotated_points.len() - 1];
                     let second_last = rotated_points[rotated_points.len() - 2];
-                    write_arrowhead_at(out, &shape.stroke, second_last, last);
+                    write_arrowhead_at(out, &shape.stroke, shape.stroke_opacity, second_last, last);
                 }
                 if *head_end != ArrowHead::None {
                     let first = rotated_points[0];
                     let second = rotated_points[1];
-                    write_arrowhead_at(out, &shape.stroke, second, first);
+                    write_arrowhead_at(out, &shape.stroke, shape.stroke_opacity, second, first);
                 }
             }
         }
@@ -980,27 +992,52 @@ fn write_shape_params(out: &mut String, shape: &Shape, width: f64, height: f64) 
         write_pattern_fill(out, pattern);
     } else if let Some(gradient) = &shape.gradient_fill {
         out.push_str(", fill: ");
-        write_gradient_fill(out, gradient);
+        write_gradient_fill(out, gradient, shape.opacity);
     } else if let Some(fill) = &shape.fill {
         write_fill_color(out, fill, shape.opacity);
     }
-    write_shape_stroke(out, &shape.stroke);
+    write_translucent_shape_stroke(out, &shape.stroke, shape.stroke_opacity);
 }
 
 /// Write stroke parameter for shapes, handling dash patterns.
 pub(super) fn write_shape_stroke(out: &mut String, stroke: &Option<BorderSide>) {
+    write_translucent_shape_stroke(out, stroke, None);
+}
+
+/// [`write_shape_stroke`] for a line paint that may carry its own alpha,
+/// which composites the outline at that opacity (issue #2159).
+fn write_translucent_shape_stroke(
+    out: &mut String,
+    stroke: &Option<BorderSide>,
+    opacity: Option<f64>,
+) {
     match stroke {
         Some(stroke) if stroke.style == BorderLineStyle::None => {
             out.push_str(", stroke: none");
         }
-        Some(stroke) => {
-            // DrawingML dashes scale with the line width (issue #678).
-            let _ = write!(out, ", stroke: {}", drawingml_stroke_value(stroke));
-        }
+        // DrawingML dashes scale with the line width (issue #678).
+        Some(stroke) => match opacity {
+            Some(opacity) => {
+                let paint: String = rgb_with_alpha(&stroke.color, opacity_byte(opacity));
+                let _ = write!(
+                    out,
+                    ", stroke: {}",
+                    drawingml_stroke_value_with_paint(stroke, &paint)
+                );
+            }
+            None => {
+                let _ = write!(out, ", stroke: {}", drawingml_stroke_value(stroke));
+            }
+        },
         // An omitted source line keeps Typst's existing default behavior.
         // Explicit no-line is carried by `BorderLineStyle::None` instead.
         None => {}
     }
+}
+
+/// An opacity from 0.0 to 1.0 as the 0-255 alpha Typst's `rgb` takes.
+fn opacity_byte(opacity: f64) -> u8 {
+    (opacity.clamp(0.0, 1.0) * 255.0).round() as u8
 }
 
 /// Write a border stroke value for image box wrapping (no leading comma).
@@ -1101,11 +1138,11 @@ fn write_subpath_curve(
         write_pattern_fill(out, pattern);
     } else if let Some(gradient) = &shape.gradient_fill {
         out.push_str(", fill: ");
-        write_gradient_fill(out, gradient);
+        write_gradient_fill(out, gradient, shape.opacity);
     } else if let Some(fill) = &shape.fill {
         write_fill_color(out, fill, shape.opacity);
     }
-    write_shape_stroke(out, &shape.stroke);
+    write_translucent_shape_stroke(out, &shape.stroke, shape.stroke_opacity);
     for subpath in subpaths {
         write_curve_subpath(out, width, height, subpath);
     }
@@ -1149,11 +1186,11 @@ fn write_polygon(
         write_pattern_fill(out, pattern);
     } else if let Some(gradient) = &shape.gradient_fill {
         out.push_str(", fill: ");
-        write_gradient_fill(out, gradient);
+        write_gradient_fill(out, gradient, shape.opacity);
     } else if let Some(fill) = &shape.fill {
         write_fill_color(out, fill, shape.opacity);
     }
-    write_shape_stroke(out, &shape.stroke);
+    write_translucent_shape_stroke(out, &shape.stroke, shape.stroke_opacity);
     out.push_str(")\n");
 }
 
@@ -1162,12 +1199,21 @@ fn write_polygon(
 /// Stops are sorted by position before rendering because Typst requires
 /// gradient stop offsets to be in monotonic (non-decreasing) order.
 /// The first stop is clamped to 0% and the last to 100% as Typst requires.
-pub(super) fn write_gradient_fill(out: &mut String, gradient: &GradientFill) {
+///
+/// `opacity` scales every stop alike, the way a shape's fill opacity masks its
+/// whole resolved gradient (issue #2159).
+pub(super) fn write_gradient_fill(out: &mut String, gradient: &GradientFill, opacity: Option<f64>) {
+    let paint = |color: &Color| -> String {
+        match opacity {
+            Some(opacity) => rgb_with_alpha(color, opacity_byte(opacity)),
+            None => rgb(color),
+        }
+    };
     // Typst requires at least 2 stops for gradient.linear().
     // Fall back to solid fill if fewer than 2 stops.
     if gradient.stops.len() < 2 {
         if let Some(stop) = gradient.stops.first() {
-            out.push_str(&rgb(&stop.color));
+            out.push_str(&paint(&stop.color));
         }
         return;
     }
@@ -1190,7 +1236,7 @@ pub(super) fn write_gradient_fill(out: &mut String, gradient: &GradientFill) {
             out.push_str(", ");
         }
         let pos_pct = (stop.position * 100.0).round() as i64;
-        let _ = write!(out, "({}, {}%)", rgb(&stop.color), pos_pct);
+        let _ = write!(out, "({}, {}%)", paint(&stop.color), pos_pct);
     }
     if gradient.angle.abs() > 0.001 {
         let _ = write!(out, ", angle: {}deg", format_f64(gradient.angle));
@@ -1615,7 +1661,12 @@ fn write_zigzag_motif(out: &mut String, color: &Color, tile_size: f64) {
 
 /// Render a multi-segment polyline as consecutive `#line()` calls,
 /// each wrapped in `#place(top + left)` so they overlay at the same origin.
-fn write_polyline(out: &mut String, stroke: &Option<BorderSide>, points: &[(f64, f64)]) {
+fn write_polyline(
+    out: &mut String,
+    stroke: &Option<BorderSide>,
+    opacity: Option<f64>,
+    points: &[(f64, f64)],
+) {
     for segment in points.windows(2) {
         let (x1, y1) = segment[0];
         let (x2, y2) = segment[1];
@@ -1628,15 +1679,17 @@ fn write_polyline(out: &mut String, stroke: &Option<BorderSide>, points: &[(f64,
             format_f64(x2),
             format_f64(y2),
         );
-        write_shape_stroke(out, stroke);
+        write_translucent_shape_stroke(out, stroke, opacity);
         out.push_str(")]\n");
     }
 }
 
 /// Draw a triangle arrowhead at `tip`, pointing in the direction from `from` → `tip`.
+/// The head paints with the line's colour, at the line's opacity.
 pub(super) fn write_arrowhead_at(
     out: &mut String,
     stroke: &Option<BorderSide>,
+    opacity: Option<f64>,
     from: (f64, f64),
     tip: (f64, f64),
 ) {
@@ -1680,7 +1733,10 @@ pub(super) fn write_arrowhead_at(
         format_f64(v2.1),
         format_f64(v3.0),
         format_f64(v3.1),
-        rgb(&stroke.color),
+        match opacity {
+            Some(opacity) => rgb_with_alpha(&stroke.color, opacity_byte(opacity)),
+            None => rgb(&stroke.color),
+        },
     );
     out.push_str(")]\n");
 }

@@ -2144,6 +2144,7 @@ fn default_anchor_shape() -> crate::ir::Shape {
         stroke: None,
         rotation_deg: None,
         opacity: None,
+        stroke_opacity: None,
         shadow: None,
         top_bevel: None,
     }

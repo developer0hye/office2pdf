@@ -2630,6 +2630,7 @@ fn test_docx_page_borders_back_layer_stays_behind_header_artwork() {
                 stroke: None,
                 rotation_deg: None,
                 opacity: None,
+                stroke_opacity: None,
                 shadow: None,
                 top_bevel: None,
             }),

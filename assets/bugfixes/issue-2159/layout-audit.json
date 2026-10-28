@@ -1,0 +1,474 @@
+{
+ "pages": [
+  {
+   "lines": {
+    "gt": 1,
+    "out": 1,
+    "matched": 1,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 1,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 0.35999499999997653,
+    "worst_dy": 0.35999499999997653,
+    "worst_dy_signed": 0.35999499999997653,
+    "worst_line": "Test4\u2014combinaisonapparition,d\u00e9placement,disparition"
+   },
+   "dx0": {
+    "mean_abs": 0.0,
+    "worst": 0.0
+   },
+   "width": {
+    "mean_abs_pct": 0.139030277440297,
+    "worst_pct": 0.139030277440297
+   },
+   "instances": {
+    "compared": 1,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 0,
+    "large_shifts": [],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 0,
+    "fine_shifts": []
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 0,
+    "worst_delta": 0.0
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 3,
+    "out_count": 3,
+    "canonical_gt_count": 2,
+    "canonical_out_count": 2,
+    "matched": 2,
+    "unmatched_gt": 0,
+    "unmatched_out": 0,
+    "mean_center_delta": 0.0022677587500083973,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 1,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [
+     {
+      "kind": "stroke",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       2
+      ],
+      "out_indices": [
+       2
+      ],
+      "gt_bbox": [
+       351.45,
+       126.18,
+       423.45,
+       198.18
+      ],
+      "out_bbox": [
+       351.44554,
+       126.17819,
+       423.44554,
+       198.17819
+      ],
+      "dx": -0.004459999999994579,
+      "dy": -0.0018100000000060845,
+      "dwidth": 0.0,
+      "dheight": 0.0,
+      "edges": {
+       "left": -0.004459999999994579,
+       "top": -0.0018100000000060845,
+       "right": -0.004459999999994579,
+       "bottom": -0.0018100000000060845
+      },
+      "center_dx": -0.004459999999994579,
+      "center_dy": -0.0018100000000060845,
+      "max_abs_delta": 0.004459999999994579
+     },
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       0
+      ],
+      "out_indices": [
+       0
+      ],
+      "gt_bbox": [
+       0.0,
+       -9.000000000014552e-05,
+       960.0,
+       539.999938965
+      ],
+      "out_bbox": [
+       0.0,
+       0.0,
+       960.0,
+       540.0
+      ],
+      "dx": 0.0,
+      "dy": 9.000000000014552e-05,
+      "dwidth": 0.0,
+      "dheight": -2.896499995586055e-05,
+      "edges": {
+       "left": 0.0,
+       "top": 9.000000000014552e-05,
+       "right": 0.0,
+       "bottom": 6.103500004428497e-05
+      },
+      "center_dx": 0.0,
+      "center_dy": 7.551750002221524e-05,
+      "max_abs_delta": 9.000000000014552e-05,
+      "visible_coverage": {
+       "status": "unmodeled",
+       "mismatch_area_pt2": 0.0,
+       "unmodeled_area_pt2": 518399.9553096,
+       "unmodeled_samples": [
+        [
+         0.0,
+         -4.500000000007276e-05,
+         275.76,
+         124.19799
+        ],
+        [
+         0.0,
+         124.19799,
+         275.76,
+         124.88455
+        ],
+        [
+         0.0,
+         124.88455,
+         275.76,
+         126.179095
+        ],
+        [
+         0.0,
+         126.179095,
+         275.76,
+         198.17909500000002
+        ],
+        [
+         0.0,
+         198.17909500000002,
+         275.76,
+         203.246925
+        ]
+       ],
+       "mismatch_samples": [],
+       "raw_edge_coverage": {
+        "left": "unchanged",
+        "right": "unchanged",
+        "top": "unchanged",
+        "bottom": "unchanged"
+       }
+      }
+     }
+    ],
+    "x": {
+     "mean_abs": 0.0022299999999972897,
+     "worst": -0.004459999999994579
+    },
+    "y": {
+     "mean_abs": 0.000950000000003115,
+     "worst": -0.0018100000000060845
+    },
+    "width": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "height": {
+     "mean_abs": 1.4482499977930274e-05,
+     "worst": -2.896499995586055e-05
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.0022299999999972897,
+      "worst": -0.004459999999994579
+     },
+     "top": {
+      "mean_abs": 0.000950000000003115,
+      "worst": -0.0018100000000060845
+     },
+     "right": {
+      "mean_abs": 0.0022299999999972897,
+      "worst": -0.004459999999994579
+     },
+     "bottom": {
+      "mean_abs": 0.0009355175000251847,
+      "worst": -0.0018100000000060845
+     }
+    }
+   },
+   "noise_floor": 0.12
+  },
+  {
+   "lines": {
+    "gt": 1,
+    "out": 1,
+    "matched": 1,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 1,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 0.35999499999997653,
+    "worst_dy": 0.35999499999997653,
+    "worst_dy_signed": 0.35999499999997653,
+    "worst_line": "Test4\u2014combinaisonapparition,d\u00e9placement,disparition"
+   },
+   "dx0": {
+    "mean_abs": 0.0,
+    "worst": 0.0
+   },
+   "width": {
+    "mean_abs_pct": 0.139030277440297,
+    "worst_pct": 0.139030277440297
+   },
+   "instances": {
+    "compared": 1,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 0,
+    "large_shifts": [],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 0,
+    "fine_shifts": []
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 0,
+    "worst_delta": 0.0
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 3,
+    "out_count": 3,
+    "canonical_gt_count": 2,
+    "canonical_out_count": 2,
+    "matched": 2,
+    "unmatched_gt": 0,
+    "unmatched_out": 0,
+    "mean_center_delta": 0.0022677587500083973,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 1,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [
+     {
+      "kind": "stroke",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       2
+      ],
+      "out_indices": [
+       2
+      ],
+      "gt_bbox": [
+       351.45,
+       126.18,
+       423.45,
+       198.18
+      ],
+      "out_bbox": [
+       351.44554,
+       126.17819,
+       423.44554,
+       198.17819
+      ],
+      "dx": -0.004459999999994579,
+      "dy": -0.0018100000000060845,
+      "dwidth": 0.0,
+      "dheight": 0.0,
+      "edges": {
+       "left": -0.004459999999994579,
+       "top": -0.0018100000000060845,
+       "right": -0.004459999999994579,
+       "bottom": -0.0018100000000060845
+      },
+      "center_dx": -0.004459999999994579,
+      "center_dy": -0.0018100000000060845,
+      "max_abs_delta": 0.004459999999994579
+     },
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       0
+      ],
+      "out_indices": [
+       0
+      ],
+      "gt_bbox": [
+       0.0,
+       -9.000000000014552e-05,
+       960.0,
+       539.999938965
+      ],
+      "out_bbox": [
+       0.0,
+       0.0,
+       960.0,
+       540.0
+      ],
+      "dx": 0.0,
+      "dy": 9.000000000014552e-05,
+      "dwidth": 0.0,
+      "dheight": -2.896499995586055e-05,
+      "edges": {
+       "left": 0.0,
+       "top": 9.000000000014552e-05,
+       "right": 0.0,
+       "bottom": 6.103500004428497e-05
+      },
+      "center_dx": 0.0,
+      "center_dy": 7.551750002221524e-05,
+      "max_abs_delta": 9.000000000014552e-05,
+      "visible_coverage": {
+       "status": "unmodeled",
+       "mismatch_area_pt2": 0.0,
+       "unmodeled_area_pt2": 518399.9553096,
+       "unmodeled_samples": [
+        [
+         0.0,
+         -4.500000000007276e-05,
+         275.76,
+         124.19799
+        ],
+        [
+         0.0,
+         124.19799,
+         275.76,
+         124.88455
+        ],
+        [
+         0.0,
+         124.88455,
+         275.76,
+         126.179095
+        ],
+        [
+         0.0,
+         126.179095,
+         275.76,
+         198.17909500000002
+        ],
+        [
+         0.0,
+         198.17909500000002,
+         275.76,
+         203.246925
+        ]
+       ],
+       "mismatch_samples": [],
+       "raw_edge_coverage": {
+        "left": "unchanged",
+        "right": "unchanged",
+        "top": "unchanged",
+        "bottom": "unchanged"
+       }
+      }
+     }
+    ],
+    "x": {
+     "mean_abs": 0.0022299999999972897,
+     "worst": -0.004459999999994579
+    },
+    "y": {
+     "mean_abs": 0.000950000000003115,
+     "worst": -0.0018100000000060845
+    },
+    "width": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "height": {
+     "mean_abs": 1.4482499977930274e-05,
+     "worst": -2.896499995586055e-05
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.0022299999999972897,
+      "worst": -0.004459999999994579
+     },
+     "top": {
+      "mean_abs": 0.000950000000003115,
+      "worst": -0.0018100000000060845
+     },
+     "right": {
+      "mean_abs": 0.0022299999999972897,
+      "worst": -0.004459999999994579
+     },
+     "bottom": {
+      "mean_abs": 0.0009355175000251847,
+      "worst": -0.0018100000000060845
+     }
+    }
+   },
+   "noise_floor": 0.12
+  }
+ ],
+ "gt_pages": 2,
+ "out_pages": 2
+}

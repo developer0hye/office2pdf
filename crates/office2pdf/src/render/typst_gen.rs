@@ -1733,7 +1733,7 @@ fn generate_fixed_page(
             format_f64(size.width),
             format_f64(size.height),
         );
-        write_gradient_fill(out, gradient);
+        write_gradient_fill(out, gradient, None);
         let _ = writeln!(out, ")");
     } else if let Some(ref bg) = page.background_color {
         let _ = writeln!(

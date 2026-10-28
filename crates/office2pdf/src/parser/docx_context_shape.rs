@@ -233,6 +233,7 @@ impl ShapeBuilder {
                 stroke,
                 rotation_deg: self.rotation_deg,
                 opacity: self.fill_opacity,
+                stroke_opacity: None,
                 shadow: None,
                 top_bevel: None,
             },

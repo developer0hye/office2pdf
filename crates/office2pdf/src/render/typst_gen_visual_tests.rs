@@ -358,7 +358,7 @@ fn explicit_no_line_does_not_emit_an_arrowhead() {
     });
     let mut output: String = String::new();
 
-    super::super::shapes::write_arrowhead_at(&mut output, &stroke, (0.0, 0.0), (10.0, 0.0));
+    super::super::shapes::write_arrowhead_at(&mut output, &stroke, None, (0.0, 0.0), (10.0, 0.0));
 
     assert!(
         output.is_empty(),
@@ -770,6 +770,7 @@ fn test_consecutive_floating_shapes_share_one_anchor_line() {
         stroke: None,
         rotation_deg: None,
         opacity: None,
+        stroke_opacity: None,
         shadow: None,
         top_bevel: None,
     };
@@ -823,6 +824,7 @@ fn a_translucent_floating_shape_fill_uses_shape_opacity() {
                 stroke: None,
                 rotation_deg: None,
                 opacity: Some(0.16),
+                stroke_opacity: None,
                 shadow: None,
                 top_bevel: None,
             },
@@ -1012,6 +1014,7 @@ fn test_gradient_shape_fill_codegen() {
             stroke: None,
             rotation_deg: None,
             opacity: None,
+            stroke_opacity: None,
             shadow: None,
             top_bevel: None,
         }),
@@ -1035,6 +1038,92 @@ fn test_gradient_shape_fill_codegen() {
     );
 }
 
+/// A translucent ellipse: half-opaque gradient fill, quarter-opaque outline.
+fn translucent_gradient_ellipse() -> FixedElement {
+    FixedElement {
+        x: 10.0,
+        y: 20.0,
+        width: 72.0,
+        height: 72.0,
+        kind: FixedElementKind::Shape(Shape {
+            kind: ShapeKind::Ellipse,
+            fill: Some(Color::new(255, 0, 0)),
+            gradient_fill: Some(GradientFill {
+                stops: vec![
+                    GradientStop {
+                        position: 0.0,
+                        color: Color::new(0, 128, 0),
+                    },
+                    GradientStop {
+                        position: 1.0,
+                        color: Color::new(0, 0, 128),
+                    },
+                ],
+                angle: 270.0,
+            }),
+            pattern_fill: None,
+            stroke: Some(BorderSide {
+                width: 2.0,
+                color: Color::new(10, 20, 30),
+                style: BorderLineStyle::Solid,
+                join: LineJoin::Round,
+                cap: LineCap::Flat,
+            }),
+            rotation_deg: None,
+            opacity: Some(0.5),
+            stroke_opacity: Some(0.25),
+            shadow: None,
+            top_bevel: None,
+        }),
+    }
+}
+
+/// Fill opacity masks every gradient stop alike, and the outline paints at its
+/// own opacity (issue #2159).
+#[test]
+fn translucent_shape_writes_gradient_and_outline_alpha() {
+    let doc = make_doc(vec![make_fixed_page(
+        720.0,
+        540.0,
+        vec![translucent_gradient_ellipse()],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+
+    assert!(
+        output.source.contains("(rgb(0, 128, 0, 128), 0%)")
+            && output.source.contains("(rgb(0, 0, 128, 128), 100%)"),
+        "both stops composite at 128/255: {}",
+        output.source,
+    );
+    assert!(
+        output.source.contains("paint: rgb(10, 20, 30, 64)"),
+        "the outline composites at 64/255: {}",
+        output.source,
+    );
+}
+
+/// The compiled page strokes the outline with that alpha, not opaque.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn translucent_shape_outline_compiles_with_its_alpha() {
+    use crate::render::pdf::{PaintedKind, compiled_paint_sequence};
+
+    let doc = make_doc(vec![make_fixed_page(
+        720.0,
+        540.0,
+        vec![translucent_gradient_ellipse()],
+    )]);
+    let output = generate_typst(&doc).unwrap();
+    let painted = compiled_paint_sequence(&output.source, &output.images, 0).unwrap();
+    let stroke_color = painted
+        .iter()
+        .filter(|item| item.kind == PaintedKind::Shape)
+        .find_map(|item| item.stroke.as_ref()?.color.clone())
+        .expect("the ellipse is stroked with a solid paint");
+
+    assert_eq!(stroke_color.to_vec4_u8(), [10, 20, 30, 64]);
+}
+
 #[test]
 fn test_light_upward_diagonal_pattern_fill_codegen() {
     let elem = FixedElement {
@@ -1054,6 +1143,7 @@ fn test_light_upward_diagonal_pattern_fill_codegen() {
             stroke: None,
             rotation_deg: None,
             opacity: None,
+            stroke_opacity: None,
             shadow: None,
             top_bevel: None,
         }),
@@ -1104,6 +1194,7 @@ fn test_all_pattern_presets_compile_to_pdf() {
                 stroke: None,
                 rotation_deg: None,
                 opacity: None,
+                stroke_opacity: None,
                 shadow: None,
                 top_bevel: None,
             }),
@@ -1137,6 +1228,7 @@ fn test_shape_shadow_codegen() {
             stroke: None,
             rotation_deg: None,
             opacity: None,
+            stroke_opacity: None,
             shadow: Some(Shadow {
                 blur_radius: 4.0,
                 distance: 3.0,
@@ -1185,6 +1277,7 @@ fn test_path_shape_casts_its_outline_as_a_shadow() {
             stroke: None,
             rotation_deg: None,
             opacity: None,
+            stroke_opacity: None,
             shadow: Some(Shadow {
                 blur_radius: 0.0,
                 distance: 3.0,
@@ -1249,6 +1342,7 @@ fn test_open_subpath_casts_an_offset_copy_of_its_stroke() {
             }),
             rotation_deg: None,
             opacity: None,
+            stroke_opacity: None,
             shadow: Some(Shadow {
                 blur_radius: 0.0,
                 distance: 3.0,
@@ -1310,6 +1404,7 @@ fn test_blurred_open_subpath_filters_its_stroke_without_filling_it() {
             }),
             rotation_deg: None,
             opacity: None,
+            stroke_opacity: None,
             shadow: Some(Shadow {
                 blur_radius: 6.0,
                 distance: 3.0,
@@ -1356,6 +1451,7 @@ fn test_shape_no_shadow_no_extra_output() {
             stroke: None,
             rotation_deg: None,
             opacity: None,
+            stroke_opacity: None,
             shadow: None,
             top_bevel: None,
         }),
@@ -1386,6 +1482,7 @@ fn test_rectangle_top_bevel_draws_four_lit_rim_faces() {
             stroke: None,
             rotation_deg: None,
             opacity: None,
+            stroke_opacity: None,
             shadow: None,
             top_bevel: Some(TopBevel {
                 width: 5.0,
@@ -1517,6 +1614,7 @@ fn test_shape_shadow_blur_uses_one_continuous_gaussian_asset() {
             stroke: None,
             rotation_deg: None,
             opacity: None,
+            stroke_opacity: None,
             shadow: Some(Shadow {
                 blur_radius: 8.0,
                 distance: 3.0,
@@ -1645,6 +1743,7 @@ fn test_shadow_silhouette_outsets_by_half_the_outline_width() {
             // Blur left off so the silhouette itself is what the geometry
             // below measures; the continuous blur contract is covered by
             // `test_shape_shadow_blur_uses_one_continuous_gaussian_asset`.
+            stroke_opacity: None,
             shadow: Some(Shadow {
                 blur_radius: 0.0,
                 distance: 1.57,
@@ -1697,6 +1796,7 @@ fn test_shadow_silhouette_ignores_outline_when_shape_has_none() {
             stroke: None,
             rotation_deg: None,
             opacity: None,
+            stroke_opacity: None,
             shadow: Some(Shadow {
                 blur_radius: 0.0,
                 distance: 1.57,
@@ -1746,6 +1846,7 @@ fn banner_shadow_output(stroke: Option<BorderSide>, rounded: bool) -> TypstOutpu
             stroke,
             rotation_deg: None,
             opacity: None,
+            stroke_opacity: None,
             shadow: Some(Shadow {
                 blur_radius: 40000.0 / 12700.0,
                 distance: 1.57,
@@ -1825,6 +1926,7 @@ fn test_shape_shadow_without_blur_keeps_single_duplicate() {
             stroke: None,
             rotation_deg: None,
             opacity: None,
+            stroke_opacity: None,
             shadow: Some(Shadow {
                 blur_radius: 0.0,
                 distance: 3.0,
@@ -1901,6 +2003,7 @@ fn triangle_shadow_output(stroke: Option<BorderSide>, blur_radius: f64) -> Typst
             stroke,
             rotation_deg: None,
             opacity: None,
+            stroke_opacity: None,
             shadow: Some(Shadow {
                 blur_radius,
                 distance: 0.0,
@@ -2027,6 +2130,7 @@ fn test_path_shadow_shrinks_a_hole_while_it_grows_the_outline() {
             }),
             rotation_deg: None,
             opacity: None,
+            stroke_opacity: None,
             shadow: Some(Shadow {
                 blur_radius: 0.0,
                 distance: 0.0,

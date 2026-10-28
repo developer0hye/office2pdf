@@ -1,0 +1,55 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 173.952,
+      "bbox_pt": {
+        "height": 2.88,
+        "width": 72.96,
+        "x": 351.36,
+        "y": 198.72
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Theme outerShdw halo below both opaque shapes: ours reads up to ~28 levels darker and ~0.5pt longer in a 2-4pt band (rectangle centre column at 199.2pt: GT 195, ours 174). Unchanged by this PR (identical before/after clusters); sub-material soft-shadow edge recorded under #1874."
+      },
+      "id": "p1-c3b11fe05509",
+      "region": "center"
+    },
+    {
+      "area_pt2": 105.984,
+      "bbox_pt": {
+        "height": 19.68,
+        "width": 54.24,
+        "x": 293.28,
+        "y": 181.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Theme outerShdw halo below both opaque shapes: ours reads up to ~28 levels darker and ~0.5pt longer in a 2-4pt band (rectangle centre column at 199.2pt: GT 195, ours 174). Unchanged by this PR (identical before/after clusters); sub-material soft-shadow edge recorded under #1874."
+      },
+      "id": "p1-4b6130ef9c2d",
+      "region": "center"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 2,
+    "duplicate": 0,
+    "total": 2,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
