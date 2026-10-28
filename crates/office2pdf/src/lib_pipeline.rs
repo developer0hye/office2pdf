@@ -943,6 +943,7 @@ mod streaming_chunk_tests {
 
     fn fixed_row(height: f64) -> ir::TableRow {
         ir::TableRow {
+            cant_split: false,
             cells: Vec::new(),
             height: Some(height),
             minimum_height: None,
@@ -1021,6 +1022,7 @@ mod streaming_chunk_tests {
     fn content_driven_rows_use_typst_boundary_search() {
         let page = sheet_page(ir::Table {
             rows: vec![ir::TableRow {
+                cant_split: false,
                 cells: Vec::new(),
                 height: None,
                 minimum_height: None,

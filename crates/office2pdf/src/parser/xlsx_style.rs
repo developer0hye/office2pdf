@@ -134,6 +134,8 @@ pub(super) fn extract_cell_text_style(
         // XLSX has no kerning concept at all, so the renderer's own default
         // stands (issue #628).
         pair_kerning: None,
+        // Nor any ligature property (issue #2205).
+        ligatures: None,
     }
 }
 

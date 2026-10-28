@@ -11,7 +11,7 @@ use super::*;
 /// `cellXfs` index a cell's `s` attribute names is exactly what this joins.
 fn build_xlsx_with_styles_and_sheet(styles_xml: &str, sheet_body: &str) -> Vec<u8> {
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
     let mut write = |path: &str, body: &str| {
         zip.start_file(path, options).unwrap();
         std::io::Write::write_all(&mut zip, body.as_bytes()).unwrap();

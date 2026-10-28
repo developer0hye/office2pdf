@@ -50,7 +50,13 @@ def visual_body(result_overrides=None, include_previews=True):
         if include_previews
         else ""
     )
-    return f"""## Visual impact
+    return f"""## Final performance pass
+
+- Status: Complete
+- Measurements: After visual acceptance, seven warm-cache conversions of the reported input and control; accepted build 1.26s / 153 MiB, final build 1.25s / 153 MiB. Commands and environment recorded in the benchmark report.
+- Outcome and revalidation: Ranges overlap; no worthwhile simple optimization was supported. No code changed after visual acceptance.
+
+## Visual impact
 
 - [ ] No rendered PDF change
 - [x] Rendered PDF change or visual evidence added
@@ -358,6 +364,55 @@ def defect_body():
 
 
 class PullRequestBodyTests(unittest.TestCase):
+    def test_visual_pr_requires_final_performance_pass(self):
+        body = re.sub(r"(?ms)^## Final performance pass\n.*?(?=^## |\Z)", "", visual_body())
+        errors = validate_pr_body(body, ["assets/bugfixes/issue-186/after.jpg"])
+        self.assertTrue(any("Final performance pass" in error for error in errors))
+
+    def test_visual_pr_rejects_unfinished_performance_pass(self):
+        for status in ("Pending", "In progress", "None", ""):
+            with self.subTest(status=status):
+                body = visual_body().replace("- Status: Complete", f"- Status: {status}")
+                errors = validate_pr_body(body, ["assets/bugfixes/issue-186/after.jpg"])
+                self.assertTrue(any("Final performance pass" in error for error in errors))
+
+    def test_completed_performance_pass_requires_measurements_and_outcome(self):
+        for name in ("Measurements", "Outcome and revalidation"):
+            for value in ("", "<!-- Fill in evidence -->", "Pending", "None", "N/A", "TODO"):
+                with self.subTest(name=name, value=value):
+                    body = re.sub(rf"(?m)^- {name}:.*$", f"- {name}: {value}", visual_body())
+                    errors = validate_pr_body(body, ["assets/bugfixes/issue-186/after.jpg"])
+                    self.assertTrue(any(f"Final performance pass > {name}" in error for error in errors))
+
+    def test_performance_pass_can_record_a_measured_optimization(self):
+        body = re.sub(
+            r"(?m)^- Outcome and revalidation:.*$",
+            "- Outcome and revalidation: Removed a measured duplicate scan; median 1.26s to 1.10s with unchanged peak RSS. Required tests and every affected page's fresh visual audit pass.",
+            visual_body(),
+        )
+        self.assertEqual(validate_pr_body(body, ["assets/bugfixes/issue-186/after.jpg"]), [])
+
+    def test_performance_exemption_requires_a_reason(self):
+        for status in ("Not applicable", "Not applicable:", "Not applicable: <!-- reason -->", "Not applicable: reason"):
+            with self.subTest(status=status):
+                body = visual_body().replace("- Status: Complete", f"- Status: {status}")
+                errors = validate_pr_body(body, ["assets/bugfixes/issue-186/after.jpg"])
+                self.assertTrue(any("Final performance pass" in error for error in errors))
+
+    def test_evidence_only_pr_can_explain_no_runtime_impact(self):
+        body = re.sub(r"(?ms)^## Final performance pass\n.*?(?=^## |\Z)", "", visual_body()) + """## Final performance pass
+
+- Status: Not applicable: Adds audit images and reports only; conversion runtime is unchanged.
+"""
+        self.assertEqual(validate_pr_body(body, ["assets/bugfixes/issue-186/after.jpg"]), [])
+
+    def test_commented_performance_completion_does_not_count(self):
+        body = visual_body().replace(
+            "## Final performance pass", "<!--\n## Final performance pass"
+        ).replace("## Visual impact", "-->\n\n## Visual impact")
+        errors = validate_pr_body(body, ["assets/bugfixes/issue-186/after.jpg"])
+        self.assertTrue(any("Final performance pass" in error for error in errors))
+
     def test_multiple_reference_differences_can_share_one_deviation_row(self):
         difference_ids = {
             "page-2-slide-number-rasterized",

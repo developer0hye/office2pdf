@@ -109,7 +109,7 @@ by applicable law.
 
 ## Final performance pass
 
-<!-- After visual acceptance and before final CI/merge, follow AGENTS.md's final memory and speed pass. Keep Pending until measurements, any worthwhile simple optimization, and revalidation are finished. Not applicable requires a reason showing no conversion runtime impact. -->
+<!-- After visual acceptance and before final CI/merge, follow AGENTS.md's final memory and speed pass. Keep Pending until measurements, any worthwhile simple optimization, and revalidation are finished. Visual PR Contract requires Complete plus non-placeholder evidence fields (links allowed), or Not applicable: explanation. Only use the exemption for changes with no conversion runtime impact; review verifies applicability and the evidence. -->
 
 - Status: Pending <!-- Complete, or Not applicable: reason -->
 - Measurements: <!-- Input/control IDs, commands, repetitions, profile, hardware/OS/fonts, cache conditions; conversion time and peak process memory before/after optimization. Scoped results are not product SLAs. -->

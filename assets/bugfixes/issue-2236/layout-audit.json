@@ -1,0 +1,136 @@
+{
+ "pages": [
+  {
+   "lines": {
+    "gt": 3,
+    "out": 3,
+    "matched": 3,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 3,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 0.6816799999999622,
+    "worst_dy": 1.738479999999953,
+    "worst_dy_signed": 1.738479999999953,
+    "worst_line": "AFTERFLOAT"
+   },
+   "dx0": {
+    "mean_abs": 0.044999999999996966,
+    "worst": 0.05499999999999261
+   },
+   "width": {
+    "mean_abs_pct": 0.8250966745355561,
+    "worst_pct": 1.7159778648973607
+   },
+   "instances": {
+    "compared": 3,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 0,
+    "large_shifts": [],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 1,
+    "fine_shifts": [
+     {
+      "label": "AFTERFLOAT",
+      "gt_x": 72.025,
+      "gt_y": 241.33000000000004,
+      "out_x": 72.0,
+      "out_y": 243.06848,
+      "dx": -0.025000000000005684,
+      "dy": 1.738479999999953,
+      "width_pct": 1.7159778648973607
+     }
+    ]
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 2,
+    "worst_delta": 1.9017599999999106
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 0,
+    "out_count": 0,
+    "canonical_gt_count": 0,
+    "canonical_out_count": 0,
+    "matched": 0,
+    "unmatched_gt": 0,
+    "unmatched_out": 0,
+    "mean_center_delta": 0.0,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 0,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [],
+    "x": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "y": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "width": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "height": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "top": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "right": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "bottom": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     }
+    }
+   },
+   "noise_floor": 0.12
+  }
+ ],
+ "gt_pages": 1,
+ "out_pages": 1
+}

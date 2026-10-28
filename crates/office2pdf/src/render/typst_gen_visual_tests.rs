@@ -394,6 +394,7 @@ fn test_floating_image_square_wrap_codegen() {
                     fill_rect: None,
                     shadow: None,
                     paragraph_spacing: None,
+                    paragraph_indent: None,
                 },
                 wrap_mode: WrapMode::Square,
                 vertical_anchor: FloatingImageVerticalAnchor::Page,
@@ -457,6 +458,7 @@ fn test_floating_image_top_and_bottom_codegen() {
                     fill_rect: None,
                     shadow: None,
                     paragraph_spacing: None,
+                    paragraph_indent: None,
                 },
                 wrap_mode: WrapMode::TopAndBottom,
                 vertical_anchor: FloatingImageVerticalAnchor::Page,
@@ -515,6 +517,7 @@ fn test_floating_image_behind_codegen() {
                     fill_rect: None,
                     shadow: None,
                     paragraph_spacing: None,
+                    paragraph_indent: None,
                 },
                 wrap_mode: WrapMode::Behind,
                 vertical_anchor: FloatingImageVerticalAnchor::Page,
@@ -2114,6 +2117,7 @@ fn test_inline_text_box_is_emitted_inside_its_anchor_paragraph() {
                         }),
                         Block::Table(Table {
                             rows: vec![TableRow {
+                                cant_split: false,
                                 cells: vec![
                                     TableCell {
                                         content: vec![Block::Paragraph(Paragraph {
@@ -2164,6 +2168,7 @@ fn test_inline_text_box_is_emitted_inside_its_anchor_paragraph() {
                             fill_rect: None,
                             shadow: None,
                             paragraph_spacing: None,
+                            paragraph_indent: None,
                         }),
                     ],
                     width: 144.0,
@@ -2257,6 +2262,7 @@ fn test_inline_text_box_survives_a_tab_and_a_table_cell() {
     let nested_table = || {
         Block::Table(Table {
             rows: vec![TableRow {
+                cant_split: false,
                 cells: vec![TableCell {
                     content: vec![Block::Paragraph(Paragraph {
                         style: ParagraphStyle::default(),
@@ -2346,6 +2352,7 @@ fn test_inline_text_box_survives_a_tab_and_a_table_cell() {
     // A table cell's paragraphs go through the table generator, not the body's.
     let celled = make_doc(vec![make_flow_page(vec![Block::Table(Table {
         rows: vec![TableRow {
+            cant_split: false,
             cells: vec![TableCell {
                 content: vec![Block::Paragraph(Paragraph {
                     style: ParagraphStyle::default(),
@@ -2414,6 +2421,7 @@ fn footnote_inline_text_box_preserves_nested_table_text() {
     for (anchor, label) in [("Source", "ReferenceCell"), ("Source:\t", "AppendixCell")] {
         let table = Table {
             rows: vec![TableRow {
+                cant_split: false,
                 cells: vec![TableCell {
                     content: vec![make_paragraph(label)],
                     ..TableCell::default()

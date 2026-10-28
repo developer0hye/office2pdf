@@ -29,6 +29,8 @@ struct RawRow {
     /// Minimum row height in points, from the same `w:trHeight` read under
     /// `atLeast` (issue #965).
     minimum_height: Option<f64>,
+    /// `w:cantSplit`, from the story scan (issue #2217).
+    cant_split: bool,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -260,6 +262,21 @@ fn convert_table_with_context(
         table_style.as_ref(),
         source_table_column_count(table),
     );
+    // The scan and docx-rs see the same `w:tr` elements in the same order. A
+    // count mismatch means one of them skipped a row, so no flag can be
+    // attributed to a row safely and every row keeps the default.
+    if header_info.cant_split_rows.len() == raw_rows.len() {
+        for (raw_row, cant_split) in raw_rows.iter_mut().zip(&header_info.cant_split_rows) {
+            raw_row.cant_split = *cant_split;
+        }
+    } else {
+        tracing::debug!(
+            format = "DOCX",
+            scanned_rows = header_info.cant_split_rows.len(),
+            parsed_rows = raw_rows.len(),
+            "Table row counts disagree; ignoring w:cantSplit for this table"
+        );
+    }
     // The table's own `w:tblBorders`, as tri-states: a stated `none` has to
     // reach the style merge as a suppression rather than as silence
     // (issue #931).
@@ -482,6 +499,7 @@ fn extract_raw_rows(
             cells,
             height,
             minimum_height,
+            cant_split: false,
         });
     }
 
@@ -1118,6 +1136,7 @@ fn resolve_vmerge_and_build_rows(raw_rows: &[RawRow]) -> Vec<TableRow> {
         }
 
         rows.push(TableRow {
+            cant_split: raw_row.cant_split,
             cells,
             height: raw_row.height,
             minimum_height: raw_row.minimum_height,

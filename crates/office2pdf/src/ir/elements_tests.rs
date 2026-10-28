@@ -92,7 +92,7 @@ fn test_list_ordered() {
             0,
             ListLevelStyle {
                 kind: ListKind::Ordered,
-                numbering_pattern: Some("1.".to_string()),
+                numbering_pattern: Some(NumberingPattern::parse("1.")),
                 full_numbering: false,
                 marker_text: None,
                 marker_style: None,

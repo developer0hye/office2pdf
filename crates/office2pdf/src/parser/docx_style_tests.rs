@@ -790,6 +790,7 @@ fn east_asia_theme_does_not_replace_the_inherited_latin_style_font() {
         &std::collections::HashMap::new(),
         &empty_context,
         &PairKerningRules::default(),
+        &LigatureRules::default(),
     );
 
     assert_eq!(
@@ -914,7 +915,7 @@ fn build_docx_without_styles_part(body_xml: &str, theme_xml: Option<&str>) -> Ve
     use std::io::Write;
 
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
     let theme_override: &str = if theme_xml.is_some() {
         r#"<Override PartName="/word/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>"#
     } else {
@@ -2530,6 +2531,354 @@ fn test_paragraph_property_defaults_are_scanned_from_the_raw_styles_part() {
     assert!(!declares(
         r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#
     ));
+}
+
+// ----- Ligatures (issue #2205) -----
+
+/// `w14:ligatures` lives in the Word 2010 namespace, which every test part
+/// below declares beside the main one.
+const LIGATURE_STYLES_NAMESPACES: &str = r#"xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml""#;
+
+const STANDARD_AND_CONTEXTUAL: Ligatures = Ligatures {
+    standard: true,
+    contextual: true,
+    historical: false,
+    discretional: false,
+};
+
+#[test]
+fn test_run_without_ligatures_element_resolves_to_no_ligatures() {
+    // Word draws no ligature that no `w14:ligatures` asks for: the Word
+    // reference of docxide case8 sets the `ffi` of `officia` as three glyphs
+    // in a face that has the ligature.
+    let data = build_docx_bytes(vec![
+        docx_rs::Paragraph::new()
+            .add_run(docx_rs::Run::new().add_text("culpa qui officia deserunt")),
+    ]);
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert_eq!(
+        first_run(&doc).style.ligatures,
+        Some(Ligatures::NONE),
+        "an absent w14:ligatures must resolve to 'no ligatures', not to 'unstated'"
+    );
+    assert_eq!(
+        doc.styles
+            .default_text
+            .as_ref()
+            .and_then(|text| text.ligatures),
+        Some(Ligatures::NONE),
+        "the document default carries the same decision"
+    );
+}
+
+#[test]
+fn test_ligatures_value_parses_each_class_and_their_combinations() {
+    assert_eq!(parse_ligatures_value("none"), Some(Ligatures::NONE));
+    assert_eq!(
+        parse_ligatures_value("standard"),
+        Some(Ligatures {
+            standard: true,
+            ..Ligatures::NONE
+        })
+    );
+    assert_eq!(
+        parse_ligatures_value("standardContextual"),
+        Some(STANDARD_AND_CONTEXTUAL)
+    );
+    assert_eq!(
+        parse_ligatures_value("historicalDiscretional"),
+        Some(Ligatures {
+            historical: true,
+            discretional: true,
+            ..Ligatures::NONE
+        })
+    );
+    assert_eq!(
+        parse_ligatures_value("contextualHistoricalDiscretional"),
+        Some(Ligatures {
+            contextual: true,
+            historical: true,
+            discretional: true,
+            ..Ligatures::NONE
+        })
+    );
+    assert_eq!(
+        parse_ligatures_value("all"),
+        Some(Ligatures {
+            standard: true,
+            contextual: true,
+            historical: true,
+            discretional: true,
+        })
+    );
+
+    // ST_Ligatures names its classes in one fixed order and only once each;
+    // anything else is not a value Word writes, so it states nothing.
+    for invalid in [
+        "",
+        "contextualStandard",
+        "standardStandard",
+        "Standard",
+        "bogus",
+    ] {
+        assert_eq!(parse_ligatures_value(invalid), None, "{invalid:?}");
+    }
+}
+
+#[test]
+fn test_doc_defaults_ligatures_are_read_from_the_raw_styles_part() {
+    // docx-rs has no field for `w14:ligatures`. Word's current blank-document
+    // template turns standard and contextual ligatures on in `w:docDefaults`,
+    // and its exports then draw `fi`, `fl` and `ff` as ligature glyphs.
+    let rules = LigatureRules::from_styles_xml(Some(&format!(
+        r#"<w:styles {LIGATURE_STYLES_NAMESPACES}>
+             <w:docDefaults><w:rPrDefault><w:rPr>
+               <w:kern w:val="2"/><w:sz w:val="22"/><w14:ligatures w14:val="standardContextual"/>
+             </w:rPr></w:rPrDefault></w:docDefaults>
+           </w:styles>"#
+    )));
+    assert_eq!(rules.document_default(), STANDARD_AND_CONTEXTUAL);
+
+    let silent = LigatureRules::from_styles_xml(Some(&format!(
+        r#"<w:styles {LIGATURE_STYLES_NAMESPACES}>
+             <w:docDefaults><w:rPrDefault><w:rPr><w:sz w:val="22"/></w:rPr></w:rPrDefault></w:docDefaults>
+           </w:styles>"#
+    )));
+    assert_eq!(
+        silent.document_default(),
+        Ligatures::NONE,
+        "an absent document default is Word's own answer, not an inheritance"
+    );
+    assert_eq!(
+        LigatureRules::from_styles_xml(None).document_default(),
+        Ligatures::NONE
+    );
+}
+
+#[test]
+fn test_style_ligatures_override_the_document_default_through_the_cascade() {
+    // A template can switch ligatures on in `w:docDefaults` and off again in
+    // its default paragraph style, then back on for its headings. Each run
+    // takes the nearest level that states the property.
+    let styles_xml = format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles {LIGATURE_STYLES_NAMESPACES}>
+  <w:docDefaults><w:rPrDefault><w:rPr><w:sz w:val="22"/><w14:ligatures w14:val="standardContextual"/></w:rPr></w:rPrDefault></w:docDefaults>
+  <w:style w:type="paragraph" w:default="1" w:styleId="Normal">
+    <w:name w:val="Normal"/><w:rPr><w14:ligatures w14:val="none"/></w:rPr>
+  </w:style>
+  <w:style w:type="paragraph" w:styleId="Heading1">
+    <w:name w:val="heading 1"/><w:basedOn w:val="Normal"/>
+    <w:rPr><w:sz w:val="32"/><w14:ligatures w14:val="standardContextual"/></w:rPr>
+  </w:style>
+  <w:style w:type="paragraph" w:styleId="BodyText">
+    <w:name w:val="Body Text"/><w:basedOn w:val="Normal"/><w:rPr><w:sz w:val="24"/></w:rPr>
+  </w:style>
+  <w:style w:type="character" w:styleId="Plain">
+    <w:name w:val="Plain"/><w:rPr><w14:ligatures w14:val="none"/></w:rPr>
+  </w:style>
+</w:styles>"#
+    );
+    let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+  <w:p><w:r><w:t>An official office</w:t></w:r></w:p>
+  <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Affirmed findings</w:t></w:r></w:p>
+  <w:p><w:pPr><w:pStyle w:val="BodyText"/></w:pPr><w:r><w:t>Suffix fluff</w:t></w:r></w:p>
+  <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr>
+    <w:r><w:rPr><w:rStyle w:val="Plain"/></w:rPr><w:t>Final figures</w:t></w:r>
+  </w:p>
+</w:body></w:document>"#;
+
+    let data = build_docx_with_styles_xml(document_xml, &styles_xml);
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let paragraphs: Vec<&Paragraph> = collect_paragraphs(&doc);
+
+    assert_eq!(
+        paragraphs[0].runs[0].style.ligatures,
+        Some(Ligatures::NONE),
+        "the default paragraph style's 'none' beats the document default"
+    );
+    assert_eq!(
+        paragraphs[1].runs[0].style.ligatures,
+        Some(STANDARD_AND_CONTEXTUAL),
+        "a heading style that states its own value beats the style it is based on"
+    );
+    assert_eq!(
+        paragraphs[2].runs[0].style.ligatures,
+        Some(Ligatures::NONE),
+        "a style that states nothing inherits through w:basedOn"
+    );
+    assert_eq!(
+        paragraphs[3].runs[0].style.ligatures,
+        Some(Ligatures::NONE),
+        "a character style beats the paragraph style beneath it"
+    );
+}
+
+#[test]
+fn test_word_document_stating_doc_defaults_ligatures_keeps_them() {
+    // 1-page.docx is genuine Word output whose `w:docDefaults` states
+    // `standardContextual`, so its body keeps the ligatures Word draws.
+    let data = std::fs::read(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/fixtures/docx/1-page.docx"
+    ))
+    .expect("fixture");
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+
+    assert_eq!(
+        first_run(&doc).style.ligatures,
+        Some(STANDARD_AND_CONTEXTUAL)
+    );
+}
+
+/// The runs of a document's paragraphs, after styles stating
+/// `rpr_default_extra` in their run defaults.
+fn runs_with_run_defaults(rpr_default_extra: &str, body_xml: &str) -> Vec<Vec<Run>> {
+    let styles_xml = format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles {LIGATURE_STYLES_NAMESPACES}>
+  <w:docDefaults><w:rPrDefault><w:rPr><w:sz w:val="22"/>{rpr_default_extra}</w:rPr></w:rPrDefault></w:docDefaults>
+</w:styles>"#
+    );
+    let document_xml = format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document {LIGATURE_STYLES_NAMESPACES}><w:body>{body_xml}</w:body></w:document>"#
+    );
+    let data = build_docx_with_styles_xml(&document_xml, &styles_xml);
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    collect_paragraphs(&doc)
+        .into_iter()
+        .map(|paragraph| paragraph.runs.clone())
+        .collect()
+}
+
+#[test]
+fn test_run_stating_its_own_ligatures_beats_the_document_default() {
+    // A run asks for standard ligatures in its own `w:rPr`, which docx-rs
+    // drops; Word ligates that run and no other. The deleted run before it
+    // states the opposite and never converts, so it must not take its slot.
+    let paragraphs = runs_with_run_defaults(
+        "",
+        r#"<w:p>
+          <w:del w:id="1" w:author="A"><w:r><w:rPr><w14:ligatures w14:val="none"/></w:rPr><w:delText>struck</w:delText></w:r></w:del>
+          <w:r><w:rPr><w14:ligatures w14:val="standard"/></w:rPr><w:t xml:space="preserve">fifi </w:t></w:r>
+          <w:r><w:t>office</w:t></w:r>
+          <w:hyperlink w:anchor="target"><w:r><w:rPr><w14:ligatures w14:val="historicalDiscretional"/></w:rPr><w:t>flow</w:t></w:r></w:hyperlink>
+        </w:p>"#,
+    );
+    let ligatures: Vec<(&str, Option<Ligatures>)> = paragraphs[0]
+        .iter()
+        .map(|run| (run.text.as_str(), run.style.ligatures))
+        .collect();
+
+    assert_eq!(
+        ligatures,
+        vec![
+            (
+                "fifi ",
+                Some(Ligatures {
+                    standard: true,
+                    ..Ligatures::NONE
+                })
+            ),
+            ("office", Some(Ligatures::NONE)),
+            (
+                "flow",
+                Some(Ligatures {
+                    historical: true,
+                    discretional: true,
+                    ..Ligatures::NONE
+                })
+            ),
+        ],
+        "each run keeps its own value, a hyperlink's included"
+    );
+}
+
+#[test]
+fn test_run_stating_no_ligatures_beats_defaults_that_turn_them_on() {
+    let paragraphs = runs_with_run_defaults(
+        r#"<w14:ligatures w14:val="standardContextual"/>"#,
+        r#"<w:p><w:r><w:t>first</w:t></w:r></w:p>
+        <w:p>
+          <w:r><w:rPr><w14:ligatures w14:val="none"/></w:rPr><w:t>offset</w:t></w:r>
+          <w:r><w:t>afflict</w:t></w:r>
+        </w:p>"#,
+    );
+
+    assert_eq!(
+        paragraphs[0][0].style.ligatures,
+        Some(STANDARD_AND_CONTEXTUAL)
+    );
+    assert_eq!(
+        paragraphs[1][0].style.ligatures,
+        Some(Ligatures::NONE),
+        "the run's own 'none' beats the document default"
+    );
+    assert_eq!(
+        paragraphs[1][1].style.ligatures,
+        Some(STANDARD_AND_CONTEXTUAL),
+        "its sibling keeps the default"
+    );
+}
+
+/// The glyphs the compiled layout draws for the `officia` paragraph of a
+/// document whose run defaults state `rpr_default_extra`, in a bundled face
+/// with standard `ffi` and `fi` ligatures.
+#[cfg(not(target_arch = "wasm32"))]
+fn shaped_officia_glyph_count(rpr_default_extra: &str) -> (usize, usize) {
+    let styles_xml = format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles {LIGATURE_STYLES_NAMESPACES}>
+  <w:docDefaults><w:rPrDefault><w:rPr>
+    <w:rFonts w:ascii="Libertinus Serif" w:hAnsi="Libertinus Serif"/><w:sz w:val="24"/>{rpr_default_extra}
+  </w:rPr></w:rPrDefault></w:docDefaults>
+</w:styles>"#
+    );
+    let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+  <w:p><w:r><w:t>officia</w:t></w:r></w:p>
+</w:body></w:document>"#;
+
+    let data = build_docx_with_styles_xml(document_xml, &styles_xml);
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let source: String = crate::render::typst_gen::generate_typst(&doc)
+        .unwrap()
+        .source;
+    let runs = crate::render::pdf::compiled_glyph_runs(&source, 0, false).unwrap();
+    let run = runs
+        .iter()
+        .find(|run| run.text == "officia")
+        .unwrap_or_else(|| panic!("the paragraph must shape as one run: {runs:?}"));
+    (run.advances_pt.len(), run.text.chars().count())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_document_stating_no_ligatures_draws_each_letter_of_officia() {
+    // Word draws `ffi` as three glyphs unless the document asks otherwise;
+    // the fused glyph pulled the rest of docxide case8's line one cell left.
+    let (glyphs, characters) = shaped_officia_glyph_count("");
+    assert_eq!(
+        glyphs, characters,
+        "every character of `officia` is its own glyph"
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_document_stating_standard_ligatures_fuses_officia() {
+    // Triangulation: the face does ligate, and a document that asks for it
+    // keeps the fused form Word draws for it.
+    let (glyphs, characters) =
+        shaped_officia_glyph_count(r#"<w14:ligatures w14:val="standardContextual"/>"#);
+    assert!(
+        glyphs < characters,
+        "the bundled face must fuse `ffi` for this to test anything: \
+         {glyphs} glyphs for {characters} characters"
+    );
 }
 
 fn collect_paragraphs(doc: &Document) -> Vec<&Paragraph> {

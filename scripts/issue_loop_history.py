@@ -2,7 +2,7 @@
 """Experience store for `scripts/issue_loop.sh`: every run's prompt, report, outcome
 and full transcript, kept where the next agent can read them.
 
-Each loop run is a fresh `claude -p` process, so without this a retry starts blind
+Each loop run is a fresh agent process, so without this a retry starts blind
 and repeats the dead end before it. Meta-Harness (arXiv:2603.28052) found that an
 agent given raw prior traces on a filesystem, to grep as it needs, beats one given
 scores or summaries; this keeps those traces and points the next prompt at them.
@@ -14,9 +14,12 @@ scores or summaries; this keeps those traces and points the next prompt at them.
 Layout under the loop's log directory:
 
     runs/index.jsonl                         one outcome per line, append-only
-    runs/issue-<N>/<YYYYmmdd-HHMMSS>/        prompt.md, result.json, outcome.json,
+    runs/issue-<N>/<attempt>/               prompt.md, result.json, outcome.json,
                                              transcript.jsonl (when the session saved one)
-    runs/reflect-<YYYYmmdd-HHMMSS>.json      report of each `--reflect-every` proposer run
+    runs/reflect-<attempt>/                 prompt.md and the reflection report/events
+
+Codex attempts save live events.jsonl and events.stderr.log in their run directory;
+record also preserves those events as transcript.jsonl and extracts the exact thread ID.
 
 The loop calls `record` after each run and `context` while building a prompt.
 """
@@ -59,13 +62,28 @@ def record(args: argparse.Namespace) -> int:
     report = read_report(run_dir / "result.json")
     session_id = report.get("session_id")
     transcript = None
-    if isinstance(session_id, str) and session_id:
+    if args.agent == "codex":
+        source = run_dir / "events.jsonl"
+        if source.is_file():
+            transcript = run_dir / "transcript.jsonl"
+            shutil.copyfile(source, transcript)
+            for line in source.read_text(encoding="utf-8", errors="replace").splitlines():
+                try:
+                    event = json.loads(line)
+                except ValueError:
+                    continue
+                if isinstance(event, dict) and event.get("type") == "thread.started":
+                    session_id = event.get("thread_id")
+                    if isinstance(session_id, str) and session_id:
+                        break
+    elif isinstance(session_id, str) and session_id:
         source = Path(transcript_dir(args.repo_root)) / f"{session_id}.jsonl"
         if source.is_file():
             transcript = run_dir / "transcript.jsonl"
             shutil.copyfile(source, transcript)
     outcome = {
         "issue": args.issue,
+        "agent": args.agent,
         "run_dir": str(run_dir),
         "outcome": args.outcome,
         "rc": args.rc,
@@ -74,7 +92,7 @@ def record(args: argparse.Namespace) -> int:
         "duration_ms": report.get("duration_ms"),
         "total_cost_usd": report.get("total_cost_usd"),
         "is_error": report.get("is_error"),
-        "final_message": str(report.get("result") or "")[:FINAL_MESSAGE_CHARS],
+        "final_message": str(report.get("result") or report.get("summary") or "")[:FINAL_MESSAGE_CHARS],
         "transcript": str(transcript) if transcript else None,
     }
     (run_dir / "outcome.json").write_text(json.dumps(outcome, indent=2) + "\n", encoding="utf-8")
@@ -182,7 +200,8 @@ def main() -> int:
     record_parser = commands.add_parser("record", help="store one finished run (called by the loop)")
     record_parser.add_argument("--log-dir", required=True)
     record_parser.add_argument("--repo-root", required=True,
-                               help="the directory `claude` ran in; names its transcript folder")
+                               help="repository root; names Claude's transcript folder")
+    record_parser.add_argument("--agent", choices=("claude", "codex"), default="claude")
     record_parser.add_argument("--run-dir", required=True)
     record_parser.add_argument("--issue", type=int, required=True)
     record_parser.add_argument("--outcome", required=True)

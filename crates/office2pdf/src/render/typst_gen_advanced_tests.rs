@@ -25,6 +25,7 @@ fn test_data_bar_codegen() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -130,6 +131,7 @@ fn test_data_bar_fixed_row_height_codegen() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: Some(24.0),
@@ -184,6 +186,7 @@ fn test_icon_text_codegen() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -254,11 +257,13 @@ fn test_table_colspan_clamped_to_available_columns() {
     let table = Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![wide_cell],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("A2"), make_text_cell("B2")],
                 height: None,
@@ -298,6 +303,7 @@ fn test_table_colspan_clamped_mid_row() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![normal_cell, wide_cell],
             height: None,
@@ -332,11 +338,13 @@ fn test_table_colspan_no_column_widths_inferred() {
     let table = Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![wide_cell],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![
                     make_text_cell("A"),
@@ -1013,6 +1021,7 @@ fn test_spill_continuation_redraws_the_line_shifted_left_and_clipped_at_the_grid
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -1064,6 +1073,7 @@ fn test_spill_width_codegen() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -1103,6 +1113,7 @@ fn test_spill_width_codegen() {
 fn test_table_default_vertical_align_codegen() {
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![TableCell {
                 content: vec![Block::Paragraph(Paragraph {
@@ -1202,6 +1213,7 @@ fn test_vert_text_box_remaps_insets() {
 #[test]
 fn test_non_repeating_header_rows_emit_a_separate_header_block() {
     let row = |text: &str| TableRow {
+        cant_split: false,
         minimum_height: None,
         cells: vec![TableCell {
             content: vec![Block::Paragraph(Paragraph {
@@ -1259,6 +1271,7 @@ fn test_non_repeating_header_rows_emit_a_separate_header_block() {
 #[test]
 fn test_header_without_non_repeating_rows_stays_a_single_block() {
     let row = |text: &str| TableRow {
+        cant_split: false,
         minimum_height: None,
         cells: vec![TableCell {
             content: vec![Block::Paragraph(Paragraph {
@@ -1326,6 +1339,7 @@ fn test_data_bar_is_inset_from_the_row_edges() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: Some(14.0),
@@ -1378,6 +1392,7 @@ fn test_data_bar_in_a_short_row_keeps_a_visible_height() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: Some(3.0),
@@ -1432,6 +1447,7 @@ fn icon_sheet(cell: TableCell) -> Page {
         margins: Margins::default(),
         table: Table {
             rows: vec![TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![cell],
                 height: Some(14.0),
@@ -2139,6 +2155,7 @@ fn sheet_page_with_text_boxes(text_boxes: Vec<crate::ir::SheetTextBox>) -> Page 
         margins: Margins::default(),
         table: Table {
             rows: vec![TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![TableCell::default()],
                 height: None,

@@ -273,6 +273,7 @@ fn test_render_document_with_image() {
                 fill_rect: None,
                 shadow: None,
                 paragraph_spacing: None,
+                paragraph_indent: None,
             })],
             header: None,
             footer: None,
@@ -327,6 +328,7 @@ fn test_render_document_image_mixed_with_text() {
                     fill_rect: None,
                     shadow: None,
                     paragraph_spacing: None,
+                    paragraph_indent: None,
                 }),
                 Block::Paragraph(Paragraph {
                     style: ParagraphStyle::default(),
@@ -442,7 +444,7 @@ fn test_render_document_fixed_textbox_ordered_list_keeps_all_numbers() {
                             0,
                             ListLevelStyle {
                                 kind: ListKind::Ordered,
-                                numbering_pattern: Some("1.".to_string()),
+                                numbering_pattern: Some(NumberingPattern::parse("1.")),
                                 full_numbering: false,
                                 marker_text: None,
                                 marker_style: None,

@@ -547,6 +547,7 @@ fn anchored_image(
         fill_rect: None,
         shadow: None,
         paragraph_spacing: None,
+        paragraph_indent: None,
     };
     crate::ir::SheetImage {
         anchor_row: anchor.from_row + 1,

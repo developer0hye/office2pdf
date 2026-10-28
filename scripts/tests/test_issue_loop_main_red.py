@@ -28,7 +28,16 @@ args = sys.argv[1:]
 with open(os.environ["FAKE_GH_LOG"], "a") as log:
     log.write(json.dumps(args) + "\n")
 joined = " ".join(args)
-if args[:1] == ["api"] and "commits/main" in joined:
+if args[:2] == ["auth", "status"]:
+    pass
+elif args[:2] == ["api", "user"]:
+    print(os.environ.get("FAKE_LOGIN", "developer0hye"))
+elif args[:2] == ["repo", "view"]:
+    print("developer0hye")
+elif args[:2] == ["auth", "switch"]:
+    sys.exit(1)
+elif args[:1] == ["api"] and "commits/main" in joined:
+    if os.environ.get("FAKE_MAIN_ERROR"): sys.exit(1)
     print("0123abc")
 elif args[:2] == ["run", "list"]:
     print(os.environ.get("FAKE_FAILURES", ""))
@@ -115,6 +124,36 @@ class MainRedTest(unittest.TestCase):
         # be retried forever, so the loop goes back to its queue.
         picked = self.next_issue(FAKE_FAILURES="cargo-deny", FAKE_MAIN_RED_ANY="2179")
         self.assertEqual(picked, "1721")
+        self.assertEqual(self.created(), [])
+
+    def test_diagnostic_checks_identity_before_each_main_red_write(self):
+        self.next_issue(FAKE_FAILURES="CI")
+        since = []
+        for call in self.gh_calls():
+            if call[:2] in (["label", "create"], ["issue", "create"]):
+                self.assertIn(["auth", "status"], since)
+                self.assertIn(["api", "user", "--jq", ".login"], since)
+                since = []
+            else:
+                since.append(call)
+
+    def test_diagnostic_cannot_publish_with_wrong_account(self):
+        done = subprocess.run(
+            ["bash", str(LOOP), "--log-dir", str(self.logs), "--print-next-issue"],
+            capture_output=True, text=True,
+            env={**self.env, "FAKE_FAILURES": "CI", "FAKE_LOGIN": "someone-else"},
+        )
+        self.assertNotEqual(done.returncode, 0)
+        self.assertEqual(self.created(), [])
+        self.assertFalse(any(c[:2] == ["label", "create"] for c in self.gh_calls()))
+
+    def test_diagnostic_propagates_main_api_failure(self):
+        done = subprocess.run(
+            ["bash", str(LOOP), "--log-dir", str(self.logs), "--print-next-issue"],
+            capture_output=True, text=True, env={**self.env, "FAKE_MAIN_ERROR": "1"},
+        )
+        self.assertNotEqual(done.returncode, 0)
+        self.assertEqual(done.stdout, "")
         self.assertEqual(self.created(), [])
 
     def test_the_instructions_forbid_merging_over_an_inherited_failure(self):

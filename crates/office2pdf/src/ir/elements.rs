@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use super::style::{Alignment, Color, ParagraphStyle, TabLeader, TextStyle};
 
 /// Header or footer content for flow pages and worksheets.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct HeaderFooter {
     pub paragraphs: Vec<HeaderFooterParagraph>,
     /// Distance in points from the page edge, when the source states one.
@@ -11,13 +11,17 @@ pub struct HeaderFooter {
     /// Fit-to-page scale of a worksheet header/footer's horizontal coordinate
     /// box. `None` for flow-page stories and sheets whose story is not scaled.
     pub sheet_print_scale: Option<f64>,
-    /// Drawing shapes and floating tables placed in the page overlay. Shapes
-    /// may be page-relative or anchored to a header/footer paragraph; a
-    /// decorative header banner carries no text (issue #961).
+    /// Drawing shapes, tables and anchored pictures placed in the page
+    /// overlay. Shapes may be page-relative or anchored to a header/footer
+    /// paragraph; a decorative header banner carries no text (issue #961). A table with
+    /// [`HeaderFooterShape::flows_in_story`] is drawn there too, but counts
+    /// toward the story's height (issue #2250).
     pub shapes: Vec<HeaderFooterShape>,
 }
 
-/// An element a header or footer story places outside its text flow.
+/// An element a header or footer story draws in the page overlay: a drawing,
+/// a picture or a table, which may still sit in the story's flow
+/// ([`Self::flows_in_story`]).
 #[derive(Debug, Clone)]
 pub struct HeaderFooterShape {
     pub content: HeaderFooterShapeContent,
@@ -25,13 +29,20 @@ pub struct HeaderFooterShape {
     /// Header/footer paragraph a text-flow-relative drawing is anchored to.
     /// Page-relative drawings and floating tables leave this unset.
     pub anchor_paragraph_index: Option<usize>,
-    /// On-page size in points. Drawing shapes use `wp:extent`; tables use
-    /// converted column widths and declared row heights.
+    /// On-page size in points. Drawing shapes use `wp:extent`; pictures
+    /// their image's size; tables converted column widths and declared row
+    /// heights.
     pub width: f64,
     pub height: f64,
-    /// Drawing-shape z-order from `<wp:anchor behindDoc="1">`. Header/footer
-    /// tables are placed behind the main story to match Word's paint order.
+    /// Drawing-shape and picture z-order from `<wp:anchor behindDoc="1">`.
+    /// Header/footer tables are placed behind the main story to match Word's
+    /// paint order.
     pub behind_text: bool,
+    /// Whether this is a table in the story's text flow — a top-level `w:tbl`
+    /// that no `w:tblpPr` positions — whose rows Word stacks with the story's
+    /// paragraphs, so they count toward the story's height (issue #2250).
+    /// False for drawings and positioned tables.
+    pub flows_in_story: bool,
 }
 
 /// Content drawn in a header/footer's page overlay.
@@ -40,6 +51,22 @@ pub enum HeaderFooterShapeContent {
     Shape(Shape),
     /// A floating `w:tbl` from a header/footer part.
     Table(Table),
+    /// A `wp:anchor` picture positioned against the page or its margins,
+    /// which Word draws there rather than in the story's flow (issue #2327).
+    Picture(HeaderFooterPicture),
+}
+
+/// A header or footer picture drawn at its anchor, and how the story's text
+/// makes room for it.
+#[derive(Debug, Clone)]
+pub struct HeaderFooterPicture {
+    pub image: ImageData,
+    /// The anchor's `wp:wrap*` element; [`WrapMode::Behind`] for
+    /// `behindDoc="1"`.
+    pub wrap_mode: WrapMode,
+    /// `wp:anchor/@distT`, `@distR`, `@distB` and `@distL` in points: the
+    /// space text keeps from the picture.
+    pub wrap_distance: Insets,
 }
 
 /// A paragraph within a header or footer.
@@ -159,6 +186,9 @@ pub enum Block {
     Table(Table),
     /// A Word table positioned by `w:tblpPr`, outside the document's text flow.
     FloatingTable(Box<FloatingTable>),
+    /// Body paragraphs Word lifts out of the text flow into a `w:framePr`
+    /// frame.
+    TextFrame(Box<TextFrame>),
     Image(ImageData),
     /// Consecutive inline images from one flow paragraph.
     InlineImages(Vec<ImageData>),
@@ -1259,7 +1289,8 @@ pub struct FloatingTextBox {
 /// box's own paragraphs, tables, and pictures flow inside it. Emitting those
 /// blocks into the body instead gives the box's content its own flow and loses
 /// the outline, so the box travels with the run it was anchored to (issues
-/// #1690, #1889).
+/// #1690, #1889). An inline cached diagram, and an inline picture that shares
+/// its paragraph with text, ride the line in the same box (issue #2227).
 #[derive(Debug, Clone)]
 pub struct InlineTextBox {
     /// The box's own flow, including paragraphs, tables, and pictures.
@@ -1294,6 +1325,51 @@ pub struct FloatingShape {
     pub wrap_mode: WrapMode,
 }
 
+/// Body paragraphs Word lifts out of the text flow into a `w:framePr` frame
+/// (issue #2231). One that hangs `w:y` below the paragraph's own place in the
+/// flow (`w:vAnchor="text"`) with a stated height is drawn in its frame, and
+/// the text after it lies beside the frame. A group of empty paragraphs in a
+/// frame at the top margin keeps the frame's box there, which a full-width
+/// table on its page starts below. A paragraph group or table in a frame at
+/// a fixed place on its page that keeps text off its sides (`text_below`) is
+/// drawn there, and the body text that meets it starts below it.
+#[derive(Debug, Clone)]
+pub struct TextFrame {
+    pub content: Vec<Block>,
+    /// `w:x` in points. Before section resolution it is measured from
+    /// `horizontal_anchor`, or replaced by `horizontal_align`; afterwards it is
+    /// measured from the left edge of the page text area, and the anchor is
+    /// Text.
+    pub x: f64,
+    pub horizontal_anchor: FrameAnchor,
+    /// `w:xAlign` in place of `w:x`.
+    pub horizontal_align: Option<FrameAlign>,
+    /// What `y` is measured from: `Text`, the top of the paragraph's place in
+    /// the flow, `Margin`, the top margin of the page the frame lands on, or
+    /// `Page`, that page's top edge. Section resolution measures a `Page`
+    /// frame's `y` from the top margin and makes it `Margin`.
+    pub vertical_anchor: FrameAnchor,
+    /// `w:y`: how far below `vertical_anchor` the frame starts, in points.
+    pub y: f64,
+    /// `w:w` in points, or zero for a frame that states none, which is as
+    /// wide as its content.
+    pub width: f64,
+    /// `w:h` in points: the frame's height when `exact_height`, otherwise the
+    /// least height its content stretches.
+    pub height: f64,
+    /// `w:hRule="exact"`.
+    pub exact_height: bool,
+    /// `w:hSpace`: how far body text beside the frame keeps from its left and
+    /// right edges, in points.
+    pub horizontal_space: f64,
+    /// `w:vSpace`: how far body text keeps from its top and bottom edges, in
+    /// points.
+    pub vertical_space: f64,
+    /// `w:wrap` `notBeside` or `none`: no body text lies beside the frame, so
+    /// a line that meets its band starts below it.
+    pub text_below: bool,
+}
+
 /// A DOCX body table whose `w:tblpPr` frame has been resolved against its
 /// section's page, margin, or text area.
 #[derive(Debug, Clone)]
@@ -1303,8 +1379,10 @@ pub struct FloatingTable {
 }
 
 /// Positioning for a DOCX floating table. Before section resolution, `x` and
-/// `y` are offsets from their corresponding anchors; afterwards they are
-/// offsets from the top-left of the page text area and both anchors are Text.
+/// `y` are offsets from their corresponding anchors. Afterwards both anchors
+/// are Text, `x` is an offset from the left of the page text area, and `y` is
+/// an offset from its top, or from the anchor paragraph's top edge when
+/// `anchored_to_text` is set.
 #[derive(Debug, Clone)]
 pub struct FloatingTableFrame {
     pub x: Option<f64>,
@@ -1313,6 +1391,25 @@ pub struct FloatingTableFrame {
     pub vertical_anchor: FrameAnchor,
     pub horizontal_align: Option<FrameAlign>,
     pub vertical_align: Option<FrameAlign>,
+    /// `w:leftFromText`: how far body text beside the table keeps from its
+    /// left edge, in points.
+    pub left_from_text: f64,
+    /// `w:rightFromText`: how far body text beside the table keeps from its
+    /// right edge, in points.
+    pub right_from_text: f64,
+    /// `w:topFromText`: how far body text keeps from the table's top edge,
+    /// in points.
+    pub top_from_text: f64,
+    /// `w:bottomFromText`: how far body text keeps from the table's bottom
+    /// edge, in points.
+    pub bottom_from_text: f64,
+    /// Whether `w:vertAnchor` is `text`, hanging the table from its anchor
+    /// paragraph. Section resolution keeps this while it rewrites
+    /// `vertical_anchor`, except for a table aligned with `w:tblpYSpec`, which
+    /// it aligns in the text area and clears this for. The renderer measures
+    /// `y` from the top edge of that paragraph while this is set, rather than
+    /// from the text area's (issue #2236).
+    pub anchored_to_text: bool,
 }
 
 /// Vertical alignment for fixed text box content.
@@ -1364,12 +1461,46 @@ pub enum ListKind {
     Unordered,
 }
 
+/// An ordered list label: literal text around counters.
+///
+/// Typst reads every counting symbol in a numbering pattern string (`1`, `a`,
+/// `A`, `i`, `I`, `*`, ...) as a counter, so literal label text cannot share
+/// that string: Word's `1.%1` printed `2` instead of `1.2` (issue #2221).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NumberingPattern {
+    /// Each counter's numbering symbol (`1`, `a`, `A`, `i` or `I`), after
+    /// the literal text that precedes it.
+    pub pieces: Vec<(String, char)>,
+    /// Literal text after the last counter.
+    pub suffix: String,
+}
+
+impl NumberingPattern {
+    /// Reads a pattern in which every `1`, `a`, `A`, `i` and `I` is a counter
+    /// and every other character is literal text.
+    pub fn parse(pattern: &str) -> Self {
+        let mut pieces: Vec<(String, char)> = Vec::new();
+        let mut literal: String = String::new();
+        for character in pattern.chars() {
+            if matches!(character, '1' | 'a' | 'A' | 'i' | 'I') {
+                pieces.push((std::mem::take(&mut literal), character));
+            } else {
+                literal.push(character);
+            }
+        }
+        Self {
+            pieces,
+            suffix: literal,
+        }
+    }
+}
+
 /// Numbering configuration for a specific list level.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ListLevelStyle {
     pub kind: ListKind,
-    /// Optional Typst numbering pattern derived from Word's lvlText/numFmt.
-    pub numbering_pattern: Option<String>,
+    /// Optional label pattern derived from Word's lvlText/numFmt.
+    pub numbering_pattern: Option<NumberingPattern>,
     /// Whether parent numbers should be shown for nested ordered lists.
     pub full_numbering: bool,
     /// Optional concrete marker text for unordered PPTX bullet lists.
@@ -1413,10 +1544,22 @@ pub struct Run {
     /// Optional footnote/endnote content. When present, a footnote marker is emitted and
     /// the content is rendered at the bottom of the page.
     pub footnote: Option<Vec<Run>>,
-    /// A DrawingML text box anchored inline at this run (`wp:inline`). Boxed
-    /// because every run carries the field while almost none carries a box.
+    /// A DrawingML text box, diagram or picture anchored inline at this run
+    /// (`wp:inline`). Boxed because every run carries the field while almost
+    /// none carries a box.
     pub inline_box: Option<Box<InlineTextBox>>,
 }
+
+/// In-text marker for a `PAGE` field's result in [`Run::text`]: the renderer
+/// draws the number of the page the run lands on in its place, in the run's
+/// style. A header or footer table cell holds ordinary runs rather than
+/// [`HFInline`], so the field has no other way to reach it (issue #2338).
+/// XML 1.0 admits no such character, so no document text can contain it.
+pub(crate) const PAGE_NUMBER_FIELD_CHAR: char = '\u{11}';
+
+/// As [`PAGE_NUMBER_FIELD_CHAR`], for a `NUMPAGES` field's result: the
+/// document's page count.
+pub(crate) const TOTAL_PAGES_FIELD_CHAR: char = '\u{12}';
 
 /// A table.
 #[derive(Debug, Clone, Default)]
@@ -1526,6 +1669,9 @@ pub struct TableRow {
     /// this tall and grows past it for taller content, which separates it from
     /// [`Self::height`] (issues #965 and #1253).
     pub minimum_height: Option<f64>,
+    /// Word's `w:cantSplit`: the row moves whole to the next page rather
+    /// than continuing there (issue #2217).
+    pub cant_split: bool,
 }
 
 /// Glyphs the parser records in [`TableCell::icon_text`] for Excel's arrow
@@ -1899,6 +2045,21 @@ pub struct ImageData {
     /// (flow documents). Word advances a picture paragraph by the picture
     /// plus these, so they have to survive the paragraph being dropped.
     pub paragraph_spacing: Option<ImageParagraphSpacing>,
+    /// Horizontal indents declared by the containing paragraph's `w:ind`
+    /// (flow documents). A picture is a glyph-like inline object, so it starts
+    /// where that paragraph's line of text would.
+    pub paragraph_indent: Option<ImageParagraphIndent>,
+}
+
+/// The `w:ind` of the paragraph that held an inline picture, in points.
+///
+/// `first_line` is signed: a hanging indent is a negative first line, as in
+/// [`ParagraphStyle::indent_first_line`].
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct ImageParagraphIndent {
+    pub left: f64,
+    pub right: f64,
+    pub first_line: f64,
 }
 
 /// The `w:spacing` of the paragraph that held an inline picture, in points.

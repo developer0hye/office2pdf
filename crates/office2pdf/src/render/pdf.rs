@@ -656,6 +656,13 @@ pub(crate) struct PlacedTextRun {
     pub text: String,
     /// Per-glyph horizontal offsets from the run origin, in run-local points.
     pub glyph_x_offsets_pt: Vec<f64>,
+    /// Distance from the page's left edge to the end of the run's last
+    /// non-whitespace glyph, in points, with every advance as laid out, so a
+    /// justified line's stretched spaces count. Meaningful only for an unturned
+    /// run.
+    pub ink_end_pt: f64,
+    /// The run's solid paint as 8-bit RGBA; `None` for a gradient or tiling.
+    pub fill_rgba: Option<[u8; 4]>,
 }
 
 /// Every text run the compiled document places on `page_index`, in layout order.
@@ -749,10 +756,29 @@ fn compiled_text_runs_with_line_seating(
                         .iter()
                         .map(|glyph| glyph.x_offset.at(text.size).to_pt())
                         .collect(),
+                    ink_end_pt: at.tx.to_pt() + inked_advance_pt(text),
+                    fill_rgba: match &text.fill {
+                        typst::visualize::Paint::Solid(color) => Some(color.to_vec4_u8()),
+                        _ => None,
+                    },
                 }),
                 _ => {}
             }
         }
+    }
+
+    /// The summed advances up to and including the last glyph that paints
+    /// something other than whitespace.
+    fn inked_advance_pt(text: &typst::text::TextItem) -> f64 {
+        let inked_glyphs: usize = text
+            .glyphs
+            .iter()
+            .rposition(|glyph| !text.text[glyph.range()].chars().all(char::is_whitespace))
+            .map_or(0, |index| index + 1);
+        text.glyphs[..inked_glyphs]
+            .iter()
+            .map(|glyph| glyph.x_advance.at(text.size).to_pt())
+            .sum()
     }
 
     // The same font set the conversion pipeline compiles with, so a probe sees
@@ -963,6 +989,10 @@ pub(crate) struct PlacedImageBox {
     /// reports them in the same source order, so the corner a transform was
     /// supposed to move is the one to read.
     pub corners: [(f64, f64); 4],
+    /// Page-space `(left, top, right, bottom)` of the region every enclosing
+    /// clip leaves visible, taken over each clip's bounding box; `None` when
+    /// nothing clips the image.
+    pub clip: Option<(f64, f64, f64, f64)>,
 }
 
 /// Every image the compiled document paints on `page_index`, in layout order.
@@ -987,12 +1017,52 @@ pub(crate) fn compiled_image_boxes(
         )
     }
 
-    fn collect(frame: &Frame, transform: Transform, out: &mut Vec<PlacedImageBox>) {
+    type Bounds = (f64, f64, f64, f64);
+
+    fn collect(
+        frame: &Frame,
+        transform: Transform,
+        clip: Option<Bounds>,
+        out: &mut Vec<PlacedImageBox>,
+    ) {
         for (position, item) in frame.items() {
             let at: Transform = transform.pre_concat(Transform::translate(position.x, position.y));
             match item {
                 FrameItem::Group(group) => {
-                    collect(&group.frame, at.pre_concat(group.transform), out);
+                    let inner: Transform = at.pre_concat(group.transform);
+                    // A group's clip is stated in its own coordinates, after
+                    // its transform.
+                    let group_clip: Option<Bounds> = group.clip.as_ref().map(|curve| {
+                        let rect = curve.bbox(None);
+                        let (min, max) = (rect.min, rect.max);
+                        let corners = [
+                            place(inner, min.x.to_pt(), min.y.to_pt()),
+                            place(inner, max.x.to_pt(), min.y.to_pt()),
+                            place(inner, max.x.to_pt(), max.y.to_pt()),
+                            place(inner, min.x.to_pt(), max.y.to_pt()),
+                        ];
+                        corners.iter().fold(
+                            (
+                                f64::INFINITY,
+                                f64::INFINITY,
+                                f64::NEG_INFINITY,
+                                f64::NEG_INFINITY,
+                            ),
+                            |(left, top, right, bottom), (x, y)| {
+                                (left.min(*x), top.min(*y), right.max(*x), bottom.max(*y))
+                            },
+                        )
+                    });
+                    let clip: Option<Bounds> = match (clip, group_clip) {
+                        (Some(outer), Some(own)) => Some((
+                            outer.0.max(own.0),
+                            outer.1.max(own.1),
+                            outer.2.min(own.2),
+                            outer.3.min(own.3),
+                        )),
+                        (outer, own) => outer.or(own),
+                    };
+                    collect(&group.frame, inner, clip, out);
                 }
                 FrameItem::Image(_, size, _) => {
                     let (width, height): (f64, f64) = (size.x.to_pt(), size.y.to_pt());
@@ -1003,6 +1073,7 @@ pub(crate) fn compiled_image_boxes(
                             place(at, width, height),
                             place(at, 0.0, height),
                         ],
+                        clip,
                     });
                 }
                 _ => {}
@@ -1024,7 +1095,7 @@ pub(crate) fn compiled_image_boxes(
         ))
     })?;
     let mut boxes: Vec<PlacedImageBox> = Vec::new();
-    collect(&page.frame, Transform::identity(), &mut boxes);
+    collect(&page.frame, Transform::identity(), None, &mut boxes);
     Ok(boxes)
 }
 
@@ -1908,18 +1979,114 @@ fn best_face(family: &str) -> Option<typst::text::Font> {
 ///
 /// `None` when `family`'s own face answers — a weight-suffixed name answered
 /// by its base family's member included — and when no face resolves at all.
-/// A substitute answers every metric lookup with its own numbers, so a test
+/// A substitute answers metric lookups with its own numbers — all but the Word
+/// line metrics of a family [`reference_hhea`] lists (issue #2247) — so a test
 /// that pins a native Office measurement of `family` reads this to skip on a
 /// host where the measured face is absent but a substitute is installed: there
 /// `font_line_metrics_em(family).is_some()` holds, yet measures the substitute
 /// (issue #2208). Exported to integration tests through [`crate::internal`].
 pub fn substitute_face_family(family: &str) -> Option<String> {
     let resolved: String = best_face(family)?.info().family.clone();
-    let requested: &str = family.trim();
+    (!is_own_family(family, &resolved)).then_some(resolved)
+}
+
+/// Whether a face filed under `resolved` is `requested`'s own: the same
+/// family, or the base family a weight-suffixed request is answered from.
+fn is_own_family(requested: &str, resolved: &str) -> bool {
+    let requested: &str = requested.trim();
     let base: &str = super::font_subst::typographic_family(requested);
-    let is_own: bool =
-        resolved.eq_ignore_ascii_case(requested) || resolved.eq_ignore_ascii_case(base);
-    (!is_own).then_some(resolved)
+    resolved.eq_ignore_ascii_case(requested) || resolved.eq_ignore_ascii_case(base)
+}
+
+/// A face's `hhea` vertical metrics, in its own font units.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct HheaMetrics {
+    ascender: i16,
+    /// Negative below the baseline, as the table stores it.
+    descender: i16,
+    line_gap: i16,
+    units_per_em: u16,
+}
+
+impl HheaMetrics {
+    fn em(self, units: i16) -> f64 {
+        f64::from(units) / f64::from(self.units_per_em).max(1.0)
+    }
+
+    /// `(above baseline, below baseline, Word single-line pitch)`, split where
+    /// [`font_line_metrics_em`] splits a face's own table.
+    fn line_metrics_em(self) -> (f64, f64, f64) {
+        let top_em: f64 = self.em(self.ascender) + self.em(self.line_gap);
+        let bottom_em: f64 = -self.em(self.descender);
+        (top_em, bottom_em, top_em + bottom_em)
+    }
+}
+
+/// The `hhea` metrics Word lays `family`'s lines out by, for a face a
+/// converting host often lacks and paints with a substitute whose metrics
+/// differ. The line-metric counterpart of the XLSX parser's
+/// `reference_digit_advance_em`: Word measures the face it resolves on its own
+/// machine, so a substitute's line box would move every line per host.
+///
+/// Tahoma is read from the Tahoma and Tahoma Bold subsets Microsoft Word
+/// exports embed, in docxide-pdf's `page-header-ordinary-marker` and
+/// `rehab_centre_physio_posting` references; both weights declare 2049/-423/0
+/// at 2048 units per em. Liberation Sans, its paint substitute since issue
+/// #2235, declares 1854/-434/67, which advanced each single-spaced Tahoma line
+/// 4.7% short. Converting that reference's own document with the subset on
+/// `--font-path` puts both of its lines within 0.1pt of Word's baselines
+/// (issue #2247).
+fn reference_hhea(family: &str) -> Option<HheaMetrics> {
+    match family.trim().to_ascii_lowercase().as_str() {
+        "tahoma" => Some(HheaMetrics {
+            ascender: 2049,
+            descender: -423,
+            line_gap: 0,
+            units_per_em: 2048,
+        }),
+        _ => None,
+    }
+}
+
+/// `family`'s [`reference_hhea`] unless its own face answers. `resolved_family`
+/// is the family of the face its chain reached, `None` where none did: a host
+/// with no substitute either still lays the line out on Word's metrics.
+fn reference_hhea_unless_own_face(
+    family: &str,
+    resolved_family: Option<&str>,
+) -> Option<HheaMetrics> {
+    if resolved_family.is_some_and(|resolved| is_own_family(family, resolved)) {
+        return None;
+    }
+    reference_hhea(family)
+}
+
+/// One Word line metric of `family`: `from_face` applied to `face`, the face
+/// its chain resolved, or `from_reference` applied to the family's
+/// [`reference_hhea`] wherever that face is not the family's own.
+///
+/// Only the metrics Word builds its line box from take this path. The
+/// compiler's own edge, [`font_cap_height_em`], stays on the face it shapes:
+/// the header seat and leading are the difference between the two.
+fn word_line_metric<T>(
+    family: &str,
+    face: Option<typst::text::Font>,
+    from_face: impl FnOnce(&typst::text::Font) -> T,
+    from_reference: impl FnOnce(HheaMetrics) -> T,
+) -> Option<T> {
+    let reference: Option<HheaMetrics> = reference_hhea_unless_own_face(
+        family,
+        face.as_ref().map(|font| font.info().family.as_str()),
+    );
+    if let Some(reference) = reference {
+        tracing::trace!(
+            family,
+            substitute = ?face.as_ref().map(|font| font.info().family.as_str()),
+            "line metrics follow the reference hhea of a face this host lacks"
+        );
+        return Some(from_reference(reference));
+    }
+    face.map(|font| from_face(&font))
 }
 
 /// Look a per-family `f64` metric up through a process-wide cache.
@@ -1930,11 +2097,10 @@ pub fn substitute_face_family(family: &str) -> Option<String> {
 fn cached_family_metric(
     cache: &OnceLock<Mutex<HashMap<String, Option<f64>>>>,
     family: &str,
-    resolve: fn(&str) -> Option<typst::text::Font>,
-    compute: impl FnOnce(&typst::text::Font) -> Option<f64>,
+    measure: impl FnOnce() -> Option<f64>,
 ) -> Option<f64> {
     if super::font_subst::active_font_search_paths().is_some() {
-        return resolve(family).and_then(|font| compute(&font));
+        return measure();
     }
 
     let cache = cache.get_or_init(|| Mutex::new(HashMap::new()));
@@ -1947,7 +2113,7 @@ fn cached_family_metric(
         return *cached;
     }
 
-    let value: Option<f64> = resolve(family).and_then(|font| compute(&font));
+    let value: Option<f64> = measure();
     cache
         .lock()
         .expect("metrics cache mutex should not be poisoned")
@@ -1956,7 +2122,8 @@ fn cached_family_metric(
 }
 
 /// The `hhea` ascender of the face Word measures `family` by, in em units
-/// (see [`line_metric_face`]).
+/// (see [`line_metric_face`]), or the family's [`reference_hhea`] where this
+/// host resolves no face of its own (issue #2247).
 ///
 /// The bare ascender, with the `hhea` line gap left out — deliberately *not*
 /// [`font_line_metrics_em`]'s first element, which folds the gap in. Callers
@@ -1992,19 +2159,25 @@ fn cached_family_metric(
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn font_hhea_ascender_em(family: &str) -> Option<f64> {
     static ASCENDER_CACHE: OnceLock<Mutex<HashMap<String, Option<f64>>>> = OnceLock::new();
-    cached_family_metric(&ASCENDER_CACHE, family, line_metric_face, |font| {
-        let instance = measured_instance(font);
-        let ttf = instance.ttf();
-        Some(f64::from(ttf.tables().hhea.ascender) / f64::from(ttf.units_per_em()).max(1.0))
+    cached_family_metric(&ASCENDER_CACHE, family, || {
+        word_line_metric(family, line_metric_face(family), hhea_ascender_em, |hhea| {
+            hhea.em(hhea.ascender)
+        })
     })
 }
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) fn font_hhea_ascender_em(family: &str) -> Option<f64> {
-    let font = best_face(family)?;
-    let instance = measured_instance(&font);
+    word_line_metric(family, best_face(family), hhea_ascender_em, |hhea| {
+        hhea.em(hhea.ascender)
+    })
+}
+
+/// `font`'s bare `hhea` ascender, in em units (see [`font_hhea_ascender_em`]).
+fn hhea_ascender_em(font: &typst::text::Font) -> f64 {
+    let instance = measured_instance(font);
     let ttf = instance.ttf();
-    Some(f64::from(ttf.tables().hhea.ascender) / f64::from(ttf.units_per_em()).max(1.0))
+    f64::from(ttf.tables().hhea.ascender) / f64::from(ttf.units_per_em()).max(1.0)
 }
 
 /// Natural DrawingML highlight edges, independent of paragraph line spacing.
@@ -2062,8 +2235,8 @@ pub(crate) fn font_highlight_edges_em(
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn font_cap_height_em(family: &str) -> Option<f64> {
     static CAP_HEIGHT_CACHE: OnceLock<Mutex<HashMap<String, Option<f64>>>> = OnceLock::new();
-    cached_family_metric(&CAP_HEIGHT_CACHE, family, best_face, |font| {
-        Some(measured_instance(font).metrics().cap_height.get())
+    cached_family_metric(&CAP_HEIGHT_CACHE, family, || {
+        best_face(family).map(|font| measured_instance(&font).metrics().cap_height.get())
     })
 }
 
@@ -2073,7 +2246,8 @@ pub(crate) fn font_cap_height_em(family: &str) -> Option<f64> {
 }
 
 /// The bare `hhea` line gap of the face Word measures `family` by, in em
-/// units (see [`line_metric_face`]).
+/// units (see [`line_metric_face`]), or the family's [`reference_hhea`] where
+/// this host resolves no face of its own (issue #2247).
 ///
 /// [`font_line_metrics_em`] folds the gap into its first element, because that
 /// is where Word puts the baseline. Excel does not: it rounds the ascender,
@@ -2086,21 +2260,26 @@ pub(crate) fn font_line_gap_em(family: &str) -> Option<f64> {
     use std::collections::HashMap;
     use std::sync::Mutex;
     static LINE_GAP_CACHE: OnceLock<Mutex<HashMap<String, Option<f64>>>> = OnceLock::new();
-    cached_family_metric(&LINE_GAP_CACHE, family, line_metric_face, |font| {
-        let instance = measured_instance(font);
-        let ttf = instance.ttf();
-        let upem = f64::from(ttf.units_per_em()).max(1.0);
-        Some(f64::from(ttf.line_gap()) / upem)
+    cached_family_metric(&LINE_GAP_CACHE, family, || {
+        word_line_metric(family, line_metric_face(family), line_gap_em, |hhea| {
+            hhea.em(hhea.line_gap)
+        })
     })
 }
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) fn font_line_gap_em(family: &str) -> Option<f64> {
-    let font = best_face(family)?;
-    let instance = measured_instance(&font);
+    word_line_metric(family, best_face(family), line_gap_em, |hhea| {
+        hhea.em(hhea.line_gap)
+    })
+}
+
+/// `font`'s line gap, in em units (see [`font_line_gap_em`]).
+fn line_gap_em(font: &typst::text::Font) -> f64 {
+    let instance = measured_instance(font);
     let ttf = instance.ttf();
     let upem = f64::from(ttf.units_per_em()).max(1.0);
-    Some(f64::from(ttf.line_gap()) / upem)
+    f64::from(ttf.line_gap()) / upem
 }
 
 /// Line metrics of the face Word measures `family` by, in em units:
@@ -2108,7 +2287,10 @@ pub(crate) fn font_line_gap_em(family: &str) -> Option<f64> {
 ///
 /// That is [`line_metric_face`], not always [`best_face`]: where a
 /// system-shipped copy shadows the Office bundle's, Word paces on the system
-/// copy's `hhea` (issue #1284).
+/// copy's `hhea` (issue #1284). Where the chain reaches no face of `family`'s
+/// own, a family [`reference_hhea`] lists keeps those reference metrics rather
+/// than taking the substitute's: Word lays a missing Tahoma out on Tahoma's
+/// line, whatever paints it (issue #2247).
 ///
 /// The first two split the third at the point Word puts the baseline —
 /// `hhea` ascender plus line gap — so they always sum to the pitch. Typst's
@@ -2128,18 +2310,13 @@ pub(crate) fn font_line_metrics_em(family: &str) -> Option<(f64, f64, f64)> {
     type LineMetricsEm = Option<(f64, f64, f64)>;
     static METRICS_CACHE: OnceLock<Mutex<HashMap<String, LineMetricsEm>>> = OnceLock::new();
 
-    let metrics_for = |font: &typst::text::Font| {
-        let instance = measured_instance(font);
-        let ttf = instance.ttf();
-        let upem = f64::from(ttf.units_per_em()).max(1.0);
-        let hhea_pitch_em = (f64::from(ttf.ascender()) - f64::from(ttf.descender())
-            + f64::from(ttf.line_gap()))
-            / upem;
-        let top_em: f64 = (f64::from(ttf.ascender()) + f64::from(ttf.line_gap())) / upem;
-        (top_em, hhea_pitch_em - top_em, hhea_pitch_em)
-    };
     if super::font_subst::active_font_search_paths().is_some() {
-        return line_metric_face(family).map(|font| metrics_for(&font));
+        return word_line_metric(
+            family,
+            line_metric_face(family),
+            face_line_metrics_em,
+            HheaMetrics::line_metrics_em,
+        );
     }
 
     let cache = METRICS_CACHE.get_or_init(|| Mutex::new(HashMap::new()));
@@ -2152,19 +2329,12 @@ pub(crate) fn font_line_metrics_em(family: &str) -> Option<(f64, f64, f64)> {
         return *cached;
     }
 
-    let metrics: Option<(f64, f64, f64)> = line_metric_face(family).map(|font| {
-        // Word seats the baseline `hhea ascender + lineGap` below the top
-        // of the line, not at the font's ascender/descender proportion of
-        // the box — measured to 0.0005em on Arial (issue #508). Typst's
-        // `metrics` pair is normalised (Malgun Gothic's sums to exactly
-        // 1.0) and cannot express that, so the split comes from `hhea`.
-        //
-        // Safe to change only since #512: the document-grid arms used to
-        // derive their line count from this pair, so altering it silently
-        // repaginated. They now choose between the grid pitch and the
-        // natural line without consulting it.
-        metrics_for(&font)
-    });
+    let metrics: Option<(f64, f64, f64)> = word_line_metric(
+        family,
+        line_metric_face(family),
+        face_line_metrics_em,
+        HheaMetrics::line_metrics_em,
+    );
     cache
         .lock()
         .expect("metrics cache mutex should not be poisoned")
@@ -2174,14 +2344,33 @@ pub(crate) fn font_line_metrics_em(family: &str) -> Option<(f64, f64, f64)> {
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) fn font_line_metrics_em(family: &str) -> Option<(f64, f64, f64)> {
-    let font = best_face(family)?;
-    let instance = measured_instance(&font);
+    word_line_metric(
+        family,
+        best_face(family),
+        face_line_metrics_em,
+        HheaMetrics::line_metrics_em,
+    )
+}
+
+/// `font`'s own line metrics, split as [`font_line_metrics_em`] reports them.
+fn face_line_metrics_em(font: &typst::text::Font) -> (f64, f64, f64) {
+    let instance = measured_instance(font);
     let ttf = instance.ttf();
     let upem = f64::from(ttf.units_per_em()).max(1.0);
     let hhea_pitch_em =
         (f64::from(ttf.ascender()) - f64::from(ttf.descender()) + f64::from(ttf.line_gap())) / upem;
-    let top_em = (f64::from(ttf.ascender()) + f64::from(ttf.line_gap())) / upem;
-    Some((top_em, hhea_pitch_em - top_em, hhea_pitch_em))
+    // Word seats the baseline `hhea ascender + lineGap` below the top of the
+    // line, not at the font's ascender/descender proportion of the box —
+    // measured to 0.0005em on Arial (issue #508). Typst's `metrics` pair is
+    // normalised (Malgun Gothic's sums to exactly 1.0) and cannot express
+    // that, so the split comes from `hhea`.
+    //
+    // Safe to change only since #512: the document-grid arms used to derive
+    // their line count from this pair, so altering it silently repaginated.
+    // They now choose between the grid pitch and the natural line without
+    // consulting it.
+    let top_em: f64 = (f64::from(ttf.ascender()) + f64::from(ttf.line_gap())) / upem;
+    (top_em, hhea_pitch_em - top_em, hhea_pitch_em)
 }
 
 /// Maximum horizontal advance over the digits U+0030..=U+0039 of the face

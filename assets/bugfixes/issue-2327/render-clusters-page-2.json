@@ -1,0 +1,4903 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 8946.432,
+      "bbox_pt": {
+        "height": 211.68,
+        "width": 305.28,
+        "x": 97.92,
+        "y": 101.28
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-255fceb9c856",
+      "region": "top"
+    },
+    {
+      "area_pt2": 2014.848,
+      "bbox_pt": {
+        "height": 279.84,
+        "width": 408.96,
+        "x": 65.28,
+        "y": 84.96
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-56ad6ab3efc7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 752.0256,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 236.64,
+        "x": 97.92,
+        "y": 144.48
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-e1246b5ae3c1",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 568.8576,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 236.64,
+        "x": 97.92,
+        "y": 270.24
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-63c612065a9a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 545.5872,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 236.64,
+        "x": 97.92,
+        "y": 239.04
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-e411459c473b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 339.3792,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 102.72,
+        "x": 166.56,
+        "y": 225.6
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-401c6a41661a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 322.7904,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 70.56,
+        "x": 97.92,
+        "y": 286.08
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-801a6fa88175",
+      "region": "left"
+    },
+    {
+      "area_pt2": 320.256,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 50.88,
+        "x": 97.92,
+        "y": 128.64
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-26bbd795fbac",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 257.5872,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 45.12,
+        "x": 127.2,
+        "y": 226.56
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-6856b7a817d5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 243.5328,
+      "bbox_pt": {
+        "height": 19.68,
+        "width": 72.0,
+        "x": 402.24,
+        "y": 254.88
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-f738070e3280",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 222.7968,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 102.72,
+        "x": 164.16,
+        "y": 288.96
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-05ed55a94a3a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 207.5904,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 71.52,
+        "x": 402.24,
+        "y": 286.08
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-c726b6109111",
+      "region": "right"
+    },
+    {
+      "area_pt2": 197.9136,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 71.52,
+        "x": 402.24,
+        "y": 270.24
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-ff34f27708b8",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 196.5312,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 71.52,
+        "x": 402.24,
+        "y": 160.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-ea78935d5e29",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 196.3008,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 71.52,
+        "x": 402.24,
+        "y": 191.52
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-51320d618152",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 193.7664,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 71.52,
+        "x": 402.24,
+        "y": 239.04
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-78cca8e8ceb4",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 190.7712,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 71.52,
+        "x": 402.24,
+        "y": 128.64
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-89808de63a95",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 190.5408,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 71.52,
+        "x": 402.24,
+        "y": 144.48
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-01649a2f1047",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 187.3152,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 71.52,
+        "x": 402.24,
+        "y": 176.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-3ad472143896",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 186.8544,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 47.52,
+        "x": 402.24,
+        "y": 223.2
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-59eb352772d7",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 182.016,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 33.12,
+        "x": 103.68,
+        "y": 103.68
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-3c154ddac486",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 181.7856,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 48.0,
+        "x": 402.24,
+        "y": 207.36
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-986ca626edaf",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 178.7904,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 35.52,
+        "x": 191.04,
+        "y": 103.68
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-33d5f1bedf0b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 171.1872,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 40.32,
+        "x": 139.2,
+        "y": 193.92
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-24baced9057d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 157.1328,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 50.88,
+        "x": 162.24,
+        "y": 305.28
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-8e2033411d33",
+      "region": "left"
+    },
+    {
+      "area_pt2": 149.0688,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 30.24,
+        "x": 371.52,
+        "y": 210.72
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-504e273fba09",
+      "region": "top"
+    },
+    {
+      "area_pt2": 149.0688,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 30.24,
+        "x": 371.52,
+        "y": 226.56
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-59e25581fc36",
+      "region": "top"
+    },
+    {
+      "area_pt2": 148.8384,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 30.24,
+        "x": 371.52,
+        "y": 132.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-a45cc5230593",
+      "region": "top"
+    },
+    {
+      "area_pt2": 148.8384,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 24.96,
+        "x": 202.56,
+        "y": 149.28
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-2e21a5b2b22c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 148.8384,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 30.24,
+        "x": 371.52,
+        "y": 179.04
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-e116d786c0c8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 148.8384,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 30.24,
+        "x": 371.52,
+        "y": 194.88
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-f456d88fc6ba",
+      "region": "top"
+    },
+    {
+      "area_pt2": 140.7744,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 29.76,
+        "x": 343.68,
+        "y": 273.6
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-b0ef7903f7a6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 140.544,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 24.0,
+        "x": 186.24,
+        "y": 212.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-2b50d34f0f14",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 138.9312,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 22.08,
+        "x": 371.52,
+        "y": 289.44
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-739970aa0b3f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 138.7008,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 22.08,
+        "x": 371.52,
+        "y": 273.6
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-c2fa7ae53a7d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 135.7056,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 29.76,
+        "x": 343.68,
+        "y": 210.72
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-e1581e8e2e0e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 126.9504,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 24.48,
+        "x": 203.04,
+        "y": 90.24
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-31cc6b6f353c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 126.72,
+      "bbox_pt": {
+        "height": 27.36,
+        "width": 237.12,
+        "x": 97.92,
+        "y": 101.28
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-22a3788cb114",
+      "region": "top"
+    },
+    {
+      "area_pt2": 124.8768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 20.16,
+        "x": 254.4,
+        "y": 149.28
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-a7d5f67f8da0",
+      "region": "top"
+    },
+    {
+      "area_pt2": 120.0384,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 71.52,
+        "x": 402.24,
+        "y": 301.92
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-a9d5440b42ac",
+      "region": "right"
+    },
+    {
+      "area_pt2": 117.504,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 24.0,
+        "x": 349.44,
+        "y": 226.56
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-71792de12ece",
+      "region": "top"
+    },
+    {
+      "area_pt2": 114.9696,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 29.28,
+        "x": 116.16,
+        "y": 305.28
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-eab41699445b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 113.5872,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 17.76,
+        "x": 120.0,
+        "y": 212.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-4ddb8a466c5b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 113.3568,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 21.6,
+        "x": 97.92,
+        "y": 207.36
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-e974be747b22",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 109.6704,
+      "bbox_pt": {
+        "height": 221.28,
+        "width": 0.96,
+        "x": 474.24,
+        "y": 84.96
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-6bf8a1dfa869",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 109.6704,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 24.0,
+        "x": 349.44,
+        "y": 179.04
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-51b3fe425c07",
+      "region": "top"
+    },
+    {
+      "area_pt2": 108.0576,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 18.24,
+        "x": 103.68,
+        "y": 195.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-3b5273e185c2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 102.9888,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 18.24,
+        "x": 153.12,
+        "y": 104.64
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-25a9e68ebaf4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 95.616,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 16.32,
+        "x": 221.76,
+        "y": 275.04
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-c8aeaca89449",
+      "region": "top"
+    },
+    {
+      "area_pt2": 94.464,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 107.04,
+        "x": 227.52,
+        "y": 305.28
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-47fb726d5ea2",
+      "region": "center"
+    },
+    {
+      "area_pt2": 93.7728,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 18.24,
+        "x": 113.76,
+        "y": 88.8
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-9ab591a4e376",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 93.312,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 18.24,
+        "x": 132.0,
+        "y": 88.8
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-3d67b5ac4c09",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 93.0816,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 14.4,
+        "x": 219.36,
+        "y": 243.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-ee2ddcaefaf8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 91.6992,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 13.44,
+        "x": 187.68,
+        "y": 243.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-aa8409888bf6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 91.4688,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 15.84,
+        "x": 234.24,
+        "y": 243.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-08cffddc6d94",
+      "region": "top"
+    },
+    {
+      "area_pt2": 83.1744,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 16.8,
+        "x": 174.72,
+        "y": 88.8
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-2846be98c4fa",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 79.9488,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 18.24,
+        "x": 171.36,
+        "y": 104.64
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-6f82996d50b7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 72.1152,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 14.4,
+        "x": 150.72,
+        "y": 88.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-bc4021dc4697",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 72.1152,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 10.56,
+        "x": 176.64,
+        "y": 243.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-d7267a9b8aab",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 65.8944,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 45.12,
+        "x": 97.92,
+        "y": 191.52
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-95e7f470cf1a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 62.6688,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 10.56,
+        "x": 165.6,
+        "y": 243.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-764a4da82d4f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 61.056,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 78.24,
+        "x": 256.32,
+        "y": 132.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-059683998749",
+      "region": "top"
+    },
+    {
+      "area_pt2": 60.5952,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 9.6,
+        "x": 103.68,
+        "y": 88.8
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-f95f0a2cafc5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 56.9088,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 10.08,
+        "x": 192.96,
+        "y": 290.88
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-112850ef78d5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 55.9872,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 10.08,
+        "x": 142.56,
+        "y": 165.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-537b74e0e820",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 55.7568,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 69.6,
+        "x": 264.96,
+        "y": 226.56
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-068a00877892",
+      "region": "top"
+    },
+    {
+      "area_pt2": 54.6048,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 11.04,
+        "x": 432.96,
+        "y": 88.8
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-a8f74f0b7fa3",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 54.144,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 18.72,
+        "x": 208.8,
+        "y": 305.28
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-67fcdd1903e1",
+      "region": "center"
+    },
+    {
+      "area_pt2": 53.6832,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 186.24,
+        "y": 275.04
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-15dba73f4c3f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 51.6096,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 72.0,
+        "x": 262.56,
+        "y": 288.96
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-4c528745358e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 50.2272,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.16,
+        "x": 156.96,
+        "y": 149.28
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-c0034f3e0180",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 49.3056,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 10.56,
+        "x": 192.48,
+        "y": 88.8
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-7241f0c3edfb",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 49.3056,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 18.24,
+        "x": 97.92,
+        "y": 301.92
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-aac2376cfcab",
+      "region": "left"
+    },
+    {
+      "area_pt2": 48.8448,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 11.04,
+        "x": 432.96,
+        "y": 320.64
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-7189f79cf126",
+      "region": "right"
+    },
+    {
+      "area_pt2": 48.8448,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 11.04,
+        "x": 432.96,
+        "y": 336.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-2ba3f68104ab",
+      "region": "right"
+    },
+    {
+      "area_pt2": 48.8448,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 11.04,
+        "x": 432.96,
+        "y": 351.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-5b1d211d1e55",
+      "region": "right"
+    },
+    {
+      "area_pt2": 48.384,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 10.56,
+        "x": 227.52,
+        "y": 104.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-cfcb9dc08df0",
+      "region": "top"
+    },
+    {
+      "area_pt2": 47.6928,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.64,
+        "x": 165.6,
+        "y": 88.8
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-382fa2cf8a95",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 47.4624,
+      "bbox_pt": {
+        "height": 27.36,
+        "width": 72.0,
+        "x": 402.24,
+        "y": 101.28
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-261d8bb754bb",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 67.2,
+        "x": 335.52,
+        "y": 117.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-38384f61af88",
+      "region": "top"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 67.2,
+        "x": 335.52,
+        "y": 164.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-1969cf30e457",
+      "region": "top"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 67.2,
+        "x": 335.52,
+        "y": 180.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-f6b61c31daf7",
+      "region": "top"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 67.2,
+        "x": 335.52,
+        "y": 195.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-6f9d1a22a474",
+      "region": "top"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 67.2,
+        "x": 335.52,
+        "y": 211.68
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-3d023d8d9d4c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 67.2,
+        "x": 335.52,
+        "y": 274.56
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-aa80907916a1",
+      "region": "center"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 67.2,
+        "x": 335.52,
+        "y": 290.4
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-8c8ecb404a4e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 46.5408,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 67.2,
+        "x": 335.52,
+        "y": 148.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-b9c5e09707c7",
+      "region": "top"
+    },
+    {
+      "area_pt2": 46.5408,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 67.2,
+        "x": 335.52,
+        "y": 242.88
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-1efda5875049",
+      "region": "top"
+    },
+    {
+      "area_pt2": 46.08,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 67.2,
+        "x": 335.52,
+        "y": 132.96
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-358c94fbbd79",
+      "region": "top"
+    },
+    {
+      "area_pt2": 46.08,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 67.2,
+        "x": 335.52,
+        "y": 227.52
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-c5f14421486e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 46.08,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 9.6,
+        "x": 118.08,
+        "y": 243.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-75697b8b118c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 45.6192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 7.68,
+        "x": 214.08,
+        "y": 259.2
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-4b4152127dc4",
+      "region": "top"
+    },
+    {
+      "area_pt2": 44.928,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.76,
+        "x": 187.2,
+        "y": 290.88
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-15e6f3c4acc9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 44.4672,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 10.56,
+        "x": 124.32,
+        "y": 196.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-5d01a2b9a68f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 44.0064,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 103.68,
+        "y": 118.08
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-7c32d8461c44",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 43.776,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 9.6,
+        "x": 434.4,
+        "y": 104.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-80ee91a693dd",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 43.776,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 11.04,
+        "x": 76.32,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-3e4ccda99e12",
+      "region": "left"
+    },
+    {
+      "area_pt2": 42.8544,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 9.6,
+        "x": 267.36,
+        "y": 180.96
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-9d7221e46400",
+      "region": "top"
+    },
+    {
+      "area_pt2": 42.8544,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 15.36,
+        "x": 143.52,
+        "y": 305.28
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-c5b9c24b7c9e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 42.624,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 11.04,
+        "x": 426.72,
+        "y": 104.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-4eded0ea3ed6",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 41.7024,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 13.44,
+        "x": 371.52,
+        "y": 305.28
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-0b43610eb499",
+      "region": "center"
+    },
+    {
+      "area_pt2": 41.472,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 71.04,
+        "x": 403.2,
+        "y": 117.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-8833d722c9b8",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 41.472,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 71.04,
+        "x": 403.2,
+        "y": 148.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-0eab319172ec",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 41.472,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 71.04,
+        "x": 403.2,
+        "y": 164.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-3de048189233",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 41.472,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 71.04,
+        "x": 403.2,
+        "y": 180.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-36d6a485238c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 41.472,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 71.04,
+        "x": 403.2,
+        "y": 195.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-9675f5492baa",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 41.472,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 71.04,
+        "x": 403.2,
+        "y": 211.68
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-66a923f4f2a3",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 41.472,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 71.04,
+        "x": 403.2,
+        "y": 242.88
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-5f1e9131cfac",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 41.472,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 71.04,
+        "x": 403.2,
+        "y": 274.56
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-ced95991a32c",
+      "region": "right"
+    },
+    {
+      "area_pt2": 41.472,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 71.04,
+        "x": 403.2,
+        "y": 290.4
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-4f3bb4acbed1",
+      "region": "right"
+    },
+    {
+      "area_pt2": 41.2416,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 71.04,
+        "x": 403.2,
+        "y": 132.96
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-544061347ef0",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 41.2416,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 71.04,
+        "x": 403.2,
+        "y": 227.52
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-d93a58fec56c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 41.2416,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 11.52,
+        "x": 222.72,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-71603b568833",
+      "region": "center"
+    },
+    {
+      "area_pt2": 39.8592,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 200.64,
+        "y": 243.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-c2cdac26f40b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.28,
+        "x": 227.52,
+        "y": 149.28
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-d6fcc6325142",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.9376,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.28,
+        "x": 203.52,
+        "y": 165.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-924a48441629",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 15.36,
+        "x": 82.08,
+        "y": 289.92
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-59c4012d33a3",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 8.16,
+        "x": 171.84,
+        "y": 120.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-7a94ea4baaa5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 36.864,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 11.04,
+        "x": 76.32,
+        "y": 104.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-f73da80ee275",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 35.2512,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 187.2,
+        "y": 352.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-4ae4a5bf962e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.0208,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 343.68,
+        "y": 104.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-83363beaa332",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.0208,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 4.8,
+        "x": 169.92,
+        "y": 275.04
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-9f00d085d9a4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 34.56,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 349.44,
+        "y": 104.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-f72d5da73989",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.56,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 4.8,
+        "x": 164.64,
+        "y": 275.04
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-c8c1a62b1f2b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 34.56,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 194.4,
+        "y": 275.04
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-4d55313fee81",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 34.3296,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 4.8,
+        "x": 158.88,
+        "y": 275.04
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-eec025dea803",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 34.0992,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 4.8,
+        "x": 186.24,
+        "y": 149.28
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-83444d1ca11c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 34.0992,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.28,
+        "x": 239.52,
+        "y": 180.48
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-49879a2fb75e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.0992,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.28,
+        "x": 203.52,
+        "y": 228.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-97566184010e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.0992,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 8.16,
+        "x": 294.72,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-f48be90e8703",
+      "region": "center"
+    },
+    {
+      "area_pt2": 34.0992,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 8.16,
+        "x": 149.28,
+        "y": 336.48
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-646bc39430bf",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.8688,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 8.16,
+        "x": 116.16,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-b84ab47cfb6a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.8688,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 8.16,
+        "x": 253.44,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-a4b1915e0abc",
+      "region": "center"
+    },
+    {
+      "area_pt2": 33.8688,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 8.16,
+        "x": 110.88,
+        "y": 352.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-ae9fd5a4e61a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.6384,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 110.88,
+        "y": 336.48
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-e36ecc3081b5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 444.48,
+        "y": 88.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-1f8f7101cd37",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 196.8,
+        "y": 180.96
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-2d0329446113",
+      "region": "top"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 349.44,
+        "y": 351.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-011ce2c7f420",
+      "region": "center"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 136.8,
+        "y": 104.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-85a643acfd68",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.28,
+        "x": 196.8,
+        "y": 149.28
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-91fbfca5048e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.28,
+        "x": 202.08,
+        "y": 180.48
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-6feeabb71a0c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 363.36,
+        "y": 88.8
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-05aea74cf902",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.28,
+        "x": 160.32,
+        "y": 196.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-e28eca48bcfb",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 10.56,
+        "x": 382.56,
+        "y": 305.28
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-423810be717a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 31.7952,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.28,
+        "x": 159.84,
+        "y": 243.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-b31665b0d093",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.5648,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 349.44,
+        "y": 88.8
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-b2f8c43b63ed",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 81.6,
+        "y": 88.8
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-79d9703d21df",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 195.84,
+        "y": 165.6
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-c97a6555162f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 363.36,
+        "y": 104.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-8b00f7ab2819",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 157.92,
+        "y": 290.88
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-b5985164b1e4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 10.08,
+        "x": 363.36,
+        "y": 289.92
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-d5c043a3b475",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.28,
+        "x": 152.16,
+        "y": 291.36
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-e03fd7b44d41",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.8,
+        "x": 444.96,
+        "y": 104.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-bfc96248f33a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 32.16,
+        "x": 66.24,
+        "y": 117.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-9c8de11e9fcc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 32.16,
+        "x": 66.24,
+        "y": 164.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-e11a928f9009",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 32.16,
+        "x": 66.24,
+        "y": 258.72
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-408cabae8be8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 32.16,
+        "x": 66.24,
+        "y": 274.56
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-92ac32b79c69",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 32.16,
+        "x": 66.24,
+        "y": 148.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-f17b7976285b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.28,
+        "x": 125.76,
+        "y": 165.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-c56bcef27c55",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 152.16,
+        "y": 165.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-5d293a549ae9",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 32.16,
+        "x": 66.24,
+        "y": 180.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-8e28a3c21749",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 32.16,
+        "x": 66.24,
+        "y": 195.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-030fb5b3ddda",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 32.16,
+        "x": 66.24,
+        "y": 211.68
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-bc720d11ee43",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 32.16,
+        "x": 66.24,
+        "y": 242.88
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-5f9dba49c022",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 32.16,
+        "x": 66.24,
+        "y": 290.4
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-385ad4e17b05",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 32.16,
+        "x": 66.24,
+        "y": 132.96
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-c0fbc64096d6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 32.16,
+        "x": 66.24,
+        "y": 227.52
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-a0ceb1e1d1a9",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.8,
+        "x": 243.84,
+        "y": 106.08
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-6f3a9784a79a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.8,
+        "x": 174.72,
+        "y": 337.92
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-8d28b099a832",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.3392,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 132.48,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-1ca4d20567a8",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.3392,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 268.8,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-7059dd777e89",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 163.68,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-fab3ea076ac9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.8,
+        "x": 264.48,
+        "y": 90.72
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-75760dd8c603",
+      "region": "top"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 524.64,
+        "y": 736.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Page number only: same Calibri-metric regular face and size as Word, 0.54pt lower and 0.40pt left at 300 DPI; sub-material, recorded under #1874."
+      },
+      "id": "p2-9c560213e060",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 142.08,
+        "y": 106.08
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-e15485dcb570",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 426.72,
+        "y": 88.8
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-bd94b1441628",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.68,
+        "x": 242.4,
+        "y": 290.88
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-5d80a99df4a3",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.68,
+        "x": 209.28,
+        "y": 290.88
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-4b4181d23fe2",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.0352,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 82.08,
+        "y": 135.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-baef9006f83c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.0352,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 310.08,
+        "y": 262.08
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-e50a467d95b9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.8048,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 82.08,
+        "y": 351.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-bdf1bc8c9bc1",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 169.44,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-3488e7523b8e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 120.0,
+        "y": 352.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-e01d9282d06e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 108.96,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-41f4dbb0f725",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 124.8,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-37a17f69dd30",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 148.8,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-01c07043c437",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 214.08,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-93ea6439b7ea",
+      "region": "center"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.68,
+        "x": 208.32,
+        "y": 121.92
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-2d86ec7fd5ba",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.68,
+        "x": 246.24,
+        "y": 121.92
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-267ea7d94e2a",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 139.68,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-8de7ab713b8e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 182.4,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-3d9484b12ce8",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 200.16,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-b9f3663b9c62",
+      "region": "center"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 376.8,
+        "y": 88.8
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-6ef912ef6afb",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.68,
+        "x": 254.88,
+        "y": 106.08
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-5fdca9bcabec",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 309.6,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-55904cf5f487",
+      "region": "center"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.68,
+        "x": 185.76,
+        "y": 337.92
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-7318534582ee",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 7.68,
+        "x": 259.68,
+        "y": 337.92
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-c9bbd9c80d4b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 130.08,
+        "y": 352.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-6753a62b3625",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 286.56,
+        "y": 120.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-973a4373d251",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 427.2,
+        "y": 120.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-7f51f148ffbd",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 225.12,
+        "y": 198.72
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-2e836936ba27",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 256.8,
+        "y": 198.72
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-9f3240ce72da",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 382.56,
+        "y": 104.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-c9bf3f88a5e2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 282.24,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-de1469bce720",
+      "region": "center"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 103.68,
+        "y": 352.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-3483a69acf25",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 269.76,
+        "y": 167.52
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-b9ac96746e67",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 357.6,
+        "y": 104.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-6aab37d93b4d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 433.44,
+        "y": 120.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-07348befb615",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 306.24,
+        "y": 104.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-d2271920539d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 377.28,
+        "y": 120.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-da7aa5d30366",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 262.08,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-180b1dbc7339",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 275.52,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-97bd15b895a9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 426.72,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-23c3179bfce0",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 140.64,
+        "y": 336.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-839da24c90d5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 240.48,
+        "y": 336.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-c601986a828a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 426.72,
+        "y": 336.48
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-dda1f3f7e00d",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 426.72,
+        "y": 352.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-3fbe6231febc",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 357.6,
+        "y": 88.8
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-bb89d24d9e30",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 158.88,
+        "y": 119.52
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-81313590c283",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 357.6,
+        "y": 120.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-341014fd64ca",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 4.8,
+        "x": 166.08,
+        "y": 133.44
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-1577f6c44cb3",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 103.68,
+        "y": 336.48
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-e9ff35277d90",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 349.44,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-bdd530d74fa3",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 279.84,
+        "y": 336.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-6e580e318a7d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 174.72,
+        "y": 351.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-1fa903191142",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 280.32,
+        "y": 276.96
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-ba355dacf18b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 357.6,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-19a1320cb20d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 357.6,
+        "y": 336.48
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-fca6d96ce4d3",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 357.6,
+        "y": 352.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-fc93d9fe744b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 4.32,
+        "x": 214.56,
+        "y": 165.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-fd5440f6d4a5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 4.8,
+        "x": 147.84,
+        "y": 106.08
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-93c0dc5c7c9d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 344.16,
+        "y": 120.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-710310b63aef",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 371.52,
+        "y": 104.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-5001b5bee835",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 376.8,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-17fe50c7ca2d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 376.8,
+        "y": 336.48
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-4db51cd1940c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.28,
+        "x": 376.8,
+        "y": 352.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-d90ab269829a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 76.32,
+        "y": 336.48
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-d0b0c8aeddc0",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 76.32,
+        "y": 352.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-8296708f138e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 444.48,
+        "y": 352.32
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-10c1af62018a",
+      "region": "right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 6.72,
+        "x": 131.04,
+        "y": 200.64
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-e46c51909342",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 4.32,
+        "x": 82.56,
+        "y": 211.68
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-aba44a643f4d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 103.68,
+        "y": 321.12
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-5abafbb76e68",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.32,
+        "x": 243.84,
+        "y": 88.8
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-3c1043aa8d14",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.32,
+        "x": 304.8,
+        "y": 262.08
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-a7bd57f66c4b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 217.44,
+        "y": 290.88
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-e08922ceb6b6",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 388.32,
+        "y": 120.0
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-a9c5cd887a53",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 387.84,
+        "y": 104.16
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-30b6bb0223e2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 249.12,
+        "y": 106.08
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-80a68e1c0dd0",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 263.04,
+        "y": 106.08
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-efc26c49dc6b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 243.84,
+        "y": 133.44
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-310248261415",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.32,
+        "x": 289.92,
+        "y": 262.08
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-3ccc01369501",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 203.04,
+        "y": 290.88
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-f0d868391f2d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 193.92,
+        "y": 337.92
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-f8f01a6f25d5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 221.28,
+        "y": 337.92
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-18d4bce5c596",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 274.08,
+        "y": 337.92
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-ea49b8c11a53",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 4.8,
+        "x": 146.4,
+        "y": 351.84
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-de691c7704f8",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.28,
+        "x": 151.68,
+        "y": 353.76
+      },
+      "disposition": {
+        "issues": [
+          "#2353",
+          "#2435"
+        ],
+        "kind": "issue",
+        "note": "Page-2 table rows: rows 30-32 move here from page 1 and every row sits 59pt low, because page 1's body starts 62pt low under the letterhead float (#2353, #2435). Same on main."
+      },
+      "id": "p2-c7bb4ccd3d76",
+      "region": "left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 257,
+    "duplicate": 0,
+    "total": 257,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

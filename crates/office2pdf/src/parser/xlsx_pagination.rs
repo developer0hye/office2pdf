@@ -541,6 +541,7 @@ fn prepend_title_columns(title_table: &Table, group_table: Table) -> Table {
             let mut cells: Vec<TableCell> = title_row.cells.clone();
             cells.extend(group_row.cells);
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells,
                 height: group_row.height,
@@ -757,6 +758,7 @@ fn slice_table_columns(table: &Table, start: usize, end: usize) -> ColumnGroupSl
         }
 
         rows.push(TableRow {
+            cant_split: false,
             minimum_height: None,
             cells,
             height: row.height,

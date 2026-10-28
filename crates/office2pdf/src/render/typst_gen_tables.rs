@@ -372,6 +372,16 @@ fn generate_table_rows(
         // shared by every cell that needs a vertical band length (issue #619
         // review, remediation 3).
         let mut row_frame_estimate_cache: Option<Option<f64>> = None;
+        // Word continues a row on the next page unless `w:cantSplit` keeps it
+        // whole. A nested table stays whole inside its outer cell. A floor
+        // stays whole too: its strut is a single frame, and Typst leaves a
+        // blank page and stacks the row's lines when that frame is taller
+        // than a page body.
+        // TODO(#2217): continue a floored row whose content outgrows a page.
+        let row_may_split: bool = ctx.table_rows_may_split
+            && ctx.table_depth == 1
+            && !row.cant_split
+            && row.minimum_height.is_none();
         let mut col_pos: usize = 0;
         for (cell_index, cell) in row.cells.iter().enumerate() {
             if cell.col_span == 0 || cell.row_span == 0 {
@@ -445,6 +455,7 @@ fn generate_table_rows(
                 // it in every cell would only repeat the same constraint.
                 row.minimum_height.filter(|_| cell_index == 0),
                 row_shared_line.as_ref(),
+                row_may_split,
                 ctx,
             )?;
             ctx.available_measure_pt = enclosing_measure_pt;
@@ -957,6 +968,7 @@ fn generate_table_cell(
     cell_track_height: Option<f64>,
     row_minimum_height: Option<f64>,
     row_shared_line: Option<&SheetRowLine>,
+    row_may_split: bool,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     // Unmerged cells retain distinct native seats even in a tight track
@@ -1245,12 +1257,27 @@ fn generate_table_cell(
     let seat_shortfall_pt: f64 = sheet_cell_seat_shortfall_pt(&cell.content, ctx);
     if wraps_content_shift {
         let (dx, dy) = content_shift.expect("the content-shift wrapper requires a seat");
-        let _ = write!(
-            out,
-            "#move(dx: {}pt, dy: {}pt)[",
-            format_geometry(dx),
-            format_geometry(dy),
-        );
+        if row_may_split {
+            // Opposite paddings translate each laid-out fragment like `move`,
+            // but `pad` is breakable. A `move` lays its body out as one frame,
+            // which cut a row taller than the space left on the page off at
+            // the bottom margin (issue #2217).
+            let _ = write!(
+                out,
+                "#pad(left: {}pt, right: {}pt, top: {}pt, bottom: {}pt)[",
+                format_geometry(dx),
+                format_geometry(-dx),
+                format_geometry(dy),
+                format_geometry(-dy),
+            );
+        } else {
+            let _ = write!(
+                out,
+                "#move(dx: {}pt, dy: {}pt)[",
+                format_geometry(dx),
+                format_geometry(dy),
+            );
+        }
     }
 
     if let Some(spill_width) = cell.spill_width {
@@ -2536,6 +2563,140 @@ fn auto_row_frame_height_estimate_pt(
         })
 }
 
+/// The height a table in a header or footer story's flow takes, in points:
+/// each row's exact height, or the taller of its `atLeast` floor and its
+/// tallest cell (issue #2250).
+///
+/// A cell is its insets plus its paragraphs, each on the line box this file
+/// draws it in, with as many lines as its words wrap to and its `w:spacing`
+/// gaps. A docxide-pdf lesson plan's one-row header table of 12pt Calibri
+/// lines and 43-twip cell margins measures 19.20pt this way; Word draws the
+/// row's bottom border 19.03pt below `w:header`.
+///
+/// `None` when the table holds anything else — a vertically merged cell, a
+/// picture or text box in a run, a nested table or a drawing — or a face does
+/// not resolve, so the story's reservation leaves the table out rather than
+/// grow on a guess.
+pub(super) fn word_story_table_height_pt(
+    table: &Table,
+    line_grid_pitch: Option<f64>,
+) -> Option<f64> {
+    if table
+        .rows
+        .iter()
+        .flat_map(|row| &row.cells)
+        .any(|cell| cell.row_span != 1)
+    {
+        return None;
+    }
+    // The same default `generate_table_inner` lays the cells out with.
+    let default_cell_padding: Insets = table.default_cell_padding.unwrap_or(Insets {
+        top: 5.0,
+        right: 5.0,
+        bottom: 5.0,
+        left: 5.0,
+    });
+    table.rows.iter().try_fold(0.0, |height_pt, row| {
+        let row_pt: f64 = match row.height {
+            Some(exact_pt) => exact_pt,
+            None => {
+                let has_east_asian_text: bool = row_has_east_asian_text(row);
+                let row_east_asian = RowEastAsianMetrics {
+                    has_east_asian_text,
+                    takes_east_asian_metrics: !table.seats_bottom_aligned_text_on_descender
+                        && (has_east_asian_text || row_is_set_in_east_asian_face(row)),
+                };
+                let mut column: usize = 0;
+                let mut tallest_pt: f64 = 0.0;
+                for cell in &row.cells {
+                    let span: usize = (cell.col_span as usize).max(1);
+                    let width_pt: f64 =
+                        table.column_widths.get(column..column + span)?.iter().sum();
+                    column += span;
+                    let inset: Insets = cell_inset_with_border(cell, default_cell_padding);
+                    let content_pt: f64 = word_story_cell_content_height_pt(
+                        cell,
+                        width_pt - inset.left - inset.right,
+                        line_grid_pitch,
+                        row_east_asian,
+                        table.default_vertical_align,
+                    )?;
+                    tallest_pt = tallest_pt.max(inset.top + content_pt + inset.bottom);
+                }
+                tallest_pt.max(row.minimum_height.unwrap_or(0.0))
+            }
+        };
+        Some(height_pt + row_pt)
+    })
+}
+
+/// The height of a story table cell's paragraphs, as
+/// [`word_story_table_height_pt`] measures them in `text_width_pt`.
+fn word_story_cell_content_height_pt(
+    cell: &TableCell,
+    text_width_pt: f64,
+    line_grid_pitch: Option<f64>,
+    row_east_asian: RowEastAsianMetrics,
+    default_vertical_align: Option<CellVerticalAlign>,
+) -> Option<f64> {
+    let mut height_pt: f64 = 0.0;
+    for (index, block) in cell.content.iter().enumerate() {
+        let Block::Paragraph(paragraph) = block else {
+            return None;
+        };
+        if paragraph.runs.iter().any(|run| run.inline_box.is_some()) {
+            return None;
+        }
+        // A blank paragraph takes the line of the text beside it, as the
+        // header table is drawn (`prefer_sibling_metrics_for_empty_cell_paragraphs`).
+        let mark_runs: Option<Cow<'_, [Run]>> = if paragraph.runs.is_empty() {
+            Some(cell_paragraph_mark_metric_runs(
+                &cell.content,
+                index,
+                &paragraph.style,
+                true,
+            )?)
+        } else {
+            None
+        };
+        let runs: &[Run] = mark_runs.as_deref().unwrap_or(&paragraph.runs);
+        let line_box: CellLineBox = word_cell_line_box(
+            runs,
+            &paragraph.style,
+            line_grid_pitch,
+            row_east_asian,
+            cell.vertical_align.or(default_vertical_align),
+            false,
+            None,
+            None,
+            None,
+            false,
+        )?;
+        let lines: usize = if paragraph.runs.is_empty() {
+            1
+        } else {
+            super::runs_line_count(
+                runs,
+                text_width_pt
+                    - paragraph.style.indent_left.unwrap_or(0.0)
+                    - paragraph.style.indent_right.unwrap_or(0.0),
+            )
+        };
+        let line_pt: f64 = (line_box.top_em + line_box.bottom_em) * line_box.font_size_pt;
+        height_pt += paragraph.style.space_before.unwrap_or(0.0)
+            + lines as f64 * line_pt
+            + (lines - 1) as f64 * line_box.leading_pt;
+        if !cell_grid_absorbs_space_after(&paragraph.style, line_grid_pitch, row_east_asian) {
+            height_pt += paragraph.style.space_after.unwrap_or(0.0);
+        }
+        // The cell carries the line advance on to its next paragraph.
+        if index + 1 < cell.content.len() {
+            height_pt += line_box.leading_pt;
+        }
+    }
+    Some(height_pt)
+}
+
 /// Word's PDF graphics grid is 1/300 inch (0.24 pt). Its native exports snap
 /// a declared half-point table border to two grid units, or 0.48 pt (#724).
 const WORD_PDF_GRAPHICS_GRID_PT: f64 = 72.0 / 300.0;
@@ -3367,6 +3528,9 @@ fn generate_cell_content(
             }
             Block::FloatingImage(fi) => generate_floating_image(out, fi, ctx),
             Block::FloatingTextBox(ftb) => generate_floating_text_box(out, ftb, ctx)?,
+            // The parser lifts only body paragraphs into frames; a cell
+            // would lay a frame's paragraphs out in place.
+            Block::TextFrame(frame) => generate_cell_content(out, &frame.content, ctx)?,
             Block::FloatingShape(fs) => generate_floating_shape(out, fs, ctx),
             Block::DrawingGroup(group) => generate_drawing_group(out, group, ctx)?,
             Block::List(list) => {
@@ -3391,6 +3555,11 @@ fn generate_cell_content(
                             line_box_em: None,
                             available_measure_pt: ctx.available_measure_pt,
                             baseline_snap: None,
+                            // TODO(#2261 cell clip): Word clips a cell list
+                            // that hangs past its cell at the cell's edge. Until
+                            // cells clip, its indents clamp at the cell's inset,
+                            // as cell paragraphs do (issue #2233).
+                            hangs_into_margin: false,
                         },
                         ctx,
                     )?;
@@ -3749,7 +3918,7 @@ fn generate_cell_paragraph(
     // framed eojeol has to restore inside itself (issue #626). The two are
     // mutually exclusive: `word_cell_line_box` bails on a paragraph that
     // declares a `LineBox`.
-    let cell_line_box_em: Option<(f64, f64)> = word_cell_line_box(
+    let word_line_box: Option<CellLineBox> = word_cell_line_box(
         &para.runs,
         style,
         cell.line_grid_pitch,
@@ -3760,13 +3929,24 @@ fn generate_cell_paragraph(
         cell.sheet_seat,
         cell.sheet_print_scale,
         cell.in_top_aligned_floating_text_box,
-    )
-    .map(|line_box| (line_box.top_em, line_box.bottom_em))
-    .or_else(|| {
-        style
-            .line_box
-            .map(|line_box| (line_box.ascent_em, line_box.descent_em))
-    });
+    );
+    let cell_line_box_em: Option<(f64, f64)> = word_line_box
+        .as_ref()
+        .map(|line_box| (line_box.top_em, line_box.bottom_em))
+        .or_else(|| {
+            style
+                .line_box
+                .map(|line_box| (line_box.ascent_em, line_box.descent_em))
+        });
+    // An inline picture or other inline box on an exact line is clipped to the
+    // cell's Word line box (issue #2228); a slide's table line is PowerPoint's
+    // own.
+    let exact_line_ascent_pt: Option<f64> = word_line_box
+        .as_ref()
+        .filter(|_| !cell.uses_powerpoint_line_box)
+        .and_then(|line_box| {
+            exact_line_ascent_pt(style, Some(line_box.top_em), line_box.font_size_pt)
+        });
     // An empty `<w:p>` has no runs, so it resolves no line box above and would
     // otherwise emit nothing at all — zero height, where Word gives the
     // paragraph mark a full blank line (issue #625). Its metric runs were
@@ -3847,7 +4027,13 @@ fn generate_cell_paragraph(
     // Unlike the body path this needs no separate outer block: a cell paragraph
     // paints no `w:shd` or `w:pBdr` of its own, so nothing has to span the
     // un-inset width.
-    let indent: Option<(f64, f64)> = paragraph_indent_pt(style);
+    // TODO(#2261 cell clip): Word clips a cell paragraph that hangs past its
+    // cell at the cell's edge. Until cells clip, a negative indent stays
+    // clamped to zero here, or the text would paint into the next cell
+    // (issue #2233).
+    let indent: Option<(f64, f64)> = paragraph_indent_pt(style)
+        .map(|(left, right)| (left.max(0.0), right.max(0.0)))
+        .filter(|(left, right)| *left > 0.0 || *right > 0.0);
     // Keep the signed first-line offset separate from the cell inset so only
     // the first visual line moves while wrapped lines retain the inset origin.
     let first_line_indent_pt: Option<f64> = style
@@ -3917,6 +4103,10 @@ fn generate_cell_paragraph(
         );
     }
     match paragraph_mark_line_pt {
+        // TODO(#2251 rules in table cells): a cell paragraph's horizontal
+        // rule is not drawn. Word drew those in docxide-pdf's
+        // `maine_criminal_history_record` autofit cells as one-twip slivers,
+        // and no export of a rule in another cell is at hand.
         Some(height_pt) => {
             let _ = write!(out, "#box(width: 0pt, height: {}pt)", format_f64(height_pt));
         }
@@ -3977,6 +4167,7 @@ fn generate_cell_paragraph(
                     style.tab_stops.as_deref(),
                     paragraph_default_tab_width_pt(style, cell.default_tab_width_pt),
                     eojeol_wrap,
+                    exact_line_ascent_pt,
                     ctx,
                 )?;
                 if let Some(space_pt) = sheet_trailing_advance_space_pt(style, &para.runs) {

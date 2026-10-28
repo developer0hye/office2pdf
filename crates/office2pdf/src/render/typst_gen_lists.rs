@@ -1,5 +1,5 @@
 use super::*;
-use crate::ir::ListMarkerSuffix;
+use crate::ir::{ListMarkerSuffix, NumberingPattern};
 use crate::numbering::format_roman_counter as roman_marker;
 
 const PPTX_BLANK_LIST_ITEM_SENTINEL: &str = "\u{E000}\u{E001}";
@@ -16,7 +16,7 @@ fn is_pptx_blank_list_item(paragraph: &Paragraph) -> bool {
 /// Nested items are wrapped in `list.item()` / `enum.item()` with a sub-list.
 struct EffectiveListStyle<'a> {
     kind: ListKind,
-    numbering_pattern: Option<&'a str>,
+    numbering_pattern: Option<&'a NumberingPattern>,
     full_numbering: bool,
     marker_text: Option<&'a str>,
     marker_style: Option<&'a TextStyle>,
@@ -40,7 +40,7 @@ fn list_style_for_level<'a>(list: &'a List, level: u32) -> EffectiveListStyle<'a
     if let Some(style) = list.level_styles.get(&level) {
         EffectiveListStyle {
             kind: style.kind,
-            numbering_pattern: style.numbering_pattern.as_deref(),
+            numbering_pattern: style.numbering_pattern.as_ref(),
             full_numbering: style.full_numbering,
             marker_text: style.marker_text.as_deref(),
             marker_style: style.marker_style.as_ref(),
@@ -67,9 +67,10 @@ fn write_list_open(
     out: &mut String,
     prefix: &str,
     style: &EffectiveListStyle<'_>,
-    fallback_marker_style: Option<&TextStyle>,
+    labels: &LevelLabelStyles,
     options: ListOpenOptions,
 ) {
+    let fallback_marker_style: Option<&TextStyle> = labels.common.as_ref();
     let ListOpenOptions {
         indent,
         spacing_pt,
@@ -93,7 +94,13 @@ fn write_list_open(
 
     if style.kind == ListKind::Ordered {
         let marker_style = merge_marker_style(fallback_marker_style, style.marker_style);
+        let numbered_marker_styles: Vec<(u32, Option<TextStyle>)> = labels
+            .by_number
+            .iter()
+            .map(|(number, label)| (*number, merge_marker_style(Some(label), style.marker_style)))
+            .collect();
         if marker_style.as_ref().is_some_and(has_text_properties)
+            || !numbered_marker_styles.is_empty()
             || indent.is_some()
             || baseline_snap.is_some()
         {
@@ -101,16 +108,20 @@ fn write_list_open(
                 out,
                 style,
                 marker_style.as_ref(),
+                &numbered_marker_styles,
                 indent,
                 baseline_snap,
             );
             out.push_str(", ");
         } else if let Some(numbering_pattern) = style.numbering_pattern {
-            let _ = write!(
-                out,
-                "numbering: \"{}\", ",
-                escape_typst_string(numbering_pattern)
-            );
+            out.push_str("numbering: ");
+            if let Some(pattern) = typst_numbering_pattern(numbering_pattern) {
+                let _ = write!(out, "\"{}\"", escape_typst_string(&pattern));
+            } else {
+                out.push_str("(..nums) => ");
+                write_numbering_label(out, Some(numbering_pattern), MarkerNumbers::Arguments);
+            }
+            out.push_str(", ");
         }
         if let Some(start_at) = start_at {
             let _ = write!(out, "start: {start_at}, ");
@@ -147,14 +158,17 @@ fn write_list_open(
     out.push('\n');
 }
 
+/// `numbered_marker_styles` gives single items their own label formatting by
+/// the number Typst passes the function, the only thing it learns about the
+/// item; every other label takes `marker_style`.
 fn write_ordered_list_numbering_function(
     out: &mut String,
     style: &EffectiveListStyle<'_>,
     marker_style: Option<&TextStyle>,
+    numbered_marker_styles: &[(u32, Option<TextStyle>)],
     indent: Option<ListIndentGeometry>,
     baseline_snap: Option<PowerPointBaselineSnap>,
 ) {
-    let pattern: &str = style.numbering_pattern.unwrap_or("1.");
     out.push_str("numbering: (..nums) => [");
     if let Some(snap) = baseline_snap {
         snap.write_marker_open(out);
@@ -162,21 +176,18 @@ fn write_ordered_list_numbering_function(
     if let Some(indent) = indent {
         write_marker_box_open(out, indent.marker_width_pt);
     }
-    if let Some(marker_style) = marker_style.filter(|style| has_text_properties(style)) {
-        out.push_str("#text(");
-        // The marker's text is `#numbering`'s result, which the engine
-        // computes from the pattern and the item's position — unnameable
-        // here, so the kerning answer stays on the safe side (issue #628).
-        write_text_params(out, marker_style);
-        out.push_str(")[");
-    }
-    let _ = write!(
-        out,
-        "#numbering(\"{}\", ..nums)",
-        escape_typst_string(pattern)
-    );
-    if marker_style.is_some_and(has_text_properties) {
-        out.push(']');
+    if numbered_marker_styles.is_empty() {
+        write_ordered_list_label(out, style, marker_style);
+    } else {
+        out.push_str("#{ let number = nums.pos().last(); ");
+        for (number, numbered_style) in numbered_marker_styles {
+            let _ = write!(out, "if number == {number} [");
+            write_ordered_list_label(out, style, numbered_style.as_ref());
+            out.push_str("] else ");
+        }
+        out.push('[');
+        write_ordered_list_label(out, style, marker_style);
+        out.push_str("] }");
     }
     if indent.is_some() {
         out.push_str("])");
@@ -185,6 +196,102 @@ fn write_ordered_list_numbering_function(
         out.push(']');
     }
     out.push(']');
+}
+
+/// Markup for one label of a numbering function, which binds `nums`.
+fn write_ordered_list_label(
+    out: &mut String,
+    style: &EffectiveListStyle<'_>,
+    marker_style: Option<&TextStyle>,
+) {
+    if let Some(marker_style) = marker_style.filter(|style| has_text_properties(style)) {
+        out.push_str("#text(");
+        // The marker's text is `#numbering`'s result, which the engine
+        // computes from the pattern and the item's position — unnameable
+        // here, so the kerning answer stays on the safe side (issue #628).
+        write_text_params(out, marker_style);
+        out.push_str(")[");
+    }
+    out.push('#');
+    write_numbering_label(out, style.numbering_pattern, MarkerNumbers::Arguments);
+    if marker_style.is_some_and(has_text_properties) {
+        out.push(']');
+    }
+}
+
+/// The numbers a label formats: a numbering function's `..nums`, or values
+/// known while the item is written.
+#[derive(Clone, Copy)]
+enum MarkerNumbers<'a> {
+    Arguments,
+    Values(&'a [u32]),
+}
+
+/// One Typst pattern string for `pattern`, if Typst reads exactly its
+/// counters back: its literal text may hold a counting symbol (issue #2221).
+fn typst_numbering_pattern(pattern: &NumberingPattern) -> Option<String> {
+    let mut joined: String = String::new();
+    for (prefix, symbol) in &pattern.pieces {
+        joined.push_str(prefix);
+        joined.push(*symbol);
+    }
+    joined.push_str(&pattern.suffix);
+    let counters: usize = joined
+        .parse::<typst::model::NumberingPattern>()
+        .ok()?
+        .pieces();
+    (counters == pattern.pieces.len()).then_some(joined)
+}
+
+/// Writes a code expression for the label. When one pattern string would turn
+/// literal text into counters, each counter is formatted alone between literal
+/// strings, taking the number at its position; a counter without one is
+/// dropped with its literal text, as Typst's patterns do.
+fn write_numbering_label(
+    out: &mut String,
+    pattern: Option<&NumberingPattern>,
+    numbers: MarkerNumbers<'_>,
+) {
+    let typst_pattern: Option<String> = match pattern {
+        Some(pattern) => typst_numbering_pattern(pattern),
+        None => Some("1.".to_string()),
+    };
+    if let Some(typst_pattern) = typst_pattern {
+        let _ = write!(out, "numbering(\"{}\"", escape_typst_string(&typst_pattern));
+        match numbers {
+            MarkerNumbers::Arguments => out.push_str(", ..nums"),
+            MarkerNumbers::Values(values) => {
+                for value in values {
+                    let _ = write!(out, ", {value}");
+                }
+            }
+        }
+        out.push(')');
+        return;
+    }
+    let Some(pattern) = pattern else {
+        return;
+    };
+    out.push_str("{ let n = ");
+    match numbers {
+        MarkerNumbers::Arguments => out.push_str("nums.pos()"),
+        MarkerNumbers::Values(values) => {
+            out.push('(');
+            for value in values {
+                let _ = write!(out, "{value},");
+            }
+            out.push(')');
+        }
+    }
+    out.push_str("; \"\"");
+    for (index, (prefix, symbol)) in pattern.pieces.iter().enumerate() {
+        let _ = write!(
+            out,
+            " + if n.len() > {index} {{ \"{}\" + numbering(\"{symbol}\", n.at({index})) }} else {{ \"\" }}",
+            escape_typst_string(prefix)
+        );
+    }
+    let _ = write!(out, " + \"{}\" }}", escape_typst_string(&pattern.suffix));
 }
 
 fn write_marker_box_open(out: &mut String, width_pt: f64) {
@@ -215,14 +322,25 @@ fn list_root_level(list: &List) -> u32 {
     list.items.first().map(|item| item.level).unwrap_or(0)
 }
 
-fn paragraph_list_indent(style: &ParagraphStyle) -> Option<ListIndentGeometry> {
-    let indent_left = style.indent_left?.max(0.0);
+/// A list paragraph's marker origin and hanging span from the list's origin,
+/// or `None` without a hanging indent.
+///
+/// With `hangs_into_margin` both keep their sign, as in a Word body list: a
+/// negative `w:ind w:left`, or a hanging span wider than it, starts the marker
+/// left of the margin (issue #2233). Otherwise the left indent and the marker
+/// clamp at the origin.
+fn paragraph_list_indent(
+    style: &ParagraphStyle,
+    hangs_into_margin: bool,
+) -> Option<ListIndentGeometry> {
+    let clamp = |pt: f64| if hangs_into_margin { pt } else { pt.max(0.0) };
+    let indent_left = clamp(style.indent_left?);
     let first_line_indent = style.indent_first_line?;
     if first_line_indent >= -0.0001 {
         return None;
     }
 
-    let marker_origin_pt = (indent_left + first_line_indent).max(0.0);
+    let marker_origin_pt = clamp(indent_left + first_line_indent);
     let marker_width_pt = indent_left - marker_origin_pt;
     (marker_width_pt > 0.0001).then_some(ListIndentGeometry {
         marker_origin_pt,
@@ -230,22 +348,39 @@ fn paragraph_list_indent(style: &ParagraphStyle) -> Option<ListIndentGeometry> {
     })
 }
 
+/// How far a level's items may stray from its first item's marker origin and
+/// hanging span and still share that geometry.
+///
+/// Word stores indents in twips, and one level's items often disagree by a
+/// rounding step: 992 vs 993 twips, or 357 (0.63cm) vs 360 (0.25in). Requiring
+/// an exact match dropped the whole level to Typst's default indents, putting
+/// the markers on the margin (issue #2332). In the docxide and bulk corpora
+/// such spreads stay within 15 twips (0.75pt), well under what a reader sees,
+/// while the next smallest is 3.8pt.
+const LIST_LEVEL_INDENT_TOLERANCE_PT: f64 = 1.0;
+
+/// The marker origin and hanging span one level's items share, taken from its
+/// first item, or `None` if any item lacks one or strays further than
+/// [`LIST_LEVEL_INDENT_TOLERANCE_PT`] from it.
 fn common_list_level_indent(
     items: &[crate::ir::ListItem],
     level: u32,
+    hangs_into_margin: bool,
 ) -> Option<ListIndentGeometry> {
     let mut geometries = items
         .iter()
         .filter(|item| item.level == level)
         .filter_map(|item| item.content.first())
-        .map(|paragraph| paragraph_list_indent(&paragraph.style));
+        .map(|paragraph| paragraph_list_indent(&paragraph.style, hangs_into_margin));
     let first = geometries.next()??;
+    let within_tolerance =
+        |left: f64, right: f64| (left - right).abs() <= LIST_LEVEL_INDENT_TOLERANCE_PT;
 
     geometries
         .all(|geometry| {
             geometry.is_some_and(|geometry| {
-                f64_approx_eq(geometry.marker_origin_pt, first.marker_origin_pt)
-                    && f64_approx_eq(geometry.marker_width_pt, first.marker_width_pt)
+                within_tolerance(geometry.marker_origin_pt, first.marker_origin_pt)
+                    && within_tolerance(geometry.marker_width_pt, first.marker_width_pt)
             })
         })
         .then_some(first)
@@ -281,7 +416,7 @@ fn paragraph_line_height(paragraph: &Paragraph) -> f64 {
 
     match paragraph.style.line_spacing {
         Some(LineSpacing::Proportional(factor)) => font_size * factor.max(0.0),
-        Some(LineSpacing::Exact(points)) => points.max(0.0),
+        Some(LineSpacing::Exact(points) | LineSpacing::AtLeast(points)) => points.max(0.0),
         None => font_size,
     }
 }
@@ -344,7 +479,7 @@ fn paragraph_uses_full_line_box(paragraph: &Paragraph) -> bool {
     let line_spacing_is_in_the_box: bool = match paragraph.style.line_spacing {
         None => true,
         Some(LineSpacing::Proportional(factor)) => factor > 0.0,
-        Some(LineSpacing::Exact(_)) => false,
+        Some(LineSpacing::Exact(_) | LineSpacing::AtLeast(_)) => false,
     };
     line_spacing_is_in_the_box && paragraph.style.line_box.is_none()
 }
@@ -489,8 +624,8 @@ pub(super) fn generate_list_with_spacing_model(
                 }));
     let root_level: u32 = list_root_level(list);
     let style = list_style_for_level(list, root_level);
-    let fallback_marker_style = common_list_level_text_style(&list.items, root_level);
-    let indent = common_list_level_indent(&list.items, root_level);
+    let labels = level_label_styles(&list.items, root_level, style.kind);
+    let indent = common_list_level_indent(&list.items, root_level, eojeol_wrap.hangs_into_margin);
     // Typst applies one root `spacing:` after every complete root item. In a
     // PowerPoint outline that item can end in a nested child, whose own
     // a:spcAft is the real boundary gap. Even one adjacent root pair is not
@@ -572,7 +707,7 @@ pub(super) fn generate_list_with_spacing_model(
         out,
         "#",
         &style,
-        fallback_marker_style.as_ref(),
+        &labels,
         ListOpenOptions {
             indent,
             spacing_pt,
@@ -724,7 +859,10 @@ fn alignment_matches(left: Option<Alignment>, right: Option<Alignment>) -> bool 
 fn line_spacing_eq(left: LineSpacing, right: LineSpacing) -> bool {
     match (left, right) {
         (LineSpacing::Proportional(l), LineSpacing::Proportional(r)) => f64_approx_eq(l, r),
-        (LineSpacing::Exact(l), LineSpacing::Exact(r)) => f64_approx_eq(l, r),
+        (
+            LineSpacing::Exact(l) | LineSpacing::AtLeast(l),
+            LineSpacing::Exact(r) | LineSpacing::AtLeast(r),
+        ) => f64_approx_eq(l, r),
         _ => false,
     }
 }
@@ -966,7 +1104,7 @@ fn pptx_blank_list_item_advance_pt(paragraph: &Paragraph) -> f64 {
         .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_SIZE_PT * 1.2);
     match paragraph.style.line_spacing {
         Some(LineSpacing::Proportional(factor)) if factor > 0.0 => plain_advance_pt * factor,
-        Some(LineSpacing::Exact(points)) if points > 0.0 => points,
+        Some(LineSpacing::Exact(points) | LineSpacing::AtLeast(points)) if points > 0.0 => points,
         _ => plain_advance_pt,
     }
 }
@@ -1219,28 +1357,135 @@ fn intersect_text_style(left: &TextStyle, right: &TextStyle) -> TextStyle {
         pair_kerning: (left.pair_kerning == right.pair_kerning)
             .then_some(left.pair_kerning)
             .flatten(),
+        ligatures: (left.ligatures == right.ligatures)
+            .then_some(left.ligatures)
+            .flatten(),
         ..TextStyle::default()
     }
 }
 
-fn common_list_level_text_style(items: &[crate::ir::ListItem], level: u32) -> Option<TextStyle> {
-    let mut visible_styles = items
-        .iter()
-        .filter(|item| item.level == level)
-        .flat_map(|item| item.content.iter())
-        .flat_map(|paragraph| paragraph.runs.iter())
-        .filter(|run| {
-            run.footnote.is_none()
-                && !run.text.is_empty()
-                && run.text != PPTX_BLANK_LIST_ITEM_SENTINEL
+/// The formatting one list level's labels take before the level's own run
+/// properties.
+struct LevelLabelStyles {
+    /// What every label at the level shares.
+    common: Option<TextStyle>,
+    /// Each ordered item's own formatting by the number Typst gives it, when
+    /// the level's Word paragraph marks disagree (issue #2337); empty
+    /// otherwise.
+    by_number: Vec<(u32, TextStyle)>,
+}
+
+impl LevelLabelStyles {
+    /// The formatting the label numbered `number` takes.
+    fn for_number(&self, number: u32) -> Option<&TextStyle> {
+        self.by_number
+            .iter()
+            .find(|(label_number, _)| *label_number == number)
+            .map(|(_, style)| style)
+            .or(self.common.as_ref())
+    }
+}
+
+/// The label formatting of `items` at `level`.
+///
+/// Typst gives a list level one numbering function, which learns only each
+/// item's number, so an ordered level whose items' Word marks disagree keys
+/// each mark's formatting by that number.
+fn level_label_styles(
+    items: &[crate::ir::ListItem],
+    level: u32,
+    kind: ListKind,
+) -> LevelLabelStyles {
+    let level_items: Vec<&crate::ir::ListItem> =
+        items.iter().filter(|item| item.level == level).collect();
+    // TODO(#2384): Word labels a bullet with its mark's face but not, on
+    // docxide-pdf's `alfies_arc_adult_safeguarding_policy` and
+    // `streamnet_steering_committee_meeting`, with the mark's bold. Until a
+    // native probe settles which mark properties a bullet takes, bullets keep
+    // the formatting their runs share.
+    let marks: Option<Vec<&TextStyle>> = (kind == ListKind::Ordered)
+        .then(|| {
+            level_items
+                .iter()
+                .map(|item| {
+                    item.content
+                        .first()
+                        .and_then(|paragraph| paragraph.style.numbering_label_style.as_deref())
+                })
+                .collect::<Option<Vec<&TextStyle>>>()
         })
-        .map(|run| &run.style);
-    let first_style = visible_styles.next()?.clone();
-    let common_style = visible_styles.fold(first_style, |common, style| {
+        .flatten()
+        .filter(|marks| !marks.is_empty());
+    let Some(marks) = marks else {
+        return LevelLabelStyles {
+            common: common_list_level_text_style(level_items.iter().copied()),
+            by_number: Vec::new(),
+        };
+    };
+    let common: Option<TextStyle> = intersect_label_styles(marks.iter().copied());
+    // Compared as `intersect_text_style` keeps them: properties no label
+    // shares are not worth a branch per item.
+    let agree = marks.windows(2).all(|pair| {
+        intersect_text_style(pair[0], pair[0]) == intersect_text_style(pair[1], pair[1])
+    });
+    if agree {
+        return LevelLabelStyles {
+            common,
+            by_number: Vec::new(),
+        };
+    }
+    // Typst numbers the first item from the list's `start`, an item with its
+    // own start from that, and every other item one past the previous.
+    let mut by_number: Vec<(u32, TextStyle)> = Vec::new();
+    let mut number: u32 = level_items
+        .first()
+        .and_then(|item| item.start_at)
+        .unwrap_or(1);
+    for (item, mark) in level_items.iter().zip(marks) {
+        number = item.start_at.unwrap_or(number);
+        match by_number
+            .iter_mut()
+            .find(|(label_number, _)| *label_number == number)
+        {
+            // A restart onto a number already used: the function cannot tell
+            // the two labels apart, so they keep what they share.
+            Some((_, shared)) => {
+                tracing::debug!(number, level, "List label number repeats within one level");
+                *shared = intersect_text_style(shared, mark);
+            }
+            None => by_number.push((number, mark.clone())),
+        }
+        number = number.saturating_add(1);
+    }
+    LevelLabelStyles { common, by_number }
+}
+
+/// What `styles` share, or `None` when that is nothing a label can show.
+fn intersect_label_styles<'a>(
+    mut styles: impl Iterator<Item = &'a TextStyle>,
+) -> Option<TextStyle> {
+    let first_style = styles.next()?.clone();
+    let common_style = styles.fold(first_style, |common, style| {
         intersect_text_style(&common, style)
     });
-
     has_text_properties(&common_style).then_some(common_style)
+}
+
+/// The formatting the visible runs of a level's `items` agree on.
+fn common_list_level_text_style<'a>(
+    items: impl Iterator<Item = &'a crate::ir::ListItem>,
+) -> Option<TextStyle> {
+    intersect_label_styles(
+        items
+            .flat_map(|item| item.content.iter())
+            .flat_map(|paragraph| paragraph.runs.iter())
+            .filter(|run| {
+                run.footnote.is_none()
+                    && !run.text.is_empty()
+                    && run.text != PPTX_BLANK_LIST_ITEM_SENTINEL
+            })
+            .map(|run| &run.style),
+    )
 }
 
 fn merge_marker_style(
@@ -1260,7 +1505,9 @@ fn fixed_text_list_line_gap_pt(style: &ParagraphStyle, list: &List) -> Option<f6
         Some(LineSpacing::Proportional(factor)) if factor > 1.0 => {
             Some((font_size_pt * (factor - 1.0)).max(0.0))
         }
-        Some(LineSpacing::Exact(points)) => Some((points - font_size_pt).max(0.0)),
+        Some(LineSpacing::Exact(points) | LineSpacing::AtLeast(points)) => {
+            Some((points - font_size_pt).max(0.0))
+        }
         _ => None,
     }
 }
@@ -1283,7 +1530,7 @@ fn fixed_text_list_leading_pt(style: &ParagraphStyle, list: &List) -> f64 {
         Some(LineSpacing::Proportional(factor)) if factor > 0.0 => {
             (font_size_pt * TYPST_DEFAULT_LEADING_EM * factor).max(0.0)
         }
-        Some(LineSpacing::Exact(points)) => points.max(0.0),
+        Some(LineSpacing::Exact(points) | LineSpacing::AtLeast(points)) => points.max(0.0),
         _ => font_size_pt * TYPST_DEFAULT_LEADING_EM,
     }
 }
@@ -1308,7 +1555,7 @@ fn fixed_text_list_powerpoint_line(list: &List) -> Option<(String, f64)> {
     let plain_advance_pt: f64 = powerpoint_line_box_pt(&paragraph.runs)?;
     let advance_pt: f64 = match paragraph.style.line_spacing {
         Some(LineSpacing::Proportional(factor)) if factor > 0.0 => plain_advance_pt * factor,
-        Some(LineSpacing::Exact(points)) if points > 0.0 => points,
+        Some(LineSpacing::Exact(points) | LineSpacing::AtLeast(points)) if points > 0.0 => points,
         _ => plain_advance_pt,
     };
     Some((settings, advance_pt))
@@ -1405,7 +1652,7 @@ fn fixed_text_list_marker(
     runs: &[Run],
 ) -> String {
     let marker: String = match kind {
-        ListKind::Ordered => ordered_marker(style.numbering_pattern.unwrap_or("1."), number),
+        ListKind::Ordered => ordered_marker(style.numbering_pattern, number),
         ListKind::Unordered => {
             let (marker_text, _) =
                 renderable_unordered_marker(style.marker_text.unwrap_or("•"), style.marker_style);
@@ -1507,23 +1754,24 @@ fn first_visible_char_is_whitespace(runs: &[Run]) -> bool {
         .is_some_and(char::is_whitespace)
 }
 
-fn ordered_marker(pattern: &str, number: u32) -> String {
-    if pattern.contains('1') {
-        return pattern.replacen('1', &number.to_string(), 1);
-    }
-    if pattern.contains('a') {
-        return pattern.replacen('a', &alpha_marker(number, false), 1);
-    }
-    if pattern.contains('A') {
-        return pattern.replacen('A', &alpha_marker(number, true), 1);
-    }
-    if pattern.contains('i') {
-        return pattern.replacen('i', &roman_marker(number, false), 1);
-    }
-    if pattern.contains('I') {
-        return pattern.replacen('I', &roman_marker(number, true), 1);
-    }
-    format!("{number}.")
+/// The item's number formats the first counter. Like Typst's `numbering`
+/// given one value, later counters are dropped with their literal text; a
+/// pattern without counters is static text.
+fn ordered_marker(pattern: Option<&NumberingPattern>, number: u32) -> String {
+    let Some(pattern) = pattern else {
+        return format!("{number}.");
+    };
+    let Some((prefix, symbol)) = pattern.pieces.first() else {
+        return pattern.suffix.clone();
+    };
+    let counter: String = match symbol {
+        'a' => alpha_marker(number, false),
+        'A' => alpha_marker(number, true),
+        'i' => roman_marker(number, false),
+        'I' => roman_marker(number, true),
+        _ => number.to_string(),
+    };
+    format!("{prefix}{counter}{}", pattern.suffix)
 }
 
 fn alpha_marker(mut number: u32, uppercase: bool) -> String {
@@ -1633,32 +1881,87 @@ fn write_list_item_trailing_gap(
     let _ = write!(out, "#v({}pt)", format_f64(gap));
 }
 
-/// Emits an item's paragraphs.
+/// Emits one of an item's paragraphs.
 ///
 /// Each paragraph decides its own Hangul breaking from its own style — its
 /// effective `w:wordWrap` and its indents — but against the *list's* fixed
 /// line box: whatever [`generate_list_with_spacing_model`] put in force on the
 /// wrapper is what a framed eojeol has to restore inside itself (issue #626).
-fn write_list_item_content(
+///
+/// `tab_origin`, a Typst length expression, is where the paragraph's first
+/// line starts from the margin. With it, a tab advances to the paragraph's
+/// next stop, as in a Word body paragraph (issue #2223); without it, a tab
+/// stays literal whitespace, which Typst collapses.
+fn write_list_paragraph_runs(
     out: &mut String,
-    item: &crate::ir::ListItem,
+    para: &Paragraph,
     wrap: &ListEojeolWrap,
+    tab_origin: Option<&str>,
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
-    for para in &item.content {
-        super::text::generate_runs_with_context(
-            out,
-            &para.runs,
-            paragraph_eojeol_wrap(
-                wrap.breaks_hangul_at_eojeol,
-                &para.style,
-                wrap.line_box_em,
-                wrap.available_measure_pt,
-            ),
-            ctx,
-        )?;
+    let eojeol_wrap = paragraph_eojeol_wrap(
+        wrap.breaks_hangul_at_eojeol,
+        &para.style,
+        wrap.line_box_em,
+        wrap.available_measure_pt,
+    );
+    let Some(tab_origin) = tab_origin else {
+        return super::text::generate_runs_with_context(out, &para.runs, eojeol_wrap, ctx);
+    };
+    let default_tab_width_pt =
+        paragraph_default_tab_width_pt(&para.style, ctx.default_tab_width_pt);
+    super::text::generate_runs_with_tabs_from_origin_context(
+        out,
+        &para.runs,
+        para.style.tab_stops.as_deref(),
+        default_tab_width_pt,
+        tab_origin,
+        eojeol_wrap,
+        ctx,
+    )
+}
+
+/// Opens a scope justifying one list paragraph whose own alignment asks for
+/// it, as a body paragraph's does, and reports whether it did; the caller
+/// closes it with `]` after the paragraph. The scope keeps the setting off the
+/// item's nested list, whose paragraphs declare their own alignment (issue
+/// #2336).
+///
+/// The lines break where an unjustified item's do, first-fit at natural
+/// width. On docxide-pdf's scraped `k4_regulations_synthesis_document` that
+/// keeps Word's break on every numbered line, where Typst's optimized breaker
+/// rewrapped 25 of page 1's 48 lines away from Word's.
+/// TODO(#2063): body paragraphs keep the optimized breaker; settle one rule
+/// for both with a native probe.
+fn write_list_paragraph_justification_open(out: &mut String, para: &Paragraph) -> bool {
+    if para.style.alignment != Some(Alignment::Justify) {
+        return false;
     }
-    Ok(())
+    out.push_str("#[\n");
+    write_justification_settings(out, &para.runs, true);
+    true
+}
+
+/// The Typst binding [`write_word_numbering_suffix_advance`] leaves holding
+/// where the first body line starts, measured from the margin.
+const WORD_BODY_ORIGIN: &str = "word_body_origin";
+
+/// The suffix and indent by which [`write_word_numbering_suffix_advance`]
+/// places an item's first body line, or `None` when it leaves that line at the
+/// list's nominal body origin.
+fn word_numbering_suffix_placement(
+    kind: ListKind,
+    paragraph_style: &ParagraphStyle,
+    hangs_into_margin: bool,
+) -> Option<(ListMarkerSuffix, ListIndentGeometry)> {
+    let suffix = paragraph_style.numbering_suffix?;
+    if suffix == ListMarkerSuffix::Tab && kind != ListKind::Ordered {
+        return None;
+    }
+    Some((
+        suffix,
+        paragraph_list_indent(paragraph_style, hangs_into_margin)?,
+    ))
 }
 
 /// What a list's items need to decide their Hangul line breaking (issue #626).
@@ -1674,11 +1977,20 @@ pub(super) struct ListEojeolWrap {
     pub(super) available_measure_pt: Option<f64>,
     /// PowerPoint's raw and layout baseline seats for absolute slide snapping.
     pub(super) baseline_snap: Option<PowerPointBaselineSnap>,
+    /// Whether a marker or body may start left of the list's origin, as a
+    /// Word body list hanging into the margin does (issue #2233).
+    pub(super) hangs_into_margin: bool,
 }
 
 /// Word's suffix positions only the first body line; continuation lines keep
 /// the declared indent. Follow docxide-pdf's `list_label::text_hanging`: measure
 /// the styled marker, then use a space, no gap, or the source/default tab.
+///
+/// A body containing tabs comes in as `tabbed_body`, emitted with
+/// [`WORD_BODY_ORIGIN`] as its tab origin. It is written inside this scope,
+/// after the binding, because a body tab starts from wherever the suffix left
+/// the pen: past a wide marker that is the stop the suffix reached.
+#[allow(clippy::too_many_arguments)]
 fn write_word_numbering_suffix_advance(
     out: &mut String,
     style: &EffectiveListStyle<'_>,
@@ -1686,14 +1998,12 @@ fn write_word_numbering_suffix_advance(
     paragraph_style: &ParagraphStyle,
     numbers: &[u32],
     default_tab_width_pt: f64,
+    tabbed_body: Option<&str>,
+    hangs_into_margin: bool,
 ) {
-    let Some(suffix) = paragraph_style.numbering_suffix else {
-        return;
-    };
-    if suffix == ListMarkerSuffix::Tab && style.kind != ListKind::Ordered {
-        return;
-    }
-    let Some(indent) = paragraph_list_indent(paragraph_style) else {
+    let Some((suffix, indent)) =
+        word_numbering_suffix_placement(style.kind, paragraph_style, hangs_into_margin)
+    else {
         return;
     };
     let (bullet_text, explicit_marker_style) = if style.kind == ListKind::Unordered {
@@ -1716,20 +2026,13 @@ fn write_word_numbering_suffix_advance(
             write_text_params(out, marker_style);
             out.push_str(")[");
         }
-        let _ = write!(
-            out,
-            "#numbering(\"{}\"",
-            escape_typst_string(style.numbering_pattern.unwrap_or("1."))
-        );
         let values = if style.full_numbering {
             numbers
         } else {
             &numbers[numbers.len() - 1..]
         };
-        for number in values {
-            let _ = write!(out, ", {number}");
-        }
-        out.push(')');
+        out.push('#');
+        write_numbering_label(out, style.numbering_pattern, MarkerNumbers::Values(values));
         if marker_style.is_some() {
             out.push(']');
         }
@@ -1740,7 +2043,7 @@ fn write_word_numbering_suffix_advance(
             "]; let word_marker_end = {}pt + measure(word_list_marker).width; ",
             format_f64(indent.marker_origin_pt)
         );
-        if suffix == ListMarkerSuffix::Space {
+        let body_start = if suffix == ListMarkerSuffix::Space {
             // Native Word uses Arial for this generated separator at the
             // marker's size, even when the marker declares another family.
             let separator_style = TextStyle {
@@ -1752,17 +2055,37 @@ fn write_word_numbering_suffix_advance(
             write_text_params(out, &separator_style);
             out.push_str(")[");
             out.push_str(r#"#" ""#);
-            out.push_str("]]; h(word_marker_end + measure(word_list_space).width - ");
+            out.push_str("]]; ");
+            "word_marker_end + measure(word_list_space).width"
         } else {
-            out.push_str("h(word_marker_end - ");
+            "word_marker_end"
+        };
+        if let Some(body) = tabbed_body {
+            let _ = write!(
+                out,
+                "let {WORD_BODY_ORIGIN} = {body_start}; h({WORD_BODY_ORIGIN} - {}pt); [{body}] }}",
+                format_f64(body_origin_pt)
+            );
+        } else {
+            let _ = write!(out, "h({body_start} - {}pt) }}", format_f64(body_origin_pt));
         }
-        let _ = write!(out, "{}pt) }}", format_f64(body_origin_pt));
         return;
     }
     let _ = write!(
         out,
-        "]; let word_marker_end = {}pt + measure(word_list_marker).width; if word_marker_end >= {}pt - 0.01pt {{ let word_body_tab = ",
-        format_f64(indent.marker_origin_pt),
+        "]; let word_marker_end = {}pt + measure(word_list_marker).width; ",
+        format_f64(indent.marker_origin_pt)
+    );
+    if tabbed_body.is_some() {
+        let _ = write!(
+            out,
+            "let {WORD_BODY_ORIGIN} = {}pt; ",
+            format_f64(body_origin_pt)
+        );
+    }
+    let _ = write!(
+        out,
+        "if word_marker_end >= {}pt - 0.01pt {{ let word_body_tab = ",
         format_f64(body_origin_pt)
     );
     let mut stops: Vec<f64> = paragraph_style
@@ -1793,11 +2116,19 @@ fn write_word_numbering_suffix_advance(
     for _ in 0..stop_count {
         out.push_str(" }");
     }
-    let _ = write!(
-        out,
-        "; h(calc.max(0pt, word_body_tab - {}pt)) }} }}",
-        format_f64(body_origin_pt)
-    );
+    if let Some(body) = tabbed_body {
+        let _ = write!(
+            out,
+            "; {WORD_BODY_ORIGIN} = calc.max({origin}pt, word_body_tab); h({WORD_BODY_ORIGIN} - {origin}pt) }}; [{body}] }}",
+            origin = format_f64(body_origin_pt)
+        );
+    } else {
+        let _ = write!(
+            out,
+            "; h(calc.max(0pt, word_body_tab - {}pt)) }} }}",
+            format_f64(body_origin_pt)
+        );
+    }
 }
 
 /// Recursively generate list items, grouping consecutive items at the same or deeper level.
@@ -1818,9 +2149,9 @@ fn generate_list_items(
 ) -> Result<(), ConvertError> {
     let style = list_style_for_level(list, base_level);
     let (_, item_func) = list_funcs(style.kind);
-    let marker_fallback = common_list_level_text_style(items, base_level);
+    let labels = level_label_styles(items, base_level, style.kind);
     let uses_word_suffixes = eojeol_wrap.breaks_hangul_at_eojeol
-        && common_list_level_indent(items, base_level).is_some()
+        && common_list_level_indent(items, base_level, eojeol_wrap.hangs_into_margin).is_some()
         && items
             .iter()
             .filter(|item| item.level == base_level)
@@ -1864,17 +2195,68 @@ fn generate_list_items(
         if let Some(snap) = eojeol_wrap.baseline_snap {
             snap.write_open(out);
         }
-        if uses_word_suffixes && let Some(paragraph) = item.content.first() {
-            write_word_numbering_suffix_advance(
-                out,
-                &style,
-                marker_fallback.as_ref(),
-                &paragraph.style,
-                &item_numbers,
-                ctx.default_tab_width_pt,
-            );
+        let mut paragraphs = item.content.iter();
+        if let Some(paragraph) = paragraphs.next() {
+            let justified = write_list_paragraph_justification_open(out, paragraph);
+            // Word counts a body tab's stops from the margin, as in any
+            // paragraph, so the body's tabs measure from where its first line
+            // starts. A slide list keeps its own tab handling.
+            let body_origin_pt: Option<f64> = (eojeol_wrap.breaks_hangul_at_eojeol
+                && super::text::paragraph_contains_tabs(&paragraph.runs))
+            .then(|| paragraph_list_indent(&paragraph.style, eojeol_wrap.hangs_into_margin))
+            .flatten()
+            .map(|indent| indent.marker_origin_pt + indent.marker_width_pt);
+            if uses_word_suffixes
+                && word_numbering_suffix_placement(
+                    style.kind,
+                    &paragraph.style,
+                    eojeol_wrap.hangs_into_margin,
+                )
+                .is_some()
+            {
+                let tabbed_body: Option<String> = match body_origin_pt {
+                    Some(_) => {
+                        let mut body = String::new();
+                        write_list_paragraph_runs(
+                            &mut body,
+                            paragraph,
+                            eojeol_wrap,
+                            Some(WORD_BODY_ORIGIN),
+                            ctx,
+                        )?;
+                        Some(body)
+                    }
+                    None => None,
+                };
+                write_word_numbering_suffix_advance(
+                    out,
+                    &style,
+                    labels.for_number(number),
+                    &paragraph.style,
+                    &item_numbers,
+                    ctx.default_tab_width_pt,
+                    tabbed_body.as_deref(),
+                    eojeol_wrap.hangs_into_margin,
+                );
+                if tabbed_body.is_none() {
+                    write_list_paragraph_runs(out, paragraph, eojeol_wrap, None, ctx)?;
+                }
+            } else {
+                let tab_origin: Option<String> =
+                    body_origin_pt.map(|origin| format!("{}pt", format_f64(origin)));
+                write_list_paragraph_runs(out, paragraph, eojeol_wrap, tab_origin.as_deref(), ctx)?;
+            }
+            if justified {
+                out.push(']');
+            }
         }
-        write_list_item_content(out, item, eojeol_wrap, ctx)?;
+        for paragraph in paragraphs {
+            let justified = write_list_paragraph_justification_open(out, paragraph);
+            write_list_paragraph_runs(out, paragraph, eojeol_wrap, None, ctx)?;
+            if justified {
+                out.push(']');
+            }
+        }
         if eojeol_wrap.baseline_snap.is_some() {
             out.push(']');
         }
@@ -1921,24 +2303,33 @@ fn generate_list_items(
                         );
                     }
                     let nested_style = list_style_for_level(list, child_level);
-                    let fallback_marker_style =
-                        common_list_level_text_style(&items[child_start..child_end], child_level);
+                    let nested_labels = level_label_styles(
+                        &items[child_start..child_end],
+                        child_level,
+                        nested_style.kind,
+                    );
                     // Word indents are absolute from the margin, but a nested
                     // Typst list is laid out inside the parent item's body:
                     // subtract the parent's text origin so the child marker
                     // lands at its absolute position (issue #356).
-                    let parent_indent = common_list_level_indent(&items[i..=i], base_level);
-                    let indent =
-                        common_list_level_indent(&items[child_start..child_end], child_level).map(
-                            |mut child| {
-                                if let Some(parent) = parent_indent {
-                                    child.marker_origin_pt = (child.marker_origin_pt
-                                        - (parent.marker_origin_pt + parent.marker_width_pt))
-                                        .max(0.0);
-                                }
-                                child
-                            },
-                        );
+                    let parent_indent = common_list_level_indent(
+                        &items[i..=i],
+                        base_level,
+                        eojeol_wrap.hangs_into_margin,
+                    );
+                    let indent = common_list_level_indent(
+                        &items[child_start..child_end],
+                        child_level,
+                        eojeol_wrap.hangs_into_margin,
+                    )
+                    .map(|mut child| {
+                        if let Some(parent) = parent_indent {
+                            child.marker_origin_pt = (child.marker_origin_pt
+                                - (parent.marker_origin_pt + parent.marker_width_pt))
+                                .max(0.0);
+                        }
+                        child
+                    });
                     // PowerPoint's a:spcAft belongs to the item that declares it.
                     // A shared nested `spacing:` cannot carry the last child's
                     // gap across the return to its parent level, so retain every
@@ -1967,7 +2358,7 @@ fn generate_list_items(
                         out,
                         if nested_gap.is_some() { "#" } else { " #" },
                         &nested_style,
-                        fallback_marker_style.as_ref(),
+                        &nested_labels,
                         ListOpenOptions {
                             indent,
                             spacing_pt,

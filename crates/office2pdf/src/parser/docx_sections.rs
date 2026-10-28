@@ -5,13 +5,16 @@ use std::io::{Cursor, Read, Seek};
 use crate::error::ConvertWarning;
 use crate::ir::{
     Block, Color, ColumnLayout, FloatingTableFrame, FlowPage, FrameAlign, FrameAnchor, HFInline,
-    HeaderFooter, HeaderFooterFrame, HeaderFooterParagraph, HeaderFooterShape,
-    HeaderFooterShapeContent, Margins, PageNumbering, PageSize, PositionedTab,
-    PositionedTabAlignment, PositionedTabRelativeTo, Run, TabLeader, Table, TextDirection,
-    TextStyle,
+    HeaderFooter, HeaderFooterFrame, HeaderFooterParagraph, HeaderFooterPicture, HeaderFooterShape,
+    HeaderFooterShapeContent, HorizontalRule, ImageData, Margins, PageNumbering, PageSize,
+    PositionedTab, PositionedTabAlignment, PositionedTabRelativeTo, Run, TabLeader, Table,
+    TextDirection, TextFrame, TextStyle, WrapMode,
 };
 
-use super::contexts::{DocxConversionContext, PictureCropContext, WrapContext};
+use super::contexts::{
+    AnchorAxisPlacement, AnchorPlacement, DocxConversionContext, PictureCropContext, WrapContext,
+    doc_pr_states_hidden, horizontal_rule,
+};
 use super::media::extract_drawing_image;
 use super::tables::convert_table;
 use super::text::ThemeFonts;
@@ -35,6 +38,20 @@ pub(super) struct SectionHeaderFooterInputs<'a> {
     pub(super) assets: &'a HeaderFooterAssets,
     pub(super) inherited_header: Option<&'a HeaderFooter>,
     pub(super) inherited_footer: Option<&'a HeaderFooter>,
+    /// The `first` stories the previous section passes on, whether or not it
+    /// showed them (issue #2224).
+    pub(super) inherited_first: &'a LinkedFirstStories,
+}
+
+/// A section's `first` header and footer as the next section links to them.
+///
+/// A section that omits a header or footer type links to the previous
+/// section's story of that type. This holds for `first` even through a section
+/// without `w:titlePg`, which keeps the story without showing it (issue #2224).
+#[derive(Debug, Clone, Default)]
+pub(super) struct LinkedFirstStories {
+    pub(super) header: Option<HeaderFooter>,
+    pub(super) footer: Option<HeaderFooter>,
 }
 
 /// What a header or footer paragraph resolves its unstated paragraph
@@ -119,6 +136,7 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
         };
         let images = build_part_image_map(archive, &path, warnings);
         let simple_fields = scan_simple_fields(&xml);
+        let horizontal_rules = scan_story_horizontal_rules(&xml);
         let Ok(header) = <docx_rs::Header as docx_rs::FromXML>::from_xml(xml.as_bytes()) else {
             continue;
         };
@@ -135,7 +153,11 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
         if let Some(converted) = convert_docx_header_with_context(
             &header,
             &images,
-            &simple_fields,
+            StoryParagraphMetadata {
+                bidi_paragraphs: &[],
+                simple_fields: &simple_fields,
+                horizontal_rules: &horizontal_rules,
+            },
             &anchors,
             styles,
             &mut conversion_context,
@@ -152,6 +174,7 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
         let images = build_part_image_map(archive, &path, warnings);
         let bidi_paragraphs = scan_bidi_paragraphs(&xml);
         let simple_fields = scan_simple_fields(&xml);
+        let horizontal_rules = scan_story_horizontal_rules(&xml);
         let Ok(footer) = <docx_rs::Footer as docx_rs::FromXML>::from_xml(xml.as_bytes()) else {
             continue;
         };
@@ -168,9 +191,10 @@ pub(super) fn build_header_footer_assets<R: Read + Seek>(
         if let Some(converted) = convert_docx_footer_with_context(
             &footer,
             &images,
-            FooterParagraphMetadata {
+            StoryParagraphMetadata {
                 bidi_paragraphs: &bidi_paragraphs,
                 simple_fields: &simple_fields,
+                horizontal_rules: &horizontal_rules,
             },
             &anchors,
             styles,
@@ -425,11 +449,12 @@ pub(super) fn build_flow_page_from_section(
     overrides: SectionOverrides,
     styles: HeaderFooterStyleContext<'_>,
     warnings: &mut Vec<ConvertWarning>,
-) -> FlowPage {
+) -> (FlowPage, LinkedFirstStories) {
     let (size, margins) = extract_page_setup(section_prop);
     let doc_default_style: Option<&ResolvedStyle> = styles.style_map.get(DOC_DEFAULT_STYLE_ID);
     let mut content = group_into_lists(elements, numberings);
     resolve_body_floating_table_positions(&mut content, &size, &margins);
+    resolve_body_text_frame_positions(&mut content, &size, &margins);
 
     for block in &content {
         if let Block::Chart(chart) = block {
@@ -477,7 +502,7 @@ pub(super) fn build_flow_page_from_section(
     if let Some(header) = &mut header {
         header.distance_from_edge = Some(twips_to_pt(section_prop.page_margin.header));
         apply_doc_default_text_style(header, doc_default_style);
-        resolve_hf_table_page_positions(header, &size, &margins, false);
+        resolve_hf_overlay_page_positions(header, &size, &margins, false);
     }
     let mut footer = extract_docx_footer(
         section_prop,
@@ -488,24 +513,43 @@ pub(super) fn build_flow_page_from_section(
     if let Some(footer) = &mut footer {
         footer.distance_from_edge = Some(twips_to_pt(section_prop.page_margin.footer));
         apply_doc_default_text_style(footer, doc_default_style);
-        resolve_hf_table_page_positions(footer, &size, &margins, true);
+        resolve_hf_overlay_page_positions(footer, &size, &margins, true);
     }
     // The first-page stories take the same edge distance and default style the
     // whole-section ones do; only which story is chosen differs (issue #846).
-    let mut first_header = extract_docx_first_header(section_prop, header_footer.assets, styles);
-    if let Some(first_header) = &mut first_header {
+    let mut linked_first_header = extract_docx_first_header(
+        section_prop,
+        header_footer.assets,
+        styles,
+        header_footer.inherited_first.header.as_ref(),
+    );
+    if let Some(first_header) = &mut linked_first_header {
         first_header.distance_from_edge = Some(twips_to_pt(section_prop.page_margin.header));
         apply_doc_default_text_style(first_header, doc_default_style);
-        resolve_hf_table_page_positions(first_header, &size, &margins, false);
+        resolve_hf_overlay_page_positions(first_header, &size, &margins, false);
     }
-    let mut first_footer = extract_docx_first_footer(section_prop, header_footer.assets, styles);
-    if let Some(first_footer) = &mut first_footer {
+    let mut linked_first_footer = extract_docx_first_footer(
+        section_prop,
+        header_footer.assets,
+        styles,
+        header_footer.inherited_first.footer.as_ref(),
+    );
+    if let Some(first_footer) = &mut linked_first_footer {
         first_footer.distance_from_edge = Some(twips_to_pt(section_prop.page_margin.footer));
         apply_doc_default_text_style(first_footer, doc_default_style);
-        resolve_hf_table_page_positions(first_footer, &size, &margins, true);
+        resolve_hf_overlay_page_positions(first_footer, &size, &margins, true);
     }
+    // `w:titlePg` shows those stories on the section's first page. Where none
+    // is linked, that page is blank: Word's references print no header or
+    // footer there, not the default one (issue #2224).
+    let first_header: Option<HeaderFooter> = section_prop
+        .title_pg
+        .then(|| linked_first_header.clone().unwrap_or_default());
+    let first_footer: Option<HeaderFooter> = section_prop
+        .title_pg
+        .then(|| linked_first_footer.clone().unwrap_or_default());
 
-    FlowPage {
+    let flow_page = FlowPage {
         size,
         margins,
         content,
@@ -522,13 +566,20 @@ pub(super) fn build_flow_page_from_section(
             .or_else(|| extract_column_layout_from_section_property(section_prop)),
         line_grid_pitch: extract_line_grid_pitch(section_prop),
         line_grid_snaps_lines: line_grid_snaps_lines(section_prop),
-    }
+    };
+    (
+        flow_page,
+        LinkedFirstStories {
+            header: linked_first_header,
+            footer: linked_first_footer,
+        },
+    )
 }
 
-/// Resolve floating table anchors against the section that defines the story.
-/// A linked later section must reuse these page-space coordinates even when its
-/// body margins differ.
-fn resolve_hf_table_page_positions(
+/// Resolve floating table and picture anchors against the section that
+/// defines the story. A linked later section must reuse these page-space
+/// coordinates even when its body margins differ.
+fn resolve_hf_overlay_page_positions(
     header_footer: &mut HeaderFooter,
     page_size: &PageSize,
     margins: &Margins,
@@ -536,9 +587,11 @@ fn resolve_hf_table_page_positions(
 ) {
     let distance_from_edge: f64 = header_footer.distance_from_edge.unwrap_or(0.0);
     for element in &mut header_footer.shapes {
-        if !matches!(element.content, HeaderFooterShapeContent::Table(_)) {
-            continue;
-        }
+        let is_table: bool = match element.content {
+            HeaderFooterShapeContent::Table(_) => true,
+            HeaderFooterShapeContent::Picture(_) => false,
+            HeaderFooterShapeContent::Shape(_) => continue,
+        };
 
         let frame: &mut HeaderFooterFrame = &mut element.frame;
         let (horizontal_origin, horizontal_available): (f64, f64) = match frame.horizontal_anchor {
@@ -590,7 +643,8 @@ fn resolve_hf_table_page_positions(
             });
         // Word clamps a header table placed above the page to the physical
         // page top, while footer positioning may legitimately extend below it.
-        let vertical_position: f64 = if is_footer {
+        // A picture keeps the offset its anchor states.
+        let vertical_position: f64 = if is_footer || !is_table {
             requested_vertical_position
         } else {
             requested_vertical_position.max(0.0)
@@ -667,7 +721,11 @@ fn convert_docx_header(
     convert_docx_header_with_context(
         header,
         images,
-        simple_fields,
+        StoryParagraphMetadata {
+            bidi_paragraphs: &[],
+            simple_fields,
+            horizontal_rules: &[],
+        },
         anchors,
         styles,
         &mut conversion_context,
@@ -678,7 +736,7 @@ fn convert_docx_header(
 fn convert_docx_header_with_context(
     header: &docx_rs::Header,
     images: &ImageMap,
-    simple_fields: &[Vec<SimpleFieldMarker>],
+    paragraph_metadata: StoryParagraphMetadata<'_>,
     anchors: &[HfAnchorBox],
     styles: HeaderFooterStyleContext<'_>,
     conversion_context: &mut DocxConversionContext,
@@ -702,9 +760,11 @@ fn convert_docx_header_with_context(
     let mut source_to_rendered_paragraphs: Vec<usize> = Vec::new();
     let mut paragraphs: Vec<HeaderFooterParagraph> = Vec::new();
     let mut index: usize = 0;
+    let mut follows_flow_table: bool = false;
     for child in story_children {
         let paragraph = match child {
             StoryChild::Table(table) => {
+                follows_flow_table |= !table_is_positioned(table);
                 shapes.push(convert_hf_table(
                     table,
                     images,
@@ -717,14 +777,29 @@ fn convert_docx_header_with_context(
             StoryChild::Paragraph(paragraph) => paragraph,
         };
         source_to_rendered_paragraphs.push(paragraphs.len());
-        paragraphs.push(convert_hf_paragraph(
+        let mut converted: HeaderFooterParagraph = convert_hf_paragraph(
             paragraph,
             images,
             false,
-            simple_fields.get(index).map(Vec::as_slice).unwrap_or(&[]),
+            paragraph_metadata
+                .simple_fields
+                .get(index)
+                .map(Vec::as_slice)
+                .unwrap_or(&[]),
             styles,
             &conversion_context.picture_crops,
-        ));
+            &mut shapes,
+        );
+        attach_story_horizontal_rule(
+            &mut converted,
+            paragraph_metadata
+                .horizontal_rules
+                .get(index)
+                .map(Vec::as_slice)
+                .unwrap_or(&[]),
+            follows_flow_table,
+        );
+        paragraphs.push(converted);
         paragraphs.extend(hf_anchored_text_box_paragraphs(
             paragraph,
             &mut anchors,
@@ -766,9 +841,10 @@ fn convert_docx_footer(
     convert_docx_footer_with_context(
         footer,
         images,
-        FooterParagraphMetadata {
+        StoryParagraphMetadata {
             bidi_paragraphs,
             simple_fields,
+            horizontal_rules: &[],
         },
         anchors,
         styles,
@@ -777,15 +853,19 @@ fn convert_docx_footer(
     )
 }
 
-struct FooterParagraphMetadata<'a> {
+/// What the part scans read for each of a story's own paragraphs, indexed as
+/// the story converts them.
+struct StoryParagraphMetadata<'a> {
     bidi_paragraphs: &'a [bool],
     simple_fields: &'a [Vec<SimpleFieldMarker>],
+    /// The horizontal rules each paragraph draws (issue #2251).
+    horizontal_rules: &'a [Vec<HorizontalRule>],
 }
 
 fn convert_docx_footer_with_context(
     footer: &docx_rs::Footer,
     images: &ImageMap,
-    paragraph_metadata: FooterParagraphMetadata<'_>,
+    paragraph_metadata: StoryParagraphMetadata<'_>,
     anchors: &[HfAnchorBox],
     styles: HeaderFooterStyleContext<'_>,
     conversion_context: &mut DocxConversionContext,
@@ -809,9 +889,11 @@ fn convert_docx_footer_with_context(
     let mut source_to_rendered_paragraphs: Vec<usize> = Vec::new();
     let mut paragraphs: Vec<HeaderFooterParagraph> = Vec::new();
     let mut index: usize = 0;
+    let mut follows_flow_table: bool = false;
     for child in story_children {
         let paragraph = match child {
             StoryChild::Table(table) => {
+                follows_flow_table |= !table_is_positioned(table);
                 shapes.push(convert_hf_table(
                     table,
                     images,
@@ -824,7 +906,7 @@ fn convert_docx_footer_with_context(
             StoryChild::Paragraph(paragraph) => paragraph,
         };
         source_to_rendered_paragraphs.push(paragraphs.len());
-        paragraphs.push(convert_hf_paragraph(
+        let mut converted: HeaderFooterParagraph = convert_hf_paragraph(
             paragraph,
             images,
             paragraph_metadata
@@ -839,7 +921,18 @@ fn convert_docx_footer_with_context(
                 .unwrap_or(&[]),
             styles,
             &conversion_context.picture_crops,
-        ));
+            &mut shapes,
+        );
+        attach_story_horizontal_rule(
+            &mut converted,
+            paragraph_metadata
+                .horizontal_rules
+                .get(index)
+                .map(Vec::as_slice)
+                .unwrap_or(&[]),
+            follows_flow_table,
+        );
+        paragraphs.push(converted);
         paragraphs.extend(hf_anchored_text_box_paragraphs(
             paragraph,
             &mut anchors,
@@ -859,6 +952,104 @@ fn convert_docx_footer_with_context(
         sheet_print_scale: None,
         shapes,
     })
+}
+
+/// Give a header or footer paragraph whose only content is one horizontal
+/// rule that rule, which is drawn on the paragraph's line as a body
+/// paragraph's is (issue #2251).
+///
+/// TODO(#2411): a paragraph after a table in the story's flow is drawn at the
+/// top of the story, over the table's rows, so its rule would cross the
+/// table's text. Such a paragraph keeps its blank line until it is drawn
+/// below the table.
+fn attach_story_horizontal_rule(
+    paragraph: &mut HeaderFooterParagraph,
+    horizontal_rules: &[HorizontalRule],
+    follows_flow_table: bool,
+) {
+    let [rule] = horizontal_rules else {
+        if !horizontal_rules.is_empty() {
+            tracing::debug!(
+                rules = horizontal_rules.len(),
+                "story paragraph holds several horizontal rules; drawing none"
+            );
+        }
+        return;
+    };
+    if !paragraph.elements.is_empty() {
+        tracing::debug!("horizontal rule shares its story paragraph with content; drawing none");
+    } else if follows_flow_table {
+        tracing::debug!("horizontal rule follows a table in the story's flow; drawing none");
+    } else {
+        paragraph.style.horizontal_rule = Some(Box::new(*rule));
+    }
+}
+
+/// The horizontal rules each of a header or footer story's own paragraphs
+/// draws, one entry per paragraph in the order the story converts them
+/// (issue #2251).
+///
+/// docx-rs drops a rule's `v:rect`, and the body's run scan reads only a
+/// `w:body`. A story's own paragraphs are its top-level ones, a content
+/// control's included. A table's cell paragraphs convert with their table,
+/// and a text box's or an `mc:Fallback` copy's not as story paragraphs, so
+/// none of them takes an entry. A rule is a `v:rect` directly inside the
+/// `w:pict` of one of the paragraph's runs; a deleted run draws none.
+fn scan_story_horizontal_rules(xml: &str) -> Vec<Vec<HorizontalRule>> {
+    let mut reader = quick_xml::Reader::from_str(xml);
+    let mut paragraphs: Vec<Vec<HorizontalRule>> = Vec::new();
+    // Open elements whose paragraphs or runs are not the story's own.
+    let mut excluded_depth: usize = 0;
+    let mut paragraph_depth: usize = 0;
+    let mut depth: usize = 0;
+    // The depth of the open `w:pict` of a story paragraph's run.
+    let mut pict_depth: Option<usize> = None;
+    let excludes = |name: &[u8]| {
+        matches!(
+            name,
+            b"tbl" | b"txbxContent" | b"Fallback" | b"del" | b"moveFrom"
+        )
+    };
+    loop {
+        let (element, is_empty) = match reader.read_event() {
+            Ok(quick_xml::events::Event::Start(element)) => (element, false),
+            Ok(quick_xml::events::Event::Empty(element)) => (element, true),
+            Ok(quick_xml::events::Event::End(element)) => {
+                let name = element.local_name();
+                if pict_depth == Some(depth) {
+                    pict_depth = None;
+                }
+                depth = depth.saturating_sub(1);
+                paragraph_depth -= usize::from(name.as_ref() == b"p" && paragraph_depth > 0);
+                excluded_depth -= usize::from(excludes(name.as_ref()) && excluded_depth > 0);
+                continue;
+            }
+            Ok(quick_xml::events::Event::Eof) | Err(_) => break,
+            _ => continue,
+        };
+        let name = element.local_name();
+        let is_own: bool = excluded_depth == 0;
+        match name.as_ref() {
+            b"p" if is_own && paragraph_depth == 0 => paragraphs.push(Vec::new()),
+            b"pict" if is_own && paragraph_depth == 1 && !is_empty => {
+                pict_depth = Some(depth + 1);
+            }
+            b"rect" if is_own && pict_depth == Some(depth) => {
+                if let (Some(rule), Some(rules)) =
+                    (horizontal_rule(&reader, &element), paragraphs.last_mut())
+                {
+                    rules.push(rule);
+                }
+            }
+            _ => {}
+        }
+        if !is_empty {
+            depth += 1;
+            paragraph_depth += usize::from(name.as_ref() == b"p");
+            excluded_depth += usize::from(excludes(name.as_ref()));
+        }
+    }
+    paragraphs
 }
 
 fn convert_hf_table(
@@ -883,9 +1074,11 @@ fn convert_hf_table(
             .map(|row_height| height + row_height)
     });
     let frame: HeaderFooterFrame = hf_table_frame(source_table, &table, width_pt, height_pt);
+    let flows_in_story: bool = !table_is_positioned(source_table);
     tracing::debug!(
         table_width_pt = width_pt,
         has_declared_height = height_pt.is_some(),
+        flows_in_story,
         "parsed DOCX header/footer table"
     );
     HeaderFooterShape {
@@ -895,12 +1088,31 @@ fn convert_hf_table(
         width: width_pt,
         height: height_pt.unwrap_or_default(),
         behind_text: true,
+        flows_in_story,
     }
 }
 
+/// Whether a `w:tblpPr` positions the table outside its story's text flow.
+/// Word ignores an empty one, as [`floating_table_frame`] does.
+fn table_is_positioned(source_table: &docx_rs::Table) -> bool {
+    serde_json::to_value(&source_table.property)
+        .ok()
+        .and_then(|properties| {
+            properties
+                .get("position")
+                .and_then(serde_json::Value::as_object)
+                .map(|position| !position.is_empty())
+        })
+        .unwrap_or(false)
+}
+
+/// The `w:tblpPr` frame of a body table, or `None` for a flow table.
+/// `vertical_from_text_twips` are the frame's `w:topFromText` and
+/// `w:bottomFromText`, which docx-rs does not read, from the story scan.
 pub(super) fn floating_table_frame(
     source_table: &docx_rs::Table,
     table: &Table,
+    vertical_from_text_twips: (Option<f64>, Option<f64>),
 ) -> Option<FloatingTableFrame> {
     let properties: serde_json::Value = serde_json::to_value(&source_table.property).ok()?;
     let position: &serde_json::Map<String, serde_json::Value> =
@@ -918,6 +1130,8 @@ pub(super) fn floating_table_frame(
             .and_then(serde_json::Value::as_f64)
             .map(|twips| twips_to_pt(twips as i32))
     };
+    let from_text_pt =
+        |twips: Option<f64>| -> f64 { twips.map_or(0.0, |twips| twips / 20.0).max(0.0) };
     let horizontal_align = position_string("positionXAlignment")
         .and_then(frame_align)
         .or(match table.alignment {
@@ -938,9 +1152,177 @@ pub(super) fn floating_table_frame(
             .unwrap_or(FrameAnchor::Margin),
         horizontal_align,
         vertical_align: position_string("positionYAlignment").and_then(frame_align),
+        left_from_text: position_twips("leftFromText").unwrap_or(0.0).max(0.0),
+        right_from_text: position_twips("rightFromText").unwrap_or(0.0).max(0.0),
+        top_from_text: from_text_pt(vertical_from_text_twips.0),
+        bottom_from_text: from_text_pt(vertical_from_text_twips.1),
+        anchored_to_text: position_string("verticalAnchor") == Some("text"),
     })
 }
 
+/// The frame of a body paragraph whose `w:framePr` hangs it `w:y` below its
+/// own place in the flow (`w:vAnchor="text"`), with a stated width and height
+/// and text allowed beside it. Word lifts such a paragraph out of the flow;
+/// docxide-pdf's Word-probed `paragraph_offset_frame` draws the same line, and
+/// keeps the other text-anchored frames in the flow (issue #2231). The caller
+/// fills in the content.
+///
+/// FIXME(unprobed height rule): `w:hRule` other than `exact` is taken as a
+/// least height, as `atLeast` states; no Word reference probes a frame that
+/// omits the rule.
+pub(super) fn body_text_frame(frame: &docx_rs::FrameProperty) -> Option<TextFrame> {
+    let y: i32 = frame.y.filter(|&y| y != 0)?;
+    let width: u32 = frame.w.filter(|&width| width > 0)?;
+    let height: u32 = frame.h.filter(|&height| height > 0)?;
+    let hangs_below_text: bool = frame.v_anchor.as_deref() == Some("text")
+        && frame.y_align.is_none()
+        && !matches!(frame.wrap.as_deref(), Some("none" | "notBeside"));
+    hangs_below_text.then(|| TextFrame {
+        vertical_anchor: FrameAnchor::Text,
+        y: twips_to_pt(y),
+        height: twips_to_pt(height as i32),
+        exact_height: frame.h_rule.as_deref() == Some("exact"),
+        ..frame_box(frame, width)
+    })
+}
+
+/// The box of a `w:framePr` frame at the top margin, `w:w` wide and as tall
+/// as the paragraphs the caller fills in, for a group of empty paragraphs
+/// whose frame Word lifts out of the flow. Word 2013 and later keep that box
+/// though the paragraphs take no flow lines: its exports of docxide-pdf's
+/// `empty-margin-frame-15-*` cases start the full-width table on the frame's
+/// page one line lower per framed paragraph, where the compatibility-mode-14
+/// exports leave the table at the top margin (issue #2231). A frame that
+/// states no `w:vAnchor` is margin-anchored, as docxide-pdf's Word probe
+/// found.
+///
+/// FIXME(unprobed frame offsets): only frames at the top margin itself, with
+/// no `w:y` and no `w:yAlign`, have a Word reference.
+pub(super) fn top_margin_frame_box(frame: &docx_rs::FrameProperty) -> Option<TextFrame> {
+    let width: u32 = frame.w.filter(|&width| width > 0)?;
+    let at_top_margin: bool = matches!(frame.v_anchor.as_deref(), None | Some("margin"))
+        && frame.y.is_none_or(|y| y == 0)
+        && frame.y_align.is_none();
+    at_top_margin.then(|| frame_box(frame, width))
+}
+
+/// The frame of a body paragraph group, or table, that Word draws at a fixed
+/// place on its page and keeps body text off the sides of: `w:wrap`
+/// `notBeside` or `none`, `w:y` below the top of the page (`w:vAnchor`
+/// `page`) or the top margin (`margin`, or no `w:vAnchor`, as docxide-pdf's
+/// Word probe found). docxide-pdf's `lifted_frame` lifts the same frames, and
+/// Word's export of its scraped `massachusetts_community_sanitation` draws
+/// the letterhead in four of them and starts the letter below them (issue
+/// #2231). A frame without `w:w` is as wide as its content. The caller fills
+/// in the content.
+///
+/// TODO(vertically aligned fixed frames): a frame placed by `w:yAlign`, or
+/// one without `w:w` placed by `w:xAlign`, needs its content's size to find
+/// its place, and stays in the flow.
+pub(super) fn fixed_text_frame(frame: &docx_rs::FrameProperty) -> Option<TextFrame> {
+    let vertical_anchor: FrameAnchor = match frame.v_anchor.as_deref() {
+        Some("page") => FrameAnchor::Page,
+        None | Some("margin") => FrameAnchor::Margin,
+        _ => return None,
+    };
+    let width: u32 = frame.w.unwrap_or(0);
+    let placed: bool = matches!(frame.wrap.as_deref(), Some("none" | "notBeside"))
+        && frame.y_align.is_none()
+        && (width > 0 || frame.x_align.is_none());
+    placed.then(|| TextFrame {
+        vertical_anchor,
+        y: frame.y.map(twips_to_pt).unwrap_or(0.0),
+        height: frame.h.map_or(0.0, |height| twips_to_pt(height as i32)),
+        exact_height: frame.h_rule.as_deref() == Some("exact"),
+        text_below: true,
+        ..frame_box(frame, width)
+    })
+}
+
+/// A frame `width_twips` wide at its horizontal place, its top at the top
+/// margin and no taller than its content.
+fn frame_box(frame: &docx_rs::FrameProperty, width_twips: u32) -> TextFrame {
+    TextFrame {
+        content: Vec::new(),
+        x: frame.x.map(twips_to_pt).unwrap_or(0.0),
+        horizontal_anchor: frame_anchor(frame.h_anchor.as_deref()),
+        // `w:xAlign` replaces `w:x`. `inside` and `outside` mirror on facing
+        // pages, which a frame's section does not tell apart here.
+        horizontal_align: frame.x_align.as_deref().and_then(|align| match align {
+            "inside" => Some(FrameAlign::Start),
+            "outside" => Some(FrameAlign::End),
+            align => frame_align(align),
+        }),
+        vertical_anchor: FrameAnchor::Margin,
+        y: 0.0,
+        width: twips_to_pt(width_twips as i32),
+        height: 0.0,
+        exact_height: false,
+        horizontal_space: frame.h_space.map(twips_to_pt).unwrap_or(0.0).max(0.0),
+        vertical_space: frame.v_space.map(twips_to_pt).unwrap_or(0.0).max(0.0),
+        text_below: false,
+    }
+}
+
+/// Measure each body text frame's `x` from the text area's left edge, where
+/// the renderer's `#place` starts. A text-anchored frame's `y` stays an
+/// offset from its anchor, whose place in the flow is known only to layout;
+/// a page-anchored one's is measured from the text area's top too, and it
+/// becomes margin-anchored.
+///
+/// An empty frame's box at the top margin that lies wholly beside the text
+/// area is dropped: no body text or table can meet it, and Word's export of
+/// docxide-pdf's `empty-margin-frame-off-page` leaves the table after one at
+/// the top margin.
+///
+/// TODO(text frames in multi-column sections): a frame's `#place` starts at
+/// its column's left edge, which is the text area's only in the first column.
+fn resolve_body_text_frame_positions(
+    blocks: &mut Vec<Block>,
+    page_size: &PageSize,
+    margins: &Margins,
+) {
+    let text_width: f64 = (page_size.width - margins.left - margins.right).max(0.0);
+    for block in blocks.iter_mut() {
+        let Block::TextFrame(frame) = block else {
+            continue;
+        };
+        let (origin, available): (f64, f64) = match frame.horizontal_anchor {
+            FrameAnchor::Page => (0.0, page_size.width),
+            FrameAnchor::Margin | FrameAnchor::Text => (
+                margins.left,
+                (page_size.width - margins.left - margins.right).max(0.0),
+            ),
+        };
+        let offset: f64 = match frame.horizontal_align {
+            Some(align) => hf_aligned_offset(Some(align), available, Some(frame.width)),
+            None => frame.x,
+        };
+        frame.x = origin + offset - margins.left;
+        frame.horizontal_anchor = FrameAnchor::Text;
+        frame.horizontal_align = None;
+        if frame.vertical_anchor == FrameAnchor::Page {
+            frame.y -= margins.top;
+            frame.vertical_anchor = FrameAnchor::Margin;
+        }
+    }
+    blocks.retain(|block| {
+        !matches!(block, Block::TextFrame(frame) if frame.vertical_anchor == FrameAnchor::Margin
+            && !frame.text_below
+            && (frame.x - frame.horizontal_space >= text_width
+                || frame.x + frame.width + frame.horizontal_space <= 0.0))
+    });
+}
+
+/// Measure each body floating table's offsets from the text area's top left,
+/// where the renderer's `#place` starts. A text-anchored table's `y` stays an
+/// offset from the top edge of its anchor paragraph, whose place in the flow
+/// is known only to layout (issue #2236).
+///
+/// FIXME(unprobed vertical alignment on a text anchor): no Word reference
+/// aligns a text-anchored table with `w:tblpYSpec`, and none of docxide-pdf's
+/// 90 documents with a text-anchored `w:tblpPr` table does. Such a table is
+/// aligned in the text area, as a margin-anchored one is.
 fn resolve_body_floating_table_positions(
     blocks: &mut [Block],
     page_size: &PageSize,
@@ -992,6 +1374,9 @@ fn resolve_body_floating_table_positions(
         // Typst's top-level `place` measures offsets from the text area's
         // origin. Resolve section anchors here so the renderer receives one
         // stable coordinate pair, including for over-wide aligned tables.
+        if frame.y.is_none() && frame.vertical_align.is_some() {
+            frame.anchored_to_text = false;
+        }
         frame.x = Some(page_x - margins.left);
         frame.y = Some(page_y - margins.top);
         frame.horizontal_anchor = FrameAnchor::Text;
@@ -1087,20 +1472,21 @@ fn append_story_sdt_children<'a>(
     }
 }
 
-/// The `first` variant of a section's header, where `<w:titlePg/>` asks for one.
+/// The `first` variant of a section's header: the section's own, else the one
+/// the previous section links on.
 ///
 /// Unlike [`extract_docx_header`] this does not fall back to the other
 /// variants: `w:titlePg` names the first-page story specifically, and standing
 /// the default in for it would draw page one the same as the rest rather than
-/// differently, which is the bug (issue #846).
-pub(super) fn extract_docx_first_header(
+/// differently, which is the bug (issue #846). Nor does it ask for
+/// `w:titlePg`, which only decides whether this section shows the story; a
+/// later section links to it either way (issue #2224).
+fn extract_docx_first_header(
     section_prop: &docx_rs::SectionProperty,
     assets: &HeaderFooterAssets,
     styles: HeaderFooterStyleContext<'_>,
+    inherited_first_header: Option<&HeaderFooter>,
 ) -> Option<HeaderFooter> {
-    if !section_prop.title_pg {
-        return None;
-    }
     section_prop
         .first_header_reference
         .as_ref()
@@ -1113,17 +1499,16 @@ pub(super) fn extract_docx_first_header(
                     convert_docx_header(header, &ImageMap::new(), &[], &[], styles)
                 })
         })
+        .or_else(|| inherited_first_header.cloned())
 }
 
 /// The `first` variant of a section's footer, under the same rule.
-pub(super) fn extract_docx_first_footer(
+fn extract_docx_first_footer(
     section_prop: &docx_rs::SectionProperty,
     assets: &HeaderFooterAssets,
     styles: HeaderFooterStyleContext<'_>,
+    inherited_first_footer: Option<&HeaderFooter>,
 ) -> Option<HeaderFooter> {
-    if !section_prop.title_pg {
-        return None;
-    }
     section_prop
         .first_footer_reference
         .as_ref()
@@ -1136,6 +1521,7 @@ pub(super) fn extract_docx_first_footer(
                     convert_docx_footer(footer, &ImageMap::new(), &[], &[], &[], styles)
                 })
         })
+        .or_else(|| inherited_first_footer.cloned())
 }
 
 /// Extract the default header, linking it to the preceding section when omitted.
@@ -1278,6 +1664,9 @@ fn apply_doc_default_text_style(
 
 /// Convert a docx-rs Paragraph into a HeaderFooterParagraph.
 /// Detects PAGE/NUMPAGES field codes within runs and emits page counter inlines.
+/// The pictures it anchors against the page or its margins are drawn in the
+/// page overlay, so they go to `overlays` rather than into its lines
+/// (issue #2327).
 fn convert_hf_paragraph(
     paragraph: &docx_rs::Paragraph,
     images: &ImageMap,
@@ -1285,6 +1674,7 @@ fn convert_hf_paragraph(
     simple_fields: &[SimpleFieldMarker],
     styles: HeaderFooterStyleContext<'_>,
     picture_crops: &PictureCropContext,
+    overlays: &mut Vec<HeaderFooterShape>,
 ) -> HeaderFooterParagraph {
     // A header paragraph resolves `w:pStyle` exactly as a body paragraph
     // does. It used to resolve none, so everything a style supplied — Word's
@@ -1308,6 +1698,7 @@ fn convert_hf_paragraph(
         style.direction = Some(TextDirection::Rtl);
     }
     let mut elements: Vec<HFInline> = Vec::new();
+    let overlays_before: usize = overlays.len();
 
     let mut processed_runs: usize = 0;
     let mut cached_runs_to_skip: usize = append_simple_fields(
@@ -1335,20 +1726,38 @@ fn convert_hf_paragraph(
                 extract_hf_run_elements(&run.children, &run_style, &mut elements, &mut field_state);
                 for run_child in &run.children {
                     if let docx_rs::RunChild::Drawing(drawing) = run_child {
-                        let crop = picture_crops.next_drawing(true);
+                        let metadata = picture_crops.next_drawing(true);
+                        // A hidden picture is not drawn (issue #2299).
+                        if metadata.hidden {
+                            continue;
+                        }
                         let Some(block) = extract_drawing_image(
                             drawing,
                             images,
                             &WrapContext::empty(),
                             None,
-                            crop,
+                            metadata.crop,
                         ) else {
                             continue;
                         };
                         match block {
                             Block::Image(image) => elements.push(HFInline::Image(image)),
                             Block::FloatingImage(image) => {
-                                elements.push(HFInline::Image(image.image));
+                                match metadata.anchor.as_ref().and_then(|anchor| {
+                                    Some((hf_picture_frame(&image.image, anchor)?, anchor))
+                                }) {
+                                    Some((frame, anchor)) => {
+                                        overlays.push(hf_picture_overlay(
+                                            image.image,
+                                            frame,
+                                            anchor,
+                                        ));
+                                    }
+                                    // TODO(#2414): a picture placed against its
+                                    // paragraph or line is still laid out in the
+                                    // story's lines.
+                                    None => elements.push(HFInline::Image(image.image)),
+                                }
                             }
                             _ => {}
                         }
@@ -1388,6 +1797,9 @@ fn convert_hf_paragraph(
             styles.style_map,
             styles.theme_fonts,
         )));
+        // TODO(#2062): Word gives every empty story paragraph that line; only
+        // one that anchors a drawing is drawn as one so far.
+        style.holds_anchored_drawing = overlays.len() > overlays_before;
     }
 
     HeaderFooterParagraph {
@@ -1397,6 +1809,60 @@ fn convert_hf_paragraph(
         elements,
         sheet_section_is_rich: false,
         frame: extract_hf_frame(&paragraph.property),
+    }
+}
+
+/// Where a story picture sits when both of its axes are placed against the
+/// page, its margins or (horizontally) the story's one column, none of which
+/// moves with the story's text. Word draws such a picture at its anchor and
+/// lays the story's lines out without it (issue #2327). `None` for a picture
+/// placed against its paragraph or line.
+fn hf_picture_frame(image: &ImageData, anchor: &AnchorPlacement) -> Option<HeaderFooterFrame> {
+    let placed = |axis: &AnchorAxisPlacement| -> Option<(FrameAnchor, Option<f64>)> {
+        let reference: FrameAnchor = axis.reference?;
+        let offset: Option<f64> = axis.align.is_none().then(|| axis.offset_pt.unwrap_or(0.0));
+        Some((reference, offset))
+    };
+    let (horizontal_anchor, x) = placed(&anchor.horizontal)?;
+    let (vertical_anchor, y) = placed(&anchor.vertical)?;
+    if vertical_anchor == FrameAnchor::Text {
+        return None;
+    }
+    Some(HeaderFooterFrame {
+        x,
+        y,
+        width: Some(image.width?),
+        height: Some(image.height?),
+        horizontal_anchor,
+        vertical_anchor,
+        horizontal_align: anchor.horizontal.align,
+        vertical_align: anchor.vertical.align,
+        inset_left: 0.0,
+        inset_top: 0.0,
+        bottom_offset: None,
+        wraps_text: true,
+    })
+}
+
+/// The page overlay that draws a story picture at `frame`.
+fn hf_picture_overlay(
+    image: ImageData,
+    frame: HeaderFooterFrame,
+    anchor: &AnchorPlacement,
+) -> HeaderFooterShape {
+    let wrap_mode: WrapMode = anchor.wrap_mode();
+    HeaderFooterShape {
+        width: frame.width.unwrap_or_default(),
+        height: frame.height.unwrap_or_default(),
+        content: HeaderFooterShapeContent::Picture(HeaderFooterPicture {
+            image,
+            wrap_mode,
+            wrap_distance: anchor.distance,
+        }),
+        frame,
+        anchor_paragraph_index: None,
+        behind_text: wrap_mode == WrapMode::Behind,
+        flows_in_story: false,
     }
 }
 
@@ -1462,6 +1928,9 @@ struct HfAnchorBox {
     /// `<a:bodyPr wrap="none">` — the paragraph stays on one line and hangs
     /// out of the text column rather than breaking (issue #967).
     wraps_text: bool,
+    /// `<wp:docPr hidden="1">` — Word draws neither the shape nor its text
+    /// (issue #2299).
+    hidden: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -1555,6 +2024,7 @@ impl HfAnchorBox {
 fn hf_anchored_shapes(anchors: &[HfAnchorBox]) -> Vec<crate::ir::HeaderFooterShape> {
     anchors
         .iter()
+        .filter(|anchor| !anchor.hidden)
         .filter_map(|anchor| {
             let shape = anchor.shape.clone()?;
             let frame = anchor.to_shape_frame()?;
@@ -1573,6 +2043,7 @@ fn hf_anchored_shapes(anchors: &[HfAnchorBox]) -> Vec<crate::ir::HeaderFooterSha
                 frame,
                 anchor_paragraph_index,
                 behind_text: anchor.behind_doc,
+                flows_in_story: false,
             })
         })
         .collect()
@@ -1620,7 +2091,7 @@ fn hf_anchored_text_box_paragraphs(
             };
             // Every anchored drawing consumes one scanned anchor, so an image
             // beside a shape does not shift the shape onto the wrong box.
-            let anchor: Option<&HfAnchorBox> = anchors.next();
+            let anchor: Option<&HfAnchorBox> = anchors.next().filter(|anchor| !anchor.hidden);
             let Some(docx_rs::DrawingData::TextBox(text_box)) = &drawing.data else {
                 continue;
             };
@@ -1631,6 +2102,8 @@ fn hf_anchored_text_box_paragraphs(
                 let docx_rs::TextBoxContentChild::Paragraph(inner) = text_box_child else {
                     continue;
                 };
+                // No picture resolves without an image map, so none is
+                // anchored here.
                 let mut converted = convert_hf_paragraph(
                     inner,
                     &ImageMap::new(),
@@ -1638,6 +2111,7 @@ fn hf_anchored_text_box_paragraphs(
                     &[],
                     styles,
                     &PictureCropContext::default(),
+                    &mut Vec::new(),
                 );
                 if !hf_paragraph_carries_text(&converted) {
                     continue;
@@ -1808,6 +2282,9 @@ fn scan_hf_anchors(xml: &str, theme_colors: &HashMap<String, Color>) -> Vec<HfAn
     let mut story_paragraph_index: Option<usize> = None;
     let mut table_depth: usize = 0;
     let mut line_depth: usize = 0;
+    // Only the anchor's own `wp:docPr`, which precedes its graphic, decides
+    // whether it is hidden; a drawing nested in its text box has another.
+    let mut reads_doc_pr: bool = false;
     let empty_color_aliases: HashMap<String, String> = HashMap::new();
     loop {
         match reader.read_event() {
@@ -1830,6 +2307,12 @@ fn scan_hf_anchors(xml: &str, theme_colors: &HashMap<String, Color>) -> Vec<HfAn
                         wraps_text: true,
                         ..HfAnchorBox::default()
                     });
+                    reads_doc_pr = true;
+                }
+                b"docPr" if std::mem::take(&mut reads_doc_pr) => {
+                    if let Some(anchor) = current.as_mut() {
+                        anchor.hidden = doc_pr_states_hidden(element);
+                    }
                 }
                 b"positionH" | b"positionV" => {
                     let horizontal = element.local_name().as_ref() == b"positionH";
@@ -1990,6 +2473,14 @@ fn scan_hf_anchors(xml: &str, theme_colors: &HashMap<String, Color>) -> Vec<HfAn
             },
             Ok(Event::Empty(ref element)) if element.local_name().as_ref() == b"bodyPr" => {
                 read_body_insets(element, current.as_mut());
+            }
+            Ok(Event::Empty(ref element))
+                if element.local_name().as_ref() == b"docPr"
+                    && std::mem::take(&mut reads_doc_pr) =>
+            {
+                if let Some(anchor) = current.as_mut() {
+                    anchor.hidden = doc_pr_states_hidden(element);
+                }
             }
             Ok(Event::Empty(ref element)) if element.local_name().as_ref() == b"p" => {
                 if current.is_none() && table_depth == 0 {
@@ -2615,6 +3106,7 @@ mod structured_tag_tests {
             &[],
             styles,
             &PictureCropContext::default(),
+            &mut Vec::new(),
         );
 
         assert!(
@@ -2669,5 +3161,57 @@ mod structured_tag_tests {
             .expect("footer SDT paragraph should be retained");
 
         assert!(contains_page_number(&converted));
+    }
+}
+
+#[cfg(test)]
+mod horizontal_rule_scan_tests {
+    use super::*;
+    use crate::ir::{Alignment, HorizontalRulePaint, HorizontalRuleWidth};
+
+    /// One entry per paragraph the story converts as its own, in order: a
+    /// table's cell paragraphs, a text box's and an `mc:Fallback` copy's are
+    /// not among them, a content control's are, and an empty `<w:p/>` counts.
+    /// Each entry holds the rules its direct runs' `w:pict` draw (issue
+    /// #2251).
+    #[test]
+    fn scans_each_story_paragraphs_own_rules_in_story_order() {
+        let xml = r##"<w:hdr xmlns:w="urn:w" xmlns:v="urn:v" xmlns:o="urn:o" xmlns:mc="urn:mc">
+          <w:p><w:r><w:t>Title</w:t></w:r></w:p>
+          <w:tbl><w:tr><w:tc><w:p><w:r><w:pict>
+            <v:rect style="width:0;height:3pt" o:hr="t"/>
+          </w:pict></w:r></w:p></w:tc></w:tr></w:tbl>
+          <w:p/>
+          <w:p><w:r><mc:AlternateContent><mc:Choice Requires="wps"><w:t>Choice</w:t></mc:Choice>
+            <mc:Fallback><w:pict><v:rect style="width:0;height:3pt" o:hr="t"/></w:pict></mc:Fallback>
+          </mc:AlternateContent></w:r></w:p>
+          <w:p><w:r><w:pict><v:shape><v:textbox><w:txbxContent>
+            <w:p><w:r><w:pict><v:rect style="width:0;height:3pt" o:hr="t"/></w:pict></w:r></w:p>
+          </w:txbxContent></v:textbox></v:shape></w:pict></w:r></w:p>
+          <w:sdt><w:sdtContent><w:p><w:r><w:pict>
+            <v:rect style="width:0;height:1.5pt" o:hralign="center" o:hr="t" fillcolor="#a0a0a0"/>
+          </w:pict></w:r></w:p></w:sdtContent></w:sdt>
+          <w:p><w:r><w:pict><v:rect style="width:100pt;height:20pt"/></w:pict></w:r><w:r><w:pict>
+            <v:rect style="width:0;height:2pt" o:hrpct="500" o:hralign="right" o:hr="t"/>
+          </w:pict></w:r></w:p>
+        </w:hdr>"##;
+
+        let shaded = |width: f64, height: f64, alignment: Alignment| HorizontalRule {
+            width: HorizontalRuleWidth::Fraction(width),
+            height,
+            alignment,
+            paint: HorizontalRulePaint::Shaded,
+        };
+        assert_eq!(
+            scan_story_horizontal_rules(xml),
+            vec![
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                vec![shaded(1.0, 1.5, Alignment::Center)],
+                vec![shaded(0.5, 2.0, Alignment::Right)],
+            ]
+        );
     }
 }

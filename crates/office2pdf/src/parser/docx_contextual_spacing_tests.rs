@@ -67,7 +67,7 @@ fn build_package(
     document_relationships.push_str("</Relationships>");
 
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
     for (name, content) in [
         ("[Content_Types].xml", content_types.as_str()),
         ("_rels/.rels", PACKAGE_RELATIONSHIPS),

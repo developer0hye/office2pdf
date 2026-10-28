@@ -2819,12 +2819,12 @@ fn repackage_xlsx_part(data: &[u8], part: &str, patch: impl Fn(&str) -> String) 
 
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).expect("entry should be readable");
-        let name: String = entry.name().to_string();
+        let name: String = entry.name().expect("entry name should decode").into_owned();
         let mut bytes: Vec<u8> = Vec::new();
         std::io::Read::read_to_end(&mut entry, &mut bytes).expect("entry should decompress");
 
         rebuilt
-            .start_file(&name, zip::write::FileOptions::default())
+            .start_file(&name, zip::write::SimpleFileOptions::default())
             .expect("entry should be writable");
         if name == part {
             let xml: String = String::from_utf8(bytes).expect("the part should be UTF-8 XML");

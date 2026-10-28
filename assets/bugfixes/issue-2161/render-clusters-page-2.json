@@ -1,0 +1,263 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 63.36,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 18.24,
+        "x": 178.08,
+        "y": 31.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The `DEFAULT HEADER` header line, Times New Roman in Word and its metric-compatible Liberation Serif stand-in here: the same glyphs in the same order, and the line sits 0.39pt below Word's 41.03pt baseline (41.42pt), unchanged by this fix and below the 0.5pt fine threshold (#1874)."
+      },
+      "id": "p2-2f4b404ed575",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 48.1536,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 13.92,
+        "x": 163.68,
+        "y": 31.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The `DEFAULT HEADER` header line, Times New Roman in Word and its metric-compatible Liberation Serif stand-in here: the same glyphs in the same order, and the line sits 0.39pt below Word's 41.03pt baseline (41.42pt), unchanged by this fix and below the 0.5pt fine threshold (#1874)."
+      },
+      "id": "p2-557f9f9f02f1",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 47.4624,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 19.68,
+        "x": 144.96,
+        "y": 32.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The `DEFAULT HEADER` header line, Times New Roman in Word and its metric-compatible Liberation Serif stand-in here: the same glyphs in the same order, and the line sits 0.39pt below Word's 41.03pt baseline (41.42pt), unchanged by this fix and below the 0.5pt fine threshold (#1874)."
+      },
+      "id": "p2-9f16d966a3a6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 37.3248,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.64,
+        "x": 127.2,
+        "y": 31.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The `DEFAULT HEADER` header line, Times New Roman in Word and its metric-compatible Liberation Serif stand-in here: the same glyphs in the same order, and the line sits 0.39pt below Word's 41.03pt baseline (41.42pt), unchanged by this fix and below the 0.5pt fine threshold (#1874)."
+      },
+      "id": "p2-39c4885870b2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 34.56,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.72,
+        "x": 118.56,
+        "y": 77.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Body-line glyph outlines: Word's embedded Times New Roman against the metric-compatible Liberation Serif. Every cluster lies on a matched line; anchors stay within 0.19pt of Word's (`Later page` +0.04pt), below the 0.5pt fine threshold, with no doubled, missing or re-wrapped glyph in the inspected 150 DPI crops."
+      },
+      "id": "p2-5e2f3b4ec995",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 12.0,
+        "x": 144.96,
+        "y": 31.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The `DEFAULT HEADER` header line, Times New Roman in Word and its metric-compatible Liberation Serif stand-in here: the same glyphs in the same order, and the line sits 0.39pt below Word's 41.03pt baseline (41.42pt), unchanged by this fix and below the 0.5pt fine threshold (#1874)."
+      },
+      "id": "p2-fff05f2c5b49",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.0256,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 7.2,
+        "x": 90.72,
+        "y": 31.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The `DEFAULT HEADER` header line, Times New Roman in Word and its metric-compatible Liberation Serif stand-in here: the same glyphs in the same order, and the line sits 0.39pt below Word's 41.03pt baseline (41.42pt), unchanged by this fix and below the 0.5pt fine threshold (#1874)."
+      },
+      "id": "p2-ae1281a94752",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.72,
+        "x": 105.12,
+        "y": 78.24
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Body-line glyph outlines: Word's embedded Times New Roman against the metric-compatible Liberation Serif. Every cluster lies on a matched line; anchors stay within 0.19pt of Word's (`Later page` +0.04pt), below the 0.5pt fine threshold, with no doubled, missing or re-wrapped glyph in the inspected 150 DPI crops."
+      },
+      "id": "p2-5a97f8eb0ecf",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 80.64,
+        "y": 78.24
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Body-line glyph outlines: Word's embedded Times New Roman against the metric-compatible Liberation Serif. Every cluster lies on a matched line; anchors stay within 0.19pt of Word's (`Later page` +0.04pt), below the 0.5pt fine threshold, with no doubled, missing or re-wrapped glyph in the inspected 150 DPI crops."
+      },
+      "id": "p2-5eff33a93331",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.68,
+        "x": 82.08,
+        "y": 31.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The `DEFAULT HEADER` header line, Times New Roman in Word and its metric-compatible Liberation Serif stand-in here: the same glyphs in the same order, and the line sits 0.39pt below Word's 41.03pt baseline (41.42pt), unchanged by this fix and below the 0.5pt fine threshold (#1874)."
+      },
+      "id": "p2-e5d4992e8b91",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.68,
+        "x": 178.08,
+        "y": 31.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The `DEFAULT HEADER` header line, Times New Roman in Word and its metric-compatible Liberation Serif stand-in here: the same glyphs in the same order, and the line sits 0.39pt below Word's 41.03pt baseline (41.42pt), unchanged by this fix and below the 0.5pt fine threshold (#1874)."
+      },
+      "id": "p2-9bd6cc3209e1",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 12.96,
+        "x": 109.92,
+        "y": 31.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The `DEFAULT HEADER` header line, Times New Roman in Word and its metric-compatible Liberation Serif stand-in here: the same glyphs in the same order, and the line sits 0.39pt below Word's 41.03pt baseline (41.42pt), unchanged by this fix and below the 0.5pt fine threshold (#1874)."
+      },
+      "id": "p2-b5a5fe747bb4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.5008,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.24,
+        "x": 125.28,
+        "y": 78.24
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Body-line glyph outlines: Word's embedded Times New Roman against the metric-compatible Liberation Serif. Every cluster lies on a matched line; anchors stay within 0.19pt of Word's (`Later page` +0.04pt), below the 0.5pt fine threshold, with no doubled, missing or re-wrapped glyph in the inspected 150 DPI crops."
+      },
+      "id": "p2-2f282c750a98",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 118.56,
+        "y": 32.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "The `DEFAULT HEADER` header line, Times New Roman in Word and its metric-compatible Liberation Serif stand-in here: the same glyphs in the same order, and the line sits 0.39pt below Word's 41.03pt baseline (41.42pt), unchanged by this fix and below the 0.5pt fine threshold (#1874)."
+      },
+      "id": "p2-9fcc1edaba77",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.32,
+        "x": 112.32,
+        "y": 78.24
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Body-line glyph outlines: Word's embedded Times New Roman against the metric-compatible Liberation Serif. Every cluster lies on a matched line; anchors stay within 0.19pt of Word's (`Later page` +0.04pt), below the 0.5pt fine threshold, with no doubled, missing or re-wrapped glyph in the inspected 150 DPI crops."
+      },
+      "id": "p2-509c045cde01",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 15,
+    "duplicate": 0,
+    "total": 15,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

@@ -1,4 +1,5 @@
 use super::*;
+use crate::ir::NumberingPattern;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
@@ -925,7 +926,7 @@ fn test_fixed_page_text_box_ordered_list_preserves_textbox_styling() {
                         0,
                         ListLevelStyle {
                             kind: ListKind::Ordered,
-                            numbering_pattern: Some("1.".to_string()),
+                            numbering_pattern: Some(NumberingPattern::parse("1.")),
                             full_numbering: false,
                             marker_text: None,
                             marker_style: None,
@@ -1033,7 +1034,7 @@ fn test_fixed_page_empty_pptx_list_paragraph_keeps_line_without_marker_or_number
                     0,
                     ListLevelStyle {
                         kind: ListKind::Ordered,
-                        numbering_pattern: Some("1.".to_string()),
+                        numbering_pattern: Some(NumberingPattern::parse("1.")),
                         full_numbering: false,
                         marker_text: None,
                         marker_style: None,
@@ -1119,7 +1120,7 @@ fn test_fixed_page_text_box_compact_list_items_use_full_width_blocks() {
                         0,
                         ListLevelStyle {
                             kind: ListKind::Ordered,
-                            numbering_pattern: Some("1)".to_string()),
+                            numbering_pattern: Some(NumberingPattern::parse("1)")),
                             full_numbering: false,
                             marker_text: None,
                             marker_style: None,
@@ -1192,7 +1193,7 @@ fn test_fixed_page_text_box_compact_list_preserves_hanging_indent() {
                         0,
                         ListLevelStyle {
                             kind: ListKind::Ordered,
-                            numbering_pattern: Some("1)".to_string()),
+                            numbering_pattern: Some(NumberingPattern::parse("1)")),
                             full_numbering: false,
                             marker_text: None,
                             marker_style: None,
@@ -1266,7 +1267,7 @@ fn test_fixed_page_text_box_compact_list_preserves_marker_origin_offset() {
                         0,
                         ListLevelStyle {
                             kind: ListKind::Ordered,
-                            numbering_pattern: Some("1)".to_string()),
+                            numbering_pattern: Some(NumberingPattern::parse("1)")),
                             full_numbering: false,
                             marker_text: None,
                             marker_style: None,
@@ -1549,7 +1550,7 @@ fn test_fixed_page_text_box_compact_list_preserves_soft_line_breaks() {
                         0,
                         ListLevelStyle {
                             kind: ListKind::Ordered,
-                            numbering_pattern: Some("1)".to_string()),
+                            numbering_pattern: Some(NumberingPattern::parse("1)")),
                             full_numbering: false,
                             marker_text: None,
                             marker_style: None,
@@ -2801,7 +2802,7 @@ fn test_fixed_page_text_box_ordered_grid_normalizes_marker_spacing() {
                         0,
                         ListLevelStyle {
                             kind: ListKind::Ordered,
-                            numbering_pattern: Some("1.".to_string()),
+                            numbering_pattern: Some(NumberingPattern::parse("1.")),
                             full_numbering: false,
                             marker_text: None,
                             marker_style: None,

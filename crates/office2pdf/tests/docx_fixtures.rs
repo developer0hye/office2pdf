@@ -13,9 +13,9 @@ use office2pdf::config::ConvertOptions;
 use office2pdf::internal::DocxParser;
 use office2pdf::internal::Parser;
 use office2pdf::ir::{
-    ArrowHead, Block, BorderLineStyle, Color, FlowPage, FrameAnchor, HFInline, Insets, ListKind,
-    Page, Paragraph, PositionedTabAlignment, PositionedTabRelativeTo, Run, ShapeKind,
-    TextBoxVerticalAlign,
+    Alignment, ArrowHead, Block, BorderLineStyle, Color, FlowPage, FrameAnchor, HFInline,
+    HorizontalRule, HorizontalRulePaint, HorizontalRuleWidth, Insets, ListKind, Page, Paragraph,
+    PositionedTabAlignment, PositionedTabRelativeTo, Run, ShapeKind, TextBoxVerticalAlign,
 };
 
 // ---------------------------------------------------------------------------
@@ -126,6 +126,11 @@ fn collect_runs_from_block<'a>(block: &'a Block, out: &mut Vec<&'a Run>) {
                 collect_runs_from_block(block, out);
             }
         }
+        Block::TextFrame(frame) => {
+            for block in &frame.content {
+                collect_runs_from_block(block, out);
+            }
+        }
         Block::DrawingGroup(group) => {
             for element in &group.elements {
                 if let office2pdf::ir::FixedElementKind::TextBox(text_box) = &element.kind {
@@ -180,6 +185,12 @@ fn block_text(block: &Block) -> String {
             .collect::<Vec<String>>()
             .join("\n"),
         Block::FloatingTextBox(text_box) => text_box
+            .content
+            .iter()
+            .map(block_text)
+            .collect::<Vec<String>>()
+            .join("\n"),
+        Block::TextFrame(frame) => frame
             .content
             .iter()
             .map(block_text)
@@ -386,26 +397,36 @@ fn has_image_block(blocks: &[&Block]) -> bool {
     blocks.iter().any(|b| matches!(b, Block::Image(_)))
 }
 
-fn image_block_count(blocks: &[&Block]) -> usize {
-    blocks
-        .iter()
-        .map(|block| match block {
-            Block::Image(_) | Block::FloatingImage(_) => 1,
-            Block::InlineImages(images) => images.len(),
-            _ => 0,
-        })
-        .sum()
+/// The pictures one block holds: a picture block's own, or those riding a
+/// paragraph's line as inline boxes, as pictures sharing their paragraph with
+/// text do (issue #2227).
+fn block_picture_count(block: &Block) -> usize {
+    match block {
+        Block::Image(_) | Block::FloatingImage(_) => 1,
+        Block::InlineImages(images) => images.len(),
+        Block::Paragraph(paragraph) => paragraph
+            .runs
+            .iter()
+            .filter(|run| {
+                run.inline_box.as_deref().is_some_and(|inline_box| {
+                    matches!(inline_box.content.as_slice(), [Block::Image(_)])
+                })
+            })
+            .count(),
+        _ => 0,
+    }
 }
 
+fn image_block_count(blocks: &[&Block]) -> usize {
+    blocks.iter().map(|block| block_picture_count(block)).sum()
+}
+
+/// How many blocks hold pictures: picture blocks, and paragraphs whose line
+/// carries them.
 fn image_flow_container_count(blocks: &[&Block]) -> usize {
     blocks
         .iter()
-        .filter(|block| {
-            matches!(
-                block,
-                Block::Image(_) | Block::InlineImages(_) | Block::FloatingImage(_)
-            )
-        })
+        .filter(|block| block_picture_count(block) > 0)
         .count()
 }
 
@@ -603,6 +624,70 @@ fn blank_paragraphs_without_a_picture_are_kept() {
             |block| matches!(block, Block::Paragraph(paragraph) if !paragraph.runs.is_empty())
         ),
         "paragraphs carrying text must survive alongside pictures"
+    );
+}
+
+/// Word's *Insert > Horizontal Line* rules in a real Word file (issue #2251):
+/// one shaded 1.5pt rule alone in a nested table cell's paragraph and three
+/// unshaded 9pt `#E5E5E5` bars alone in body paragraphs carry their rules. A
+/// fifth rule shares its paragraph with a break and text, which keeps its
+/// text and draws no rule until such a rule's own line is laid out.
+#[test]
+fn drawing_rule_only_paragraphs_carry_their_horizontal_rules() {
+    fn collect_rules(blocks: &[Block], out: &mut Vec<(HorizontalRule, String)>) {
+        for block in blocks {
+            match block {
+                Block::Paragraph(paragraph) => {
+                    if let Some(rule) = paragraph.style.horizontal_rule.as_deref() {
+                        let text: String =
+                            paragraph.runs.iter().map(|run| run.text.as_str()).collect();
+                        out.push((*rule, text));
+                    }
+                }
+                Block::Table(table) => {
+                    for cell in table.rows.iter().flat_map(|row| &row.cells) {
+                        collect_rules(&cell.content, out);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    let pages = flow_pages("drawing.docx");
+    let mut rules: Vec<(HorizontalRule, String)> = Vec::new();
+    for page in &pages {
+        collect_rules(&page.content, &mut rules);
+    }
+
+    let unshaded_bar = HorizontalRule {
+        width: HorizontalRuleWidth::Fraction(1.0),
+        height: 9.0,
+        alignment: Alignment::Center,
+        paint: HorizontalRulePaint::Solid(Color::new(0xE5, 0xE5, 0xE5)),
+    };
+    assert_eq!(
+        rules,
+        [
+            (
+                HorizontalRule {
+                    width: HorizontalRuleWidth::Fraction(1.0),
+                    height: 1.5,
+                    alignment: Alignment::Center,
+                    paint: HorizontalRulePaint::Shaded,
+                },
+                String::new(),
+            ),
+            (unshaded_bar, String::new()),
+            (unshaded_bar, String::new()),
+            (unshaded_bar, String::new()),
+        ]
+    );
+    let all = all_blocks(&pages);
+    let text: String = all_runs(&all).iter().map(|run| run.text.as_str()).collect();
+    assert!(
+        text.contains("ВолгаИнформ"),
+        "the text sharing a paragraph with a rule survives"
     );
 }
 

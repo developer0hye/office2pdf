@@ -27,3 +27,22 @@ Markup-based typesetting system. Compiles `.typ` source to PDF/PNG/SVG/HTML. Emb
 - Improving Typst codegen quality or discovering new Typst features
 - Debugging layout issues in generated PDFs
 - Optimizing compilation performance
+
+## Flow page-break rules (`typst-layout` 0.15.1, `flow/distribute.rs`)
+
+- `#v` is relative spacing: `rel()` only subtracts it from the region and never
+  checks fit, so spacing cut off at a region's end carries nothing over.
+- A breakable block moves whole to the next region when the region is already
+  full, or when its first frame is empty and its spill holds a non-empty frame;
+  spacing alone makes neither.
+- An unbreakable block (`single()`) that does not fit finishes the region and
+  moves whole; where `may_progress()` is false, as in a fresh page or a fixed
+  box, it overflows in place. An empty paragraph's blocks are unbreakable for
+  that reason (#2253).
+- A tag, such as `#metadata(none) <label>`, waits in `work.tags` until the next
+  frame or placed item lands, so a section label written before a block that
+  moves to the next region lands there with it, at the body top (#2254).
+- Weak spacing with no frame before it in the region is dropped, so a block's
+  `above` vanishes where the block opens a page. A strong `v` as the block's
+  first content, from a `context` that reads such a label before the block,
+  puts it back only there, and the layout settles in two passes (#2255).

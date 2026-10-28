@@ -7,17 +7,19 @@ use crate::config::ConvertOptions;
 use crate::error::ConvertError;
 use crate::ir::{
     Alignment, ArrowHead, AxisTickMark, BarBandLayout, BaselineShiftEm, Block, BorderLineStyle,
-    BorderSide, CellBorder, CellVerticalAlign, Chart, ChartGrouping, ChartType, Color,
+    BorderSide, BreakClear, CellBorder, CellVerticalAlign, Chart, ChartGrouping, ChartType, Color,
     ColumnLayout, Document, FixedElement, FixedElementKind, FixedPage, FloatingImage,
-    FloatingImageVerticalAnchor, FloatingShape, FloatingTextBox, FlowPage, FrameAnchor,
-    GradientFill, HFInline, HeaderFooter, HeaderFooterFrame, HeaderFooterShapeContent, IconShading,
-    ImageCrop, ImageData, ImageFormat, ImageParagraphSpacing, InlineTextBox, Insets,
+    FloatingImageVerticalAnchor, FloatingShape, FloatingTable, FloatingTextBox, FlowPage,
+    FrameAnchor, GradientFill, HFInline, HeaderFooter, HeaderFooterFrame, HeaderFooterShapeContent,
+    HorizontalRule, HorizontalRulePaint, HorizontalRuleWidth, IconShading, ImageCrop, ImageData,
+    ImageFormat, ImageParagraphIndent, ImageParagraphSpacing, InlineTextBox, Insets,
     LegendPosition, LineBox, LineCap, LineJoin, LineSpacing, List, ListKind, Margins, MathEquation,
-    Metadata, Page, PageNumberFormat, PageSize, PairKerning, Paragraph, ParagraphStyle,
-    PatternFill, PatternPreset, PositionedTabAlignment, PositionedTabRelativeTo, Run, Shadow,
-    Shape, ShapeKind, SheetPage, SmartArt, SparklineInfo, TabAlignment, TabLeader, TabStop, Table,
-    TableBorderPaintModel, TableCell, TableOfContents, TableRow, TextBoxData, TextBoxVerticalAlign,
-    TextDirection, TextStyle, VerticalTextAlign, WrapMode,
+    Metadata, PAGE_NUMBER_FIELD_CHAR, Page, PageNumberFormat, PageSize, PairKerning, Paragraph,
+    ParagraphStyle, PatternFill, PatternPreset, PositionedTabAlignment, PositionedTabRelativeTo,
+    Run, Shadow, Shape, ShapeKind, SheetPage, SmartArt, SparklineInfo, TOTAL_PAGES_FIELD_CHAR,
+    TabAlignment, TabLeader, TabStop, Table, TableBorderPaintModel, TableCell, TableOfContents,
+    TableRow, TextBoxData, TextBoxVerticalAlign, TextDirection, TextFrame, TextStyle,
+    VerticalTextAlign, WrapMode,
 };
 
 use self::diagrams::{
@@ -111,6 +113,16 @@ const WRITER_PAGE_LEFT_TEXT_ORIGIN_SEAT_PT: f64 = 0.15;
 /// has to travel with it (issue #605).
 const PAGE_FORMAT_STATE: &str = "o2p-page-format";
 
+/// The label of the `#metadata` that records a section's restarted page
+/// number on the page where its counter restarts.
+///
+/// Typst lays a page's background out before the page's body, so a page
+/// counter drawn there misses a `counter(page).update` on that same page; the
+/// header and footer, laid out after the body, see it. A page field in a
+/// header or footer table is drawn in the background, so it reads the restart
+/// from this record instead (issue #2338).
+const PAGE_RESTART_LABEL: &str = "o2p-page-restart";
+
 /// The indent a contents entry takes per level below the first.
 ///
 /// Word's built-in `TOC<n>` styles step the left indent by a flat amount; a
@@ -139,10 +151,17 @@ struct GenCtx {
     /// Which flow section is being written, so a `<w:titlePg/>` header can
     /// label its own section's first page (issue #846).
     flow_section_index: usize,
+    /// The continuous `<w:titlePg/>` sections that share the page setup the
+    /// current section writes ([`title_page_run_members`]).
+    flow_run_title_page_members: Vec<TitlePageRunMember>,
     /// Layers containing the previous section's borders must be reset explicitly.
     flow_border_layers: [bool; 2],
     has_flow_line_numbering: bool,
     in_flow_body: bool,
+    /// The section body is written straight into the page flow, with no
+    /// single-frame wrapper around it, so a table row there can continue on
+    /// the next page (issue #2217).
+    flow_body_is_breakable: bool,
     flow_page_alignments: Vec<crate::ir::PageVerticalAlignment>,
     flow_alignment_index: usize,
     flow_current_alignment: crate::ir::PageVerticalAlignment,
@@ -157,12 +176,18 @@ struct GenCtx {
     /// Header/footer story tables preserve their sibling-derived blank
     /// paragraph metrics so paragraph-anchored artwork keeps its native seat.
     prefer_sibling_metrics_for_empty_cell_paragraphs: bool,
+    /// Whether the header story being written lays each line out as Word's
+    /// own line box, which is the only form that honours an exact line.
+    hf_lines_are_word_boxes: bool,
     /// How many sheet drawing layers have been written. Each needs its own
     /// label, because the layer is a page foreground that has to recognise
     /// its own sheet's first printed page (issue #1168).
     next_sheet_drawing_layer_id: usize,
     next_excel_fill_id: usize,
     table_depth: usize,
+    /// The table being written is a block of a breakable section body, so
+    /// its rows may continue on the next page (issue #2217).
+    table_rows_may_split: bool,
     /// Active section's Word document-grid line pitch, in points.
     line_grid_pitch: Option<f64>,
     /// `w:defaultTabStop` from the document settings, in points.
@@ -249,6 +274,15 @@ struct GenCtx {
     /// change its body frame without changing the page that already began.
     active_page_size: Option<PageSize>,
     active_page_margins: Option<Margins>,
+    /// The top margin the active page setup writes, where a line that opens
+    /// a page lands. A header taller than the section's margin grows it.
+    active_body_top_pt: Option<f64>,
+    /// Whether the flow section before the one being written ends at a page
+    /// or column break, so the new section opens at a page or column top.
+    previous_flow_ends_at_layout_break: bool,
+    /// How many paragraphs have had a page-top gap label written, which
+    /// keeps each label unique.
+    next_page_top_gap_id: usize,
     /// The spreadsheet cell box the current paragraph is laid out in, so a
     /// centred line can be seated on Excel's whole-point grid (issue #1600).
     /// `None` outside a sheet table cell.
@@ -270,6 +304,46 @@ struct GenCtx {
     /// which corroborates the direction and magnitude without being ground
     /// truth.
     table_uses_powerpoint_line_box: bool,
+    /// The floating tables and text frames placed so far in the current
+    /// flow, which the root paragraphs after them wrap around until a page,
+    /// column or section break, or until those paragraphs have advanced a
+    /// page (issues #2229, #2231). A float outlasts the start of a
+    /// continuous section laid out in the same text area (issue #2369).
+    body_floats: Vec<float_wrap::BodyFloat>,
+    next_body_float_id: usize,
+    /// The width and height of the single text column floating tables and
+    /// text frames wrap in, or `None` where they do not wrap yet: outside a
+    /// flow body and in multi-column sections.
+    float_wrap_text_area_pt: Option<(f64, f64)>,
+    /// Set for the paragraph `generate_block` is about to write at the flow
+    /// root while `body_floats` is non-empty; `generate_paragraph` takes it,
+    /// so the paragraphs nested inside that one never see it.
+    float_wrap_pending: bool,
+    /// Set with `float_wrap_pending` for the part of a paragraph after a
+    /// clearing break, which starts below the floats it clears
+    /// (issue #2230).
+    float_wrap_clear: Option<BreakClear>,
+    /// Set for the root text-anchored text frame or floating table
+    /// `generate_block` is about to write: the gap after the flow block before
+    /// it, when there is one (issues #2231, #2236). A top-margin frame box
+    /// hangs from no flow block, so it never has one.
+    flow_anchor_gap_pt: Option<f64>,
+    /// The text area the previous flow section's floats wrapped in, which a
+    /// continuous section in the same area keeps in force.
+    carried_float_text_area_pt: Option<(f64, f64)>,
+    /// Whether the current flow section keeps an empty frame's box at the top
+    /// margin, which the section's full-width tables at the flow root clear
+    /// (issue #2231). docxide-pdf's `empty_frame_table_bands` keeps the boxes
+    /// to their own section too, and the check is a layout-time query that
+    /// every such table would otherwise pay for.
+    clears_top_margin_frame_boxes: bool,
+    /// Whether the next block in the block list being written is a top-margin
+    /// frame box, so a full-width table before it clears the box with the
+    /// rows it carries onto the box's page (issue #2231).
+    top_margin_frame_box_follows: bool,
+    /// Set by such a table for the box after it: the bottom of the text area,
+    /// from the top of the page.
+    frame_box_carry_text_bottom_pt: Option<f64>,
 }
 
 impl GenCtx {
@@ -286,9 +360,11 @@ impl GenCtx {
     fn new() -> Self {
         Self {
             flow_section_index: 0,
+            flow_run_title_page_members: Vec::new(),
             flow_border_layers: [false; 2],
             has_flow_line_numbering: false,
             in_flow_body: false,
+            flow_body_is_breakable: false,
             flow_page_alignments: Vec::new(),
             flow_alignment_index: 0,
             flow_current_alignment: crate::ir::PageVerticalAlignment::Top,
@@ -300,9 +376,11 @@ impl GenCtx {
             next_text_box_id: 0,
             in_top_aligned_floating_text_box: false,
             prefer_sibling_metrics_for_empty_cell_paragraphs: false,
+            hf_lines_are_word_boxes: false,
             next_sheet_drawing_layer_id: 0,
             next_excel_fill_id: 0,
             table_depth: 0,
+            table_rows_may_split: false,
             table_uses_powerpoint_line_box: false,
             line_grid_pitch: None,
             row_east_asian: RowEastAsianMetrics {
@@ -328,7 +406,20 @@ impl GenCtx {
             available_measure_pt: None,
             active_page_size: None,
             active_page_margins: None,
+            active_body_top_pt: None,
+            previous_flow_ends_at_layout_break: false,
+            next_page_top_gap_id: 0,
             sheet_cell_box: None,
+            body_floats: Vec::new(),
+            next_body_float_id: 0,
+            float_wrap_text_area_pt: None,
+            float_wrap_pending: false,
+            float_wrap_clear: None,
+            flow_anchor_gap_pt: None,
+            carried_float_text_area_pt: None,
+            clears_top_margin_frame_boxes: false,
+            top_margin_frame_box_follows: false,
+            frame_box_carry_text_bottom_pt: None,
         }
     }
 
@@ -672,10 +763,25 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
     write_page_format_state(&mut out);
     write_document_language(&mut out, doc.styles.default_language.as_ref());
     write_hyphenation_rule(&mut out, doc.styles.hyphenates_automatically);
+    if let Some(ligatures) = doc
+        .styles
+        .default_text
+        .as_ref()
+        .and_then(|text| text.ligatures)
+    {
+        write_document_ligature_state(&mut out, ligatures);
+    }
     if doc.pages.iter().any(|page| matches!(page, Page::Fixed(_))) {
         write_powerpoint_ligature_state(&mut out);
         write_powerpoint_advance_grid_helpers(&mut out);
         out.push('\n');
+    }
+
+    if float_wrap::document_has_body_float(doc) {
+        float_wrap::write_float_wrap_helper(&mut out);
+    }
+    if float_wrap::document_has_top_margin_frame_box(doc) {
+        float_wrap::write_top_margin_frame_box_clearance_helper(&mut out);
     }
 
     let mut ctx = GenCtx::new();
@@ -693,6 +799,17 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
         }
         match page {
             Page::Flow(flow) | Page::FlowContinuous(flow) => {
+                ctx.flow_run_title_page_members =
+                    title_page_run_members(&doc.pages, index, ctx.flow_section_index);
+                ctx.previous_flow_ends_at_layout_break = index
+                    .checked_sub(1)
+                    .and_then(|previous| doc.pages.get(previous))
+                    .is_some_and(|previous| match previous {
+                        Page::Flow(previous) | Page::FlowContinuous(previous) => {
+                            previous.content.last().is_some_and(is_layout_break)
+                        }
+                        _ => false,
+                    });
                 generate_flow_page(
                     &mut out,
                     flow,
@@ -758,8 +875,13 @@ fn generate_flow_page(
                 DEFAULT_TAB_WIDTH_PT
             });
     let mut section_content: Vec<Block> = page.content.clone();
+    let mut section_mark_space: Option<(usize, f64)> = None;
     if begins_continuously {
         suppress_typst_spacing_at_continuous_section_start(&mut section_content);
+        section_mark_space = take_section_mark_space(&mut section_content);
+        if page.columns.is_none() && !ctx.previous_flow_ends_at_layout_break {
+            keep_opening_space_before_at_page_top(&mut section_content);
+        }
     }
     if !begins_continuously {
         write_flow_page_setup(out, page, &size, false, ctx)?;
@@ -785,6 +907,7 @@ fn generate_flow_page(
     // from the document start, so the section states its own first number.
     if let Some(start) = page.page_numbering.and_then(|numbering| numbering.start) {
         let _ = writeln!(out, "#counter(page).update({start})");
+        let _ = writeln!(out, "#metadata({start}) <{PAGE_RESTART_LABEL}>");
     }
     // A `PAGE` field takes the format from `ctx` at codegen time, but a
     // contents entry cannot: which section an entry lands in is only known
@@ -808,6 +931,24 @@ fn generate_flow_page(
     // Typst distributes each page's flow, preserving page breaks and horizontal alignment.
     ctx.in_flow_body = true;
     write_flow_body_alignment(out, ctx);
+    let text_height_pt: f64 = size.height - page.margins.top - page.margins.bottom;
+    // TODO(floats wrap in one column only): a floating table or text frame
+    // placed in a multi-column section still excludes no text.
+    let text_area_pt: Option<(f64, f64)> = ctx
+        .available_measure_pt
+        .filter(|_| page.columns.is_none() && text_height_pt > 0.0)
+        .map(|width_pt| (width_pt, text_height_pt));
+    // A float still excludes text in a continuous section laid out in the
+    // same text area. In Word's exports of docxide-pdf's
+    // `paragraph-offset-frame-immediate-long` (a text frame, issue #2231) and
+    // `section-mark-after-table-float-compat15` (a floating table, issue
+    // #2369), the float ends the first section, and the text it keeps off
+    // opens the next.
+    if !begins_continuously || ctx.carried_float_text_area_pt != text_area_pt {
+        ctx.body_floats.clear();
+    }
+    ctx.float_wrap_text_area_pt = text_area_pt;
+    ctx.clears_top_margin_frame_boxes = float_wrap::has_top_margin_frame_box(&section_content);
 
     // Word keeps `w:spacing w:before` on the document's first body paragraph,
     // but Typst collapses leading block spacing at a page boundary, pulling the
@@ -833,6 +974,7 @@ fn generate_flow_page(
         let mut adjusted = first.clone();
         adjusted.style.space_before = None;
         let _ = writeln!(out, "#v({}pt, weak: false)", format_f64(gap));
+        ctx.flow_body_is_breakable = true;
         generate_block(out, &Block::Paragraph(adjusted), ctx)?;
         if section_content.len() > 1 {
             out.push('\n');
@@ -847,7 +989,9 @@ fn generate_flow_page(
             cols,
             FlowColumnRenderOptions {
                 begins_continuously,
+                ends_continuously,
                 balance_final_segment: ends_continuously,
+                section_mark_space,
             },
             ctx,
         )?;
@@ -856,17 +1000,39 @@ fn generate_flow_page(
             .iter()
             .any(|block| matches!(block, Block::PageBreak))
     {
-        generate_continuous_flow_blocks(out, page, &size, &section_content, ctx)?;
+        generate_continuous_flow_blocks(
+            out,
+            page,
+            &size,
+            &section_content,
+            ends_continuously,
+            section_mark_space,
+            ctx,
+        )?;
     } else {
         let has_continuous_frame: bool =
             begins_continuously && write_continuous_flow_frame_open(out, page, ctx);
-        generate_blocks(out, &section_content, ctx)?;
+        // The continuous-section frame is a `#move`, which lays its body out
+        // as one frame that cannot continue on the next page.
+        ctx.flow_body_is_breakable = !has_continuous_frame;
+        generate_blocks_with_layout_space_before(
+            out,
+            &section_content,
+            ctx,
+            section_mark_space,
+            false,
+            false,
+            false,
+        )?;
         if has_continuous_frame {
             write_continuous_flow_frame_close(out);
         }
     }
+    ctx.flow_body_is_breakable = false;
     ctx.in_flow_body = false;
     ctx.preserve_page_after_spacing = false;
+    ctx.carried_float_text_area_pt = ctx.float_wrap_text_area_pt.take();
+    ctx.clears_top_margin_frame_boxes = false;
     reset_flow_body_alignment(out, ctx);
     Ok(())
 }
@@ -922,6 +1088,8 @@ fn write_continuation_flow_setup(
 /// Remove Typst's fallback paragraph gap at the first body block of a
 /// continuous section. The boundary is a Word section transition, not a
 /// paragraph boundary, so implicit block spacing must not separate the flows.
+/// A stated `w:before` stays: the section continues on the same page, which is
+/// no page top, and Word draws the gap there (issue #2161).
 fn suppress_typst_spacing_at_continuous_section_start(content: &mut [Block]) {
     let Some(first_content_index) = content.iter().position(block_has_paragraph_content) else {
         return;
@@ -931,21 +1099,86 @@ fn suppress_typst_spacing_at_continuous_section_start(content: &mut [Block]) {
     {
         return;
     }
-    suppress_block_space_before(&mut content[first_content_index]);
-    match &mut content[first_content_index] {
-        Block::Paragraph(paragraph) => paragraph.style.space_before = Some(0.0),
-        Block::Caption(caption) => caption.paragraph.style.space_before = Some(0.0),
-        Block::List(list) => {
-            if let Some(paragraph) = list
-                .items
-                .first_mut()
-                .and_then(|item| item.content.first_mut())
-            {
-                paragraph.style.space_before = Some(0.0);
-            }
-        }
-        _ => {}
+    let Some(style) = first_paragraph_style_mut(&mut content[first_content_index]) else {
+        return;
+    };
+    if !style.space_before.is_some_and(|gap| gap > 0.0) {
+        style.space_before = Some(0.0);
     }
+}
+
+/// Mark a continuous section's first block, a paragraph with text, to keep
+/// its stated `w:before` at the top of the next page should it not fit on
+/// this one: Word's export of docxide-pdf's `cont-first-text-overflow` keeps
+/// the gap there (issue #2255), where Typst drops a block's `above` at a page
+/// top. Run after [`take_section_mark_space`], which writes its gap as fixed
+/// space and zeroes the paragraph's own. The caller skips a section that
+/// opens after a page or column break, where Word suppresses the spacing of a
+/// paragraph that follows a break.
+///
+/// TODO(unprobed page-top gaps): a multi-column section's opener, the
+/// section-mark gap and a paragraph after the section's first block lose
+/// their gap at a page top as well; no Word reference shows what they keep.
+fn keep_opening_space_before_at_page_top(content: &mut [Block]) {
+    let Some(first) = content
+        .first_mut()
+        .filter(|block| block_has_paragraph_content(block))
+    else {
+        return;
+    };
+    let style: &mut ParagraphStyle = match first {
+        Block::Paragraph(paragraph) => &mut paragraph.style,
+        Block::Caption(caption) => &mut caption.paragraph.style,
+        _ => return,
+    };
+    style.keeps_space_before_at_page_top =
+        !style.starts_after_layout_break && style.space_before.is_some_and(|gap| gap > 0.0);
+}
+
+/// The style of a block's first paragraph; a list's is its first item's.
+fn first_paragraph_style_mut(block: &mut Block) -> Option<&mut ParagraphStyle> {
+    match block {
+        Block::Paragraph(paragraph) => Some(&mut paragraph.style),
+        Block::Caption(caption) => Some(&mut caption.paragraph.style),
+        Block::List(list) => list
+            .items
+            .first_mut()?
+            .content
+            .first_mut()
+            .map(|paragraph| &mut paragraph.style),
+        _ => None,
+    }
+}
+
+/// The gap a continuous section's first paragraph takes after an empty
+/// section mark that took no line ([`ParagraphStyle::section_mark_after`]),
+/// with the index of the block it goes before. Word adds the part of the
+/// paragraph's `w:before` beyond the mark's `w:after` to the previous
+/// paragraph's whole after-gap (issue #2232), where Typst's block spacing
+/// would keep only the larger of the two. So the gap is written as fixed
+/// space, which Typst's weak block spacing looks past, and the paragraph's
+/// own before-gap becomes zero. In a multi-column section the space goes in
+/// the first column, where the paragraph is: Word's export of docxide-pdf's
+/// `scraped/covid_insomnia_mental_health` starts its second column above the
+/// first column's numbered heading. After a layout break the paragraph sits
+/// at a page or column top, so it keeps its gaps as they were.
+fn take_section_mark_space(content: &mut [Block]) -> Option<(usize, f64)> {
+    let index: usize = content.iter().position(|block| {
+        matches!(
+            block,
+            Block::Paragraph(_) | Block::Caption(_) | Block::List(_)
+        )
+    })?;
+    if content[..index].iter().any(is_layout_break)
+        || block_starts_after_layout_break(&content[index])
+    {
+        return None;
+    }
+    let style: &mut ParagraphStyle = first_paragraph_style_mut(&mut content[index])?;
+    let mark_after: f64 = style.section_mark_after?;
+    let space: f64 = (style.space_before.unwrap_or(0.0) - mark_after).max(0.0);
+    style.space_before = Some(0.0);
+    (space > 0.0).then_some((index, space))
 }
 
 /// Open the new section's horizontal text frame inside the page that is
@@ -985,17 +1218,24 @@ fn write_continuous_flow_frame_close(out: &mut String) {
 
 /// Keep page breaks at the top level while applying continuous-section page
 /// setup to each continuation page.
+///
+/// A break that ends the section leaves an empty last slice. The next section
+/// starts a page of its own unless it continues on this one
+/// (`ends_continuously`), so only then is that break written (issue #2370).
 fn generate_continuous_flow_blocks(
     out: &mut String,
     page: &FlowPage,
     size: &PageSize,
     content: &[Block],
+    ends_continuously: bool,
+    section_mark_space: Option<(usize, f64)>,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     let segments: Vec<(usize, &[Block])> = split_at_page_breaks(content);
     let last_segment_index: usize = segments.len() - 1;
     for (index, (segment_start, segment)) in segments.iter().enumerate() {
-        let is_trailing_empty_segment: bool = index == last_segment_index && segment.is_empty();
+        let is_trailing_empty_segment: bool =
+            index == last_segment_index && segment.is_empty() && !ends_continuously;
         if index > 0 && !is_trailing_empty_segment {
             out.push_str("#pagebreak()\n");
             write_continuation_flow_setup(out, page, size, ctx)?;
@@ -1015,7 +1255,7 @@ fn generate_continuous_flow_blocks(
             out,
             segment,
             ctx,
-            None,
+            section_mark_space.filter(|_| index == 0),
             joins_previous_at_page_boundary,
             joins_next_at_page_boundary,
             segment_end < content.len(),
@@ -1037,10 +1277,15 @@ fn generate_continuous_flow_blocks(
 /// page, which is one wrapper per page's slice of the content with a top-level
 /// break between the slices. A break at either end of the section leaves an
 /// empty slice, and an empty wrapper would paint nothing while still claiming
-/// vertical space, so only the break itself is emitted for those.
+/// vertical space, so only the break itself is emitted for those. A break
+/// that ends the section is emitted only when the next section continues on
+/// the same page; one that does not starts a page of its own (issue #2370).
 struct FlowColumnRenderOptions {
     begins_continuously: bool,
+    ends_continuously: bool,
     balance_final_segment: bool,
+    /// [`take_section_mark_space`]'s gap, written in the first column.
+    section_mark_space: Option<(usize, f64)>,
 }
 
 fn generate_flow_page_columns(
@@ -1057,7 +1302,8 @@ fn generate_flow_page_columns(
     let segments: Vec<(usize, &[Block])> = split_at_page_breaks(content);
     let last_segment_index: usize = segments.len() - 1;
     for (index, (segment_start, segment)) in segments.iter().enumerate() {
-        let is_trailing_empty_segment: bool = index == last_segment_index && segment.is_empty();
+        let is_trailing_empty_segment: bool =
+            index == last_segment_index && segment.is_empty() && !options.ends_continuously;
         if index > 0 && !is_trailing_empty_segment {
             out.push_str("#pagebreak()\n");
             if options.begins_continuously {
@@ -1072,7 +1318,9 @@ fn generate_flow_page_columns(
         // A page-top paragraph consumes space only in the column where it
         // starts; writing this gap before `#columns` would shift every column.
         let mut layout_break_space_before: Option<(usize, f64)> = None;
-        if index > 0 {
+        if index == 0 {
+            layout_break_space_before = options.section_mark_space;
+        } else {
             let has_content_before_page_break: bool = segments[..index]
                 .iter()
                 .flat_map(|(_, previous_segment)| previous_segment.iter())
@@ -2843,6 +3091,66 @@ fn hf_trailing_space_after_pt(hf: &HeaderFooter) -> f64 {
         .unwrap_or(0.0)
 }
 
+/// The page-space `(top, bottom)` bands of the footer pictures its lines
+/// cannot sit beside, lowest first, each widened by its `distT`/`distB`.
+///
+/// A picture wrapped top and bottom keeps text off both of its sides; a
+/// square or tight one only where it leaves no room beside it in the text
+/// column. TODO(side wrap): one that leaves room lets Word set the lines
+/// beside it, narrowed, at their own height, so they stay where they are.
+fn footer_line_obstacles(footer: &HeaderFooter, page: &FlowPage) -> Vec<(f64, f64)> {
+    let column_left: f64 = page.margins.left;
+    let column_right: f64 = page.size.width - page.margins.right;
+    let mut obstacles: Vec<(f64, f64)> = footer
+        .shapes
+        .iter()
+        .filter_map(|shape| {
+            let HeaderFooterShapeContent::Picture(picture) = &shape.content else {
+                return None;
+            };
+            let distance = picture.wrap_distance;
+            let covers_column = || {
+                let left: f64 = shape.frame.x? - distance.left;
+                let right: f64 = shape.frame.x? + shape.width + distance.right;
+                Some(left <= column_left && right >= column_right)
+            };
+            let keeps_lines_off: bool = match picture.wrap_mode {
+                WrapMode::TopAndBottom => true,
+                WrapMode::Square | WrapMode::Tight => covers_column().unwrap_or(false),
+                WrapMode::Behind | WrapMode::InFront | WrapMode::None => false,
+            };
+            if !keeps_lines_off || shape.frame.vertical_anchor != FrameAnchor::Page {
+                return None;
+            }
+            let top: f64 = shape.frame.y?;
+            Some((top - distance.top, top + shape.height + distance.bottom))
+        })
+        .collect();
+    obstacles.sort_by(|left, right| right.0.total_cmp(&left.0));
+    obstacles
+}
+
+/// How far Word's line box for a flowed story's first line reaches above the
+/// cap height Typst starts that line at, in points; zero where the face is
+/// unknown, the line holds a picture, or the story is laid out as stacked
+/// blocks of Word's own line heights.
+fn hf_story_first_line_ascent_above_cap_pt(hf: &HeaderFooter) -> f64 {
+    if hf_story_rules_a_paragraph(hf) {
+        return 0.0;
+    }
+    hf.paragraphs
+        .iter()
+        .find(|paragraph| hf_paragraph_is_emitted(paragraph))
+        .filter(|paragraph| {
+            !paragraph
+                .elements
+                .iter()
+                .any(|element| matches!(element, HFInline::Image(_)))
+        })
+        .and_then(|paragraph| text::word_header_band_shift_pt(&hf_paragraph_metric_runs(paragraph)))
+        .unwrap_or(0.0)
+}
+
 /// Build the `#set page(footer: …)` value for one footer story (issue #846).
 fn flow_footer_value(footer: &HeaderFooter, page: &FlowPage, ctx: &mut GenCtx) -> FlowFooterValue {
     let mut value = String::new();
@@ -2867,11 +3175,12 @@ fn flow_footer_value(footer: &HeaderFooter, page: &FlowPage, ctx: &mut GenCtx) -
         // Typst's `"descender"` is its normalised one, which is the wrong
         // quantity for a face whose line box carries more below the
         // baseline than its descender does (issue #630).
-        let bottom_edge: String = footer
+        let descent_em: Option<f64> = footer
             .paragraphs
             .last()
             .map(hf_paragraph_metric_runs)
-            .and_then(|runs| text::word_line_box_descent_em(&runs))
+            .and_then(|runs| text::word_line_box_descent_em(&runs));
+        let bottom_edge: String = descent_em
             .map(|descent_em| format!("-{}em", format_f64(descent_em)))
             .unwrap_or_else(|| "\"descender\"".to_string());
         // Word reserves the last paragraph's own `w:spacing w:after` between
@@ -2879,15 +3188,52 @@ fn flow_footer_value(footer: &HeaderFooter, page: &FlowPage, ctx: &mut GenCtx) -
         // `w:pgMar/@w:footer` rather than on it. A gap deeper than the band
         // itself would invert the block, so the band is as far as the story can
         // be lifted (issue #1195).
-        let drawn_band: f64 =
-            round_to_hundredths((band - hf_trailing_space_after_pt(footer)).max(0.0));
+        let space_after: f64 = hf_trailing_space_after_pt(footer);
+        let drawn_band: f64 = round_to_hundredths((band - space_after).max(0.0));
         let _ = write!(
             value,
-            "block(width: 100%, height: {}pt)[#set text(bottom-edge: {bottom_edge}); #place(bottom, block(width: 100%)[",
+            "block(width: 100%, height: {}pt)[#set text(bottom-edge: {bottom_edge}); ",
             format_f64(drawn_band)
         );
-        generate_flow_hf_content(&mut value, footer, ctx);
-        value.push_str("])]");
+        let obstacles: Vec<(f64, f64)> = footer_line_obstacles(footer, page);
+        if obstacles.is_empty() {
+            value.push_str("#place(bottom, block(width: 100%)[");
+        } else {
+            value.push_str("#context { let story = block(width: 100%)[");
+        }
+        // That edge sits under every line of the story, so the leading has to
+        // leave room for it. Where it is the renderer's own `"descender"`, the
+        // last paragraph's face did not resolve and no descent is known to
+        // leave room for.
+        generate_flow_hf_content(&mut value, footer, descent_em.unwrap_or(0.0), ctx);
+        if obstacles.is_empty() {
+            value.push_str("])]");
+        } else {
+            // Word sets the story's lines above a picture they cannot sit
+            // beside: its box, `w:spacing w:after` included, ends at the top
+            // of the first picture its bottom-anchored lines would cross, and
+            // of each one that box then crosses (issue #2327).
+            let page_height: f64 = page.size.height;
+            let story_bottom: f64 = page_height - page.margins.bottom + drawn_band + space_after;
+            let text_width: f64 = page.size.width - page.margins.left - page.margins.right;
+            // The measured story starts at its first line's cap height;
+            // Word's line box reaches that face's ascent.
+            let word_box_extra: f64 = hf_story_first_line_ascent_above_cap_pt(footer) + space_after;
+            let tuples: String = obstacles
+                .iter()
+                .map(|(above, below)| {
+                    format!("({}pt, {}pt), ", format_f64(*above), format_f64(*below))
+                })
+                .collect();
+            let _ = write!(
+                value,
+                "]; let height = measure(story, width: {}pt).height + {}pt; let edge = {}pt; for (above, below) in ({tuples}) {{ if edge - height < below and above < edge {{ edge = above }} }}; place(bottom, dy: edge - {}pt, story) }}]",
+                format_f64(text_width),
+                format_f64(word_box_extra),
+                format_f64(story_bottom),
+                format_f64(story_bottom),
+            );
+        }
         return FlowFooterValue {
             markup: value,
             wants_zero_descent: true,
@@ -2895,14 +3241,14 @@ fn flow_footer_value(footer: &HeaderFooter, page: &FlowPage, ctx: &mut GenCtx) -
     }
     if hf_needs_stack_offset(footer) {
         value.push_str("context { let footer_content = block(width: 100%)[");
-        generate_flow_hf_content(&mut value, footer, ctx);
+        generate_flow_hf_content(&mut value, footer, 0.0, ctx);
         value.push_str("]; move(dy: -measure(footer_content).height / 2)[#footer_content] }");
     } else {
         if hf_needs_context(footer) {
             value.push_str("context ");
         }
         value.push('[');
-        generate_flow_hf_content(&mut value, footer, ctx);
+        generate_flow_hf_content(&mut value, footer, 0.0, ctx);
         value.push(']');
     }
     FlowFooterValue {
@@ -2932,6 +3278,116 @@ fn section_first_page_expression(section_index: usize) -> String {
         "query(<{}>).first().location().page()",
         section_first_page_label(section_index)
     )
+}
+
+/// A continuous section that shows first-page stories (`<w:titlePg/>`) and
+/// shares the page setup an earlier section writes. Typst cannot set a page
+/// up again mid-page, so that setup chooses the section's first stories for
+/// it, on the page its first line opens (issue #2254).
+#[derive(Clone)]
+struct TitlePageRunMember {
+    section_index: usize,
+    header: Option<HeaderFooter>,
+    footer: Option<HeaderFooter>,
+    first_header: Option<HeaderFooter>,
+    first_footer: Option<HeaderFooter>,
+}
+
+/// The continuous title-page sections after `pages[index]` that share the
+/// page setup `pages[index]` writes. `section_index` is that section's flow
+/// index. A section holding a page break sets its page up again there
+/// ([`generate_continuous_flow_blocks`]), so the sections after it join that
+/// setup instead.
+fn title_page_run_members(
+    pages: &[Page],
+    index: usize,
+    section_index: usize,
+) -> Vec<TitlePageRunMember> {
+    let mut members: Vec<TitlePageRunMember> = Vec::new();
+    for (offset, page) in pages.iter().skip(index + 1).enumerate() {
+        let Page::FlowContinuous(flow) = page else {
+            break;
+        };
+        // A section stating a first-page story always carries the label
+        // `generate_flow_page` writes, which the member's branch reads.
+        if flow.first_header.is_some() || flow.first_footer.is_some() {
+            members.push(TitlePageRunMember {
+                section_index: section_index + offset + 1,
+                header: flow.header.clone(),
+                footer: flow.footer.clone(),
+                first_header: flow.first_header.clone(),
+                first_footer: flow.first_footer.clone(),
+            });
+        }
+        if flow
+            .content
+            .iter()
+            .any(|block| matches!(block, Block::PageBreak))
+        {
+            break;
+        }
+    }
+    members
+}
+
+/// Typst condition for "this page is a continuous section's first page".
+/// The section's label is laid out with its first line, because Typst holds
+/// a tag back until the next frame lands. Word gives a page the two sections
+/// share to the earlier one, as its references for docxide-pdf
+/// `cont-first-first-fits` show, so the label also has to sit at the body
+/// top, `body_top_pt`, where a line that opens the page lands once Typst has
+/// trimmed the weak gap above it.
+fn continuous_section_first_page_condition(section_index: usize, body_top_pt: f64) -> String {
+    format!(
+        "{{ let start = locate(<{}>).position(); start.page == here().page() and start.y <= {}pt }}",
+        section_first_page_label(section_index),
+        format_f64(body_top_pt + 0.01)
+    )
+}
+
+/// The first-page stories a page setup chooses between, each with the Typst
+/// condition for the page that shows it: the section's own, then each
+/// member's. A story without flow content shows nothing there.
+fn first_page_story_choices<'a>(
+    (own_first_page, own): (&str, Option<&'a HeaderFooter>),
+    members: &'a [TitlePageRunMember],
+    member_story: fn(&TitlePageRunMember) -> Option<&HeaderFooter>,
+    body_top_pt: f64,
+) -> Vec<(String, Option<&'a HeaderFooter>)> {
+    own.map(|story| (own_first_page.to_string(), story))
+        .into_iter()
+        .chain(members.iter().filter_map(|member| {
+            member_story(member).map(|story| {
+                (
+                    continuous_section_first_page_condition(member.section_index, body_top_pt),
+                    story,
+                )
+            })
+        }))
+        .map(|(condition, story)| {
+            (
+                condition,
+                Some(story).filter(|story| hf_has_flow_content(story)),
+            )
+        })
+        .collect()
+}
+
+/// A page setup value that picks, per page, the first branch whose
+/// condition holds, or `default`. `open` and `close` wrap each choice: `{`/`}`
+/// around code, `[`/`]` around markup.
+fn per_page_story_choice(
+    branches: &[(String, String)],
+    default: &str,
+    open: &str,
+    close: &str,
+) -> String {
+    let mut out = String::from("context { ");
+    for (condition, value) in branches {
+        let _ = write!(out, "if {condition} {open}{value}{close} else ");
+    }
+    let _ = write!(out, "{open}{default}{close} }}");
+    out
 }
 
 /// Build the `#set page(header: …)` value for one header story.
@@ -2971,7 +3427,7 @@ fn flow_header_value(
                     "block(width: 100%, height: {}pt)[#place(top, block(width: 100%)[",
                     format_f64(band)
                 );
-                generate_flow_hf_content(&mut out, header, ctx);
+                generate_flow_header_content(&mut out, header, ctx);
                 out.push_str("])]");
             }
         }
@@ -2985,7 +3441,7 @@ fn flow_header_value(
     } else {
         out.push('[');
     }
-    generate_flow_hf_content(&mut out, header, ctx);
+    generate_flow_header_content(&mut out, header, ctx);
     out.push(']');
     FlowHeaderValue {
         markup: out,
@@ -3001,7 +3457,13 @@ fn flow_header_value(
 /// body text; the reference export pushes the body below all four (issue #736).
 /// On continuation pages, a page-anchored header shape that crosses the body
 /// top margin also reserves its bottom and any following empty header line
-/// boxes, as Word does (issue #1995).
+/// boxes, as Word does (issue #1995). A table in the story's flow counts with
+/// the story's lines (issue #2250), except in a section whose first page has
+/// its own story (`TODO(#2216)` below).
+///
+/// A continuation page is one a continuous section sets up again after a page
+/// break it holds. It is never the section's first page, so it reserves only
+/// the default story (issue #2224).
 ///
 /// Otherwise `w:top` is left alone, so the common case emits exactly what it
 /// always did. When a header face cannot be measured, its nonempty text cannot
@@ -3011,27 +3473,44 @@ fn flow_page_top_margin_pt(
     page: &FlowPage,
     size: &PageSize,
     default_text: Option<&TextStyle>,
-    reserve_page_anchored_header_shapes: bool,
+    continuation_page: bool,
 ) -> f64 {
     // One margin serves the whole section, so where `w:titlePg` gives the first
     // page its own story both have to fit it — taking the default story alone
     // would leave a taller first-page header overprinting page one, which is
     // the same defect one page in (#846 added that second story).
-    [page.header.as_ref(), page.first_header.as_ref()]
+    let first_header: Option<&HeaderFooter> =
+        page.first_header.as_ref().filter(|_| !continuation_page);
+    [page.header.as_ref(), first_header]
         .into_iter()
         .flatten()
         .filter_map(|header| {
-            let overlay_bottom: Option<f64> = reserve_page_anchored_header_shapes
+            let overlay_bottom: Option<f64> = continuation_page
                 .then(|| page_anchored_header_shape_bottom_pt(header, size, page.margins.top))
                 .flatten();
+            // TODO(#2216): one margin serves both stories of a `w:titlePg`
+            // section, so a default story's table would also lower a first
+            // page that does not show it. Microsoft's Initials resume template
+            // has a 147.6pt exact-row table in its default header and no
+            // first-page story, and that one-page resume ran to two. Reserve
+            // tables there once the margin is per page (#2300).
+            let story_tables_pt: f64 = if first_header.is_none() {
+                hf_story_tables_height_pt(
+                    header,
+                    page.line_grid_pitch.filter(|_| page.line_grid_snaps_lines),
+                )
+            } else {
+                0.0
+            };
             // A story of nothing but empty paragraphs still has their lines
-            // (issue #2056).
+            // (issue #2056), and one of nothing but a table its rows.
             if !hf_has_flow_content(header)
                 && !header
                     .paragraphs
                     .iter()
                     .any(hf_paragraph_is_empty_flow_line)
                 && overlay_bottom.is_none()
+                && story_tables_pt <= 0.0
             {
                 return None;
             }
@@ -3053,11 +3532,20 @@ fn flow_page_top_margin_pt(
                 )
                 .map(|height| distance_pt + height)
             };
-            // Where the drawn story's natural lines end, and where Word's own
-            // story ends once each line takes its stated height and each
-            // paragraph its spacing.
-            let drawn_reach: Option<f64> = content_reach(HfLineHeights::Natural);
-            let word_reach: Option<f64> = content_reach(HfLineHeights::Declared);
+            // Where the drawn story's lines end, and where Word's own story
+            // ends once each line takes its stated height and each paragraph
+            // its spacing.
+            let drawn_lines: HfLineHeights = if header_story_draws_line_boxes(header) {
+                HfLineHeights::Boxed
+            } else {
+                HfLineHeights::Natural
+            };
+            let drawn_reach: Option<f64> = content_reach(drawn_lines);
+            // Word stacks the story's flow tables with its paragraphs. The
+            // drawn story leaves them out: they are placed at `w:header` in the
+            // page background, so its band shift does not ride on them.
+            let word_reach: Option<f64> =
+                content_reach(HfLineHeights::Declared).map(|reach| reach + story_tables_pt);
             if drawn_reach.is_none() && word_reach.is_none() && overlay_bottom.is_none() {
                 return None;
             }
@@ -3093,11 +3581,15 @@ fn flow_page_top_margin_pt(
 /// Which layout [`hf_content_height_pt`] measures a header story in.
 #[derive(Clone, Copy)]
 enum HfLineHeights {
-    /// The face's natural lines and no paragraph spacing, which is what the
-    /// drawn story lays out (issue #2062).
+    /// The face's natural line, which is what the flowed drawn story lays out.
+    /// Neither drawn layout keeps paragraph spacing (issue #2062).
     Natural,
-    /// Word's own: each paragraph's `w:spacing w:line` where it states one, and
-    /// its `w:before`/`w:after` gaps (see [`hf_content_height_pt`]).
+    /// An exact line at its stated height and any other at the face's natural
+    /// line, which is what a story drawn as Word's line boxes lays out.
+    Boxed,
+    /// Word's own: the paragraph's exact, at-least or proportional
+    /// `w:spacing w:line` where it states one, and its `w:before`/`w:after`
+    /// gaps (see [`hf_content_height_pt`]).
     Declared,
 }
 
@@ -3105,13 +3597,19 @@ enum HfLineHeights {
 ///
 /// Reserve each measurable wrapped line plus its paragraph border rules. An
 /// empty paragraph is a line of its paragraph mark in Word's measurement and
-/// nothing in the drawn story's, which leaves it out (issue #2062). Word's
-/// measurement also keeps paragraph spacing. A native probe showed the first
-/// paragraph keeping its `w:before` and each adjacent `w:after`/`w:before`
-/// pair collapsing; the pair takes the larger gap, as the body flow does,
-/// which that probe did not measure. The last paragraph's `w:after` is kept by
-/// analogy to the footer's (issue #1195), unverified for a header (issue
-/// #2056). An empty paragraph with a rule retains its existing behavior.
+/// nothing in the drawn story's, which leaves it out (issue #2062). A
+/// horizontal rule's paragraph is a line of its mark in both, because the
+/// drawn story draws it (issue #2251).
+///
+/// Word's measure also keeps paragraph spacing and proportional lines, which
+/// the drawn story drops (issue #2062). Native Word for Mac probes of a
+/// three-paragraph Arial 12pt header (issue #2056) moved the body by exactly
+/// the first paragraph's `w:before`, the larger of each adjacent
+/// `w:after`/`w:before` pair (12pt after against 6, 12 and 18pt before gave
+/// 12, 12 and 18pt), and the last paragraph's `w:after`. A `w:lineRule="auto"`
+/// multiple of 1.5 or 0.5 scaled each 13.8pt line by it, within Word's 0.24pt
+/// export grid. An empty paragraph with a `w:pBdr` rule retains its existing
+/// behavior.
 fn hf_content_height_pt(
     hf: &HeaderFooter,
     default_text: Option<&TextStyle>,
@@ -3134,19 +3632,29 @@ fn hf_content_height_pt(
             total += pending_after_pt.map_or(before_pt, |after_pt| after_pt.max(before_pt));
             pending_after_pt = Some(paragraph.style.space_after.unwrap_or(0.0).max(0.0));
         }
+        // A rule's paragraph is a line of its mark in Word's measure and in
+        // the drawn story alike, which draws it (issue #2251), and so is one
+        // that anchors a drawing (issue #2327).
+        if hf_paragraph_is_mark_line(paragraph) {
+            total += hf_empty_paragraph_line_pt(paragraph, default_text, line_heights)?;
+            continue;
+        }
         if !include_empty_flow_paragraphs && hf_paragraph_is_empty_flow_line(paragraph) {
             total += match line_heights {
-                HfLineHeights::Natural => 0.0,
-                HfLineHeights::Declared => hf_empty_paragraph_line_pt(paragraph, default_text)?,
+                HfLineHeights::Natural | HfLineHeights::Boxed => 0.0,
+                HfLineHeights::Declared => {
+                    hf_empty_paragraph_line_pt(paragraph, default_text, line_heights)?
+                }
             };
             continue;
         }
         let line_count: usize = hf_paragraph_line_count(paragraph, text_width_pt);
-        let declared_line_pt: Option<f64> = match line_heights {
+        let stated_line_pt: Option<f64> = match line_heights {
             HfLineHeights::Natural => None,
+            HfLineHeights::Boxed => hf_paragraph_exact_line_pt(paragraph),
             HfLineHeights::Declared => hf_paragraph_declared_line_pt(paragraph),
         };
-        if let Some(line_pt) = declared_line_pt {
+        if let Some(line_pt) = stated_line_pt {
             total += line_count as f64 * line_pt + hf_paragraph_border_extent_pt(paragraph);
             continue;
         }
@@ -3165,25 +3673,41 @@ fn hf_content_height_pt(
 }
 
 /// The line height a header or footer paragraph with text states for each of
-/// its lines.
+/// its lines: exact, at least, or proportional.
 ///
 /// Word lays every line of an exact paragraph out at exactly that height,
-/// whatever its face, so that height needs no face metrics. A proportional
+/// whatever its face, so the height needs no face metrics. A proportional
 /// (`w:lineRule="auto"`) one scales the face's natural line, as a body line
-/// does. An empty flow paragraph is measured by [`hf_empty_paragraph_line_pt`]
-/// instead, which honours both rules as well. One holding only a picture or a
-/// positioned tab still takes the natural-line path, which cannot measure it
-/// (issue #2164).
+/// does (issue #2056). An empty flow paragraph is measured by
+/// [`hf_empty_paragraph_line_pt`] instead, which honours these as well. One
+/// holding only a picture or a positioned tab still takes the natural-line
+/// path, which cannot measure it (issue #2164).
+///
+/// TODO(at-least lines): an at-least height is only a floor under the face's
+/// natural line, but the top-margin measure still takes it as the line itself.
 fn hf_paragraph_declared_line_pt(paragraph: &crate::ir::HeaderFooterParagraph) -> Option<f64> {
     let runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
     if runs.is_empty() {
         return None;
     }
     match paragraph.style.line_spacing {
-        Some(crate::ir::LineSpacing::Exact(line_pt)) if line_pt > 0.0 => Some(line_pt),
+        Some(crate::ir::LineSpacing::Exact(line_pt) | crate::ir::LineSpacing::AtLeast(line_pt))
+            if line_pt > 0.0 =>
+        {
+            Some(line_pt)
+        }
         Some(crate::ir::LineSpacing::Proportional(factor)) if factor > 0.0 => {
             Some(text::word_line_advance_pt(&runs)? * factor)
         }
+        _ => None,
+    }
+}
+
+/// The height a header or footer paragraph with text states as an exact
+/// line, as [`hf_paragraph_declared_line_pt`] reads it.
+fn hf_paragraph_exact_line_pt(paragraph: &crate::ir::HeaderFooterParagraph) -> Option<f64> {
+    match paragraph.style.line_spacing {
+        Some(crate::ir::LineSpacing::Exact(_)) => hf_paragraph_declared_line_pt(paragraph),
         _ => None,
     }
 }
@@ -3202,15 +3726,24 @@ fn hf_paragraph_is_empty_flow_line(paragraph: &crate::ir::HeaderFooterParagraph)
 /// It is the line of the paragraph mark's face: two scraped docxide-pdf
 /// specifications whose headers end in an empty paragraph, with an 11pt and a
 /// 12pt Times New Roman mark, have Word start the body 1.25pt apart. An exact
-/// `w:spacing w:line` sets it whatever the face, and a proportional one scales
-/// it, as they do a line of text.
+/// `w:spacing w:line` sets it whatever the face, and in Word's measure a
+/// proportional one scales it, as they do a line of text.
 fn hf_empty_paragraph_line_pt(
     paragraph: &crate::ir::HeaderFooterParagraph,
     default_text: Option<&TextStyle>,
+    line_heights: HfLineHeights,
 ) -> Option<f64> {
     match paragraph.style.line_spacing {
-        Some(crate::ir::LineSpacing::Exact(line_pt)) if line_pt > 0.0 => Some(line_pt),
-        Some(crate::ir::LineSpacing::Proportional(factor)) if factor > 0.0 => {
+        Some(crate::ir::LineSpacing::Exact(line_pt) | crate::ir::LineSpacing::AtLeast(line_pt))
+            if line_pt > 0.0 =>
+        {
+            Some(line_pt)
+        }
+        // The drawn story sets a rule's mark line at the face's natural line,
+        // so only Word's measure scales it.
+        Some(crate::ir::LineSpacing::Proportional(factor))
+            if factor > 0.0 && matches!(line_heights, HfLineHeights::Declared) =>
+        {
             match text::word_line_advance_pt(&[hf_empty_paragraph_mark_run(
                 paragraph,
                 default_text,
@@ -3225,18 +3758,23 @@ fn hf_empty_paragraph_line_pt(
     }
 }
 
-/// How many lines a header or footer paragraph takes in `width_pt`.
+/// How many lines a header or footer paragraph takes in `width_pt`, as
+/// [`runs_line_count`] lays its runs out inside its indents.
+fn hf_paragraph_line_count(paragraph: &crate::ir::HeaderFooterParagraph, width_pt: f64) -> usize {
+    let available_pt: f64 = width_pt
+        - paragraph.style.indent_left.unwrap_or(0.0)
+        - paragraph.style.indent_right.unwrap_or(0.0);
+    runs_line_count(&hf_paragraph_metric_runs(paragraph), available_pt)
+}
+
+/// How many lines a paragraph's runs take in `available_pt`.
 ///
 /// Its words are laid greedily on the faces' own advances, as a line breaker
 /// fills them, and a hard break starts a line. Kerning is ignored, which the
 /// one-line-per-paragraph estimate this replaced ignored as well. A paragraph
 /// that cannot be measured — a run without a face, a tab, a face that does
 /// not resolve — counts one line, so the margin never grows on a guess.
-fn hf_paragraph_line_count(paragraph: &crate::ir::HeaderFooterParagraph, width_pt: f64) -> usize {
-    let available_pt: f64 = width_pt
-        - paragraph.style.indent_left.unwrap_or(0.0)
-        - paragraph.style.indent_right.unwrap_or(0.0);
-    let runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
+fn runs_line_count(runs: &[Run], available_pt: f64) -> usize {
     if available_pt <= 0.0 || runs.iter().any(|run| run.text.contains('\t')) {
         return 1;
     }
@@ -3251,7 +3789,7 @@ fn hf_paragraph_line_count(paragraph: &crate::ir::HeaderFooterParagraph, width_p
             *line_width += word_pt;
         }
     };
-    for run in &runs {
+    for run in runs {
         let Some(family) = run.style.font_family.as_deref() else {
             return 1;
         };
@@ -3261,7 +3799,16 @@ fn hf_paragraph_line_count(paragraph: &crate::ir::HeaderFooterParagraph, width_p
             .font_size
             .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_SIZE_PT);
         let advance_pt = |text: &str| -> Option<f64> {
-            Some(crate::render::pdf::text_advance_em(family, is_bold, text)? * font_size_pt)
+            // A table cell's page field shapes as digits, as a story
+            // paragraph's [`hf_paragraph_metric_runs`] stands it in; its
+            // marker has no glyph to measure (issue #2338).
+            const FIELDS: [char; 2] = [PAGE_NUMBER_FIELD_CHAR, TOTAL_PAGES_FIELD_CHAR];
+            let text: std::borrow::Cow<'_, str> = if text.contains(FIELDS) {
+                text.replace(FIELDS, "1").into()
+            } else {
+                text.into()
+            };
+            Some(crate::render::pdf::text_advance_em(family, is_bold, &text)? * font_size_pt)
         };
         // OOXML may split a word into runs even when its formatting is
         // unchanged. Only an actual space or hard break ends the word.
@@ -3291,6 +3838,9 @@ fn hf_paragraph_line_count(paragraph: &crate::ir::HeaderFooterParagraph, width_p
 }
 
 /// The bottom of a page-anchored header shape that crosses the body's top edge.
+///
+/// A table in the story's flow is not an overlay: its rows are measured with
+/// the story's paragraphs on every page (issue #2250).
 fn page_anchored_header_shape_bottom_pt(
     header: &HeaderFooter,
     size: &PageSize,
@@ -3299,6 +3849,7 @@ fn page_anchored_header_shape_bottom_pt(
     header
         .shapes
         .iter()
+        .filter(|shape| !shape.flows_in_story)
         .filter(|shape| shape.frame.vertical_anchor == crate::ir::FrameAnchor::Page)
         .filter_map(|shape| {
             if shape.height <= 0.0 {
@@ -3311,6 +3862,31 @@ fn page_anchored_header_shape_bottom_pt(
             (top < top_margin_pt && bottom > top_margin_pt).then_some(bottom)
         })
         .max_by(f64::total_cmp)
+}
+
+/// The height of the tables in a header story's flow, in points, which Word
+/// stacks with the story's paragraphs (issue #2250). A table that cannot be
+/// measured adds nothing, so the margin never grows on a guess.
+fn hf_story_tables_height_pt(header: &HeaderFooter, line_grid_pitch: Option<f64>) -> f64 {
+    header
+        .shapes
+        .iter()
+        .filter(|shape| shape.flows_in_story)
+        .filter_map(|shape| match &shape.content {
+            HeaderFooterShapeContent::Table(table) => {
+                let height_pt: Option<f64> =
+                    tables::word_story_table_height_pt(table, line_grid_pitch);
+                if height_pt.is_none() {
+                    tracing::debug!(
+                        rows = table.rows.len(),
+                        "header table in the story flow is not measurable; not reserved"
+                    );
+                }
+                height_pt
+            }
+            HeaderFooterShapeContent::Shape(_) | HeaderFooterShapeContent::Picture(_) => None,
+        })
+        .sum()
 }
 
 /// Reserve the final flowing header line below its page-anchored overlay.
@@ -3340,8 +3916,11 @@ fn hf_paragraph_height_pt(
     use_default_for_empty: bool,
 ) -> Option<f64> {
     let mut runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
-    let is_empty_flow_paragraph: bool = runs.is_empty() && use_default_for_empty;
-    if is_empty_flow_paragraph {
+    // A paragraph holding only a rule or anchored drawings is measured as the
+    // empty line of its mark it is.
+    let is_empty_flow_paragraph: bool =
+        (runs.is_empty() || hf_paragraph_is_mark_line(paragraph)) && use_default_for_empty;
+    if runs.is_empty() && use_default_for_empty {
         runs.push(hf_empty_paragraph_mark_run(paragraph, default_text));
     }
     let line_pt: f64 = text::word_line_advance_pt(&runs).or_else(|| {
@@ -3356,7 +3935,9 @@ fn hf_paragraph_height_pt(
             .reduce(f64::max)
             .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_SIZE_PT);
         Some(match paragraph.style.line_spacing {
-            Some(crate::ir::LineSpacing::Exact(height)) => height.max(0.0),
+            Some(
+                crate::ir::LineSpacing::Exact(height) | crate::ir::LineSpacing::AtLeast(height),
+            ) => height.max(0.0),
             Some(crate::ir::LineSpacing::Proportional(multiplier)) => {
                 (font_size_pt * multiplier).max(0.0)
             }
@@ -3421,21 +4002,25 @@ fn write_flow_page_setup(
     out: &mut String,
     page: &FlowPage,
     size: &PageSize,
-    reserve_page_anchored_header_shapes: bool,
+    continuation_page: bool,
     ctx: &mut GenCtx,
 ) -> Result<(), ConvertError> {
     ctx.active_page_size = Some(*size);
     ctx.active_page_margins = Some(page.margins);
     // A section may declare only a first-page story — `w:titlePg` with just a
     // `first` reference means pages after the first carry none — so the
-    // shortcut has to ask about those too (issue #846).
+    // shortcut has to ask about those too (issue #846), and about the first
+    // stories of the continuous sections sharing this setup (issue #2254).
+    let members: Vec<TitlePageRunMember> = ctx.flow_run_title_page_members.clone();
     if page.header.is_none()
         && page.footer.is_none()
         && page.first_header.is_none()
         && page.first_footer.is_none()
         && page.page_borders.is_none()
+        && members.is_empty()
     {
         write_page_setup(out, size, &page.margins);
+        ctx.active_body_top_pt = Some(page.margins.top);
         for (index, layer) in ["background", "foreground"].iter().enumerate() {
             if ctx.flow_border_layers[index] {
                 let _ = writeln!(out, "#set page({layer}: none)");
@@ -3451,8 +4036,9 @@ fn write_flow_page_setup(
         page,
         size,
         ctx.document_default_text.as_ref(),
-        reserve_page_anchored_header_shapes,
+        continuation_page,
     );
+    ctx.active_body_top_pt = Some(top_margin_pt);
     let _ = write!(
         out,
         "#set page(width: {}pt, height: {}pt, margin: (top: {}pt, bottom: {}pt, left: {}pt, right: {}pt)",
@@ -3467,40 +4053,60 @@ fn write_flow_page_setup(
     // A section with `<w:titlePg/>` draws a different story on its first page,
     // so the header value becomes a choice made per page rather than one block
     // (issue #846). Both variants share the band and ascent, which come from
-    // the section's own margins, so they are built the same way.
+    // the section's own margins, so they are built the same way. The choice
+    // follows the declared first story even when it has no text: page one
+    // then shows nothing, not the default story (issue #2224). A continuous
+    // title-page section sharing this setup adds its own first page to the
+    // choice (issue #2254).
+    // TODO(#2373): its default stories and margins still come from this one.
+    let own_first_page: String = format!(
+        "here().page() == {}",
+        section_first_page_expression(ctx.flow_section_index)
+    );
     let default_header = page
         .header
         .as_ref()
         .filter(|header| hf_has_flow_content(header));
-    let first_header = page
-        .first_header
-        .as_ref()
-        .filter(|header| hf_has_flow_content(header));
-    if first_header.is_some() || default_header.is_some() {
+    let first_headers = first_page_story_choices(
+        (&own_first_page, page.first_header.as_ref()),
+        &members,
+        |member| member.first_header.as_ref(),
+        top_margin_pt,
+    );
+    if default_header.is_some() || first_headers.iter().any(|(_, story)| story.is_some()) {
         let default_value = default_header
             .map(|header| flow_header_value(header, page, size, top_margin_pt, ctx))
             .unwrap_or_default();
-        let first_value = first_header
-            .map(|header| flow_header_value(header, page, size, top_margin_pt, ctx))
-            .unwrap_or_default();
-        // The ascent is a page property, so it is set when either story wants
+        let first_values: Vec<(String, FlowHeaderValue)> = first_headers
+            .iter()
+            .map(|(condition, header)| {
+                let value = header
+                    .map(|header| flow_header_value(header, page, size, top_margin_pt, ctx))
+                    .unwrap_or_default();
+                (condition.clone(), value)
+            })
+            .collect();
+        // The ascent is a page property, so it is set when any story wants
         // it; a story that does not is unaffected by it.
-        if default_value.wants_zero_ascent || first_value.wants_zero_ascent {
+        if default_value.wants_zero_ascent
+            || first_values
+                .iter()
+                .any(|(_, value)| value.wants_zero_ascent)
+        {
             out.push_str(", header-ascent: 0pt");
         }
-        match first_header {
-            Some(_) => {
-                let _ = write!(
-                    out,
-                    ", header: context {{ if here().page() == {} {{ {} }} else {{ {} }} }}",
-                    section_first_page_expression(ctx.flow_section_index),
-                    first_value.markup,
-                    default_value.markup
-                );
-            }
-            None => {
-                let _ = write!(out, ", header: {}", default_value.markup);
-            }
+        if first_values.is_empty() {
+            let _ = write!(out, ", header: {}", default_value.markup);
+        } else {
+            let branches: Vec<(String, String)> = first_values
+                .into_iter()
+                .map(|(condition, value)| (condition, value.markup))
+                .collect();
+            let _ = write!(
+                out,
+                ", header: {}",
+                per_page_story_choice(&branches, &default_value.markup, "{ ", " }")
+            );
         }
     }
 
@@ -3509,33 +4115,44 @@ fn write_flow_page_setup(
         .footer
         .as_ref()
         .filter(|footer| hf_has_flow_content(footer));
-    let first_footer = page
-        .first_footer
-        .as_ref()
-        .filter(|footer| hf_has_flow_content(footer));
-    if first_footer.is_some() || default_footer.is_some() {
+    let first_footers = first_page_story_choices(
+        (&own_first_page, page.first_footer.as_ref()),
+        &members,
+        |member| member.first_footer.as_ref(),
+        top_margin_pt,
+    );
+    if default_footer.is_some() || first_footers.iter().any(|(_, story)| story.is_some()) {
         let default_value = default_footer
             .map(|footer| flow_footer_value(footer, page, ctx))
             .unwrap_or_default();
-        let first_value = first_footer
-            .map(|footer| flow_footer_value(footer, page, ctx))
-            .unwrap_or_default();
-        if default_value.wants_zero_descent || first_value.wants_zero_descent {
+        let first_values: Vec<(String, FlowFooterValue)> = first_footers
+            .iter()
+            .map(|(condition, footer)| {
+                let value = footer
+                    .map(|footer| flow_footer_value(footer, page, ctx))
+                    .unwrap_or_default();
+                (condition.clone(), value)
+            })
+            .collect();
+        if default_value.wants_zero_descent
+            || first_values
+                .iter()
+                .any(|(_, value)| value.wants_zero_descent)
+        {
             out.push_str(", footer-descent: 0pt");
         }
-        match first_footer {
-            Some(_) => {
-                let _ = write!(
-                    out,
-                    ", footer: context {{ if here().page() == {} {{ {} }} else {{ {} }} }}",
-                    section_first_page_expression(ctx.flow_section_index),
-                    first_value.markup,
-                    default_value.markup
-                );
-            }
-            None => {
-                let _ = write!(out, ", footer: {}", default_value.markup);
-            }
+        if first_values.is_empty() {
+            let _ = write!(out, ", footer: {}", default_value.markup);
+        } else {
+            let branches: Vec<(String, String)> = first_values
+                .into_iter()
+                .map(|(condition, value)| (condition, value.markup))
+                .collect();
+            let _ = write!(
+                out,
+                ", footer: {}",
+                per_page_story_choice(&branches, &default_value.markup, "{ ", " }")
+            );
         }
     }
 
@@ -3557,49 +4174,64 @@ fn write_flow_page_setup(
             behind_text,
             ctx,
         )?;
+        // The continuous title-page sections sharing this setup draw their
+        // first stories' artwork on their own first pages (issue #2254).
         let first_stated: bool = page.first_header.is_some() || page.first_footer.is_some();
-        let mut first_markup: String = match first_stated {
-            true => page_anchored_layer_markup(
-                page.first_header.as_ref().or(page.header.as_ref()),
-                page.first_footer.as_ref().or(page.footer.as_ref()),
-                page,
-                size,
-                behind_text,
-                ctx,
-            )?,
-            false => String::new(),
-        };
+        let mut first_branches: Vec<(String, String)> = Vec::new();
+        if first_stated {
+            first_branches.push((
+                own_first_page.clone(),
+                page_anchored_layer_markup(
+                    page.first_header.as_ref().or(page.header.as_ref()),
+                    page.first_footer.as_ref().or(page.footer.as_ref()),
+                    page,
+                    size,
+                    behind_text,
+                    ctx,
+                )?,
+            ));
+        }
+        for member in &members {
+            first_branches.push((
+                continuous_section_first_page_condition(member.section_index, top_margin_pt),
+                page_anchored_layer_markup(
+                    member.first_header.as_ref().or(member.header.as_ref()),
+                    member.first_footer.as_ref().or(member.footer.as_ref()),
+                    page,
+                    size,
+                    behind_text,
+                    ctx,
+                )?,
+            ));
+        }
         let border_markup =
             page_border_layer_markup(page, size, behind_text, ctx.flow_section_index);
-        if behind_text {
-            // Back borders also sit below page-anchored header/footer artwork.
-            default_markup.insert_str(0, &border_markup);
-            first_markup.insert_str(0, &border_markup);
-        } else {
-            default_markup.push_str(&border_markup);
-            first_markup.push_str(&border_markup);
+        for markup in std::iter::once(&mut default_markup)
+            .chain(first_branches.iter_mut().map(|(_, markup)| markup))
+        {
+            if behind_text {
+                // Back borders also sit below page-anchored header/footer artwork.
+                markup.insert_str(0, &border_markup);
+            } else {
+                markup.push_str(&border_markup);
+            }
         }
         let had_border: bool = ctx.flow_border_layers[layer_index];
         ctx.flow_border_layers[layer_index] = !border_markup.is_empty();
-        if default_markup.is_empty() && first_markup.is_empty() {
+        if default_markup.is_empty() && first_branches.iter().all(|(_, markup)| markup.is_empty()) {
             if had_border {
                 let _ = write!(out, ", {layer}: none");
             }
             continue;
         }
-        match first_stated {
-            true => {
-                let _ = write!(
-                    out,
-                    ", {layer}: context {{ if here().page() == {} [{}] else [{}] }}",
-                    section_first_page_expression(ctx.flow_section_index),
-                    first_markup,
-                    default_markup
-                );
-            }
-            false => {
-                let _ = write!(out, ", {layer}: [{default_markup}]");
-            }
+        if first_branches.is_empty() {
+            let _ = write!(out, ", {layer}: [{default_markup}]");
+        } else {
+            let _ = write!(
+                out,
+                ", {layer}: {}",
+                per_page_story_choice(&first_branches, &default_markup, "[", "]")
+            );
         }
     }
 
@@ -3660,7 +4292,29 @@ fn hf_has_flow_content(header_footer: &HeaderFooter) -> bool {
 }
 
 fn hf_paragraph_has_content(paragraph: &crate::ir::HeaderFooterParagraph) -> bool {
-    !paragraph.elements.is_empty() || paragraph.border.is_some()
+    !paragraph.elements.is_empty()
+        || paragraph.border.is_some()
+        || hf_paragraph_is_mark_line(paragraph)
+}
+
+/// Whether a header or footer paragraph with no runs is still a line of its
+/// paragraph mark: one whose only content is a horizontal rule (issue #2251)
+/// or drawings the story draws at their anchors (issue #2327).
+fn hf_paragraph_is_mark_line(paragraph: &crate::ir::HeaderFooterParagraph) -> bool {
+    paragraph.elements.is_empty()
+        && (paragraph.style.horizontal_rule.is_some() || paragraph.style.holds_anchored_drawing)
+}
+
+/// The horizontal rule a header or footer paragraph holds as its only
+/// content, which it draws on a line of its paragraph mark (issue #2251).
+fn hf_paragraph_rule(
+    paragraph: &crate::ir::HeaderFooterParagraph,
+) -> Option<&crate::ir::HorizontalRule> {
+    paragraph
+        .style
+        .horizontal_rule
+        .as_deref()
+        .filter(|_| paragraph.elements.is_empty())
 }
 
 fn hf_paragraph_has_flow_content(paragraph: &crate::ir::HeaderFooterParagraph) -> bool {
@@ -3684,33 +4338,38 @@ fn page_anchored_layer_markup(
     behind_text: bool,
     ctx: &mut GenCtx,
 ) -> Result<String, ConvertError> {
-    let mut markup = String::new();
-    for (hf, is_footer) in [(header, false), (footer, true)] {
-        let Some(hf) = hf else {
-            continue;
-        };
-        generate_page_anchored_hf_elements(
-            &mut markup,
-            hf,
-            page,
-            size,
-            behind_text,
-            is_footer,
-            ctx,
-        )?;
-        // Word paints the main story after header/footer framed paragraphs, so
-        // body drawings can cover those frames. Typst's page background is the
-        // layer that preserves that cross-story order (issue #1408).
-        if behind_text {
-            generate_page_anchored_hf_frames(&mut markup, hf, size, page.margins.right, ctx);
+    // The stories' tables carry their page fields as markers in runs
+    // (issue #2338).
+    with_page_number_format(ctx.page_number_format, || {
+        let mut markup = String::new();
+        for (hf, is_footer) in [(header, false), (footer, true)] {
+            let Some(hf) = hf else {
+                continue;
+            };
+            generate_page_anchored_hf_elements(
+                &mut markup,
+                hf,
+                page,
+                size,
+                behind_text,
+                is_footer,
+                ctx,
+            )?;
+            // Word paints the main story after header/footer framed paragraphs, so
+            // body drawings can cover those frames. Typst's page background is the
+            // layer that preserves that cross-story order (issue #1408).
+            if behind_text {
+                generate_page_anchored_hf_frames(&mut markup, hf, size, page.margins.right, ctx);
+            }
         }
-    }
-    Ok(markup)
+        Ok(markup)
+    })
 }
 
 /// Place header/footer elements in the page overlay. Paragraph-relative
 /// drawing shapes use their anchor paragraph's position; page-relative shapes
-/// use their stored extent, and tables use converted dimensions and frame anchors.
+/// use their stored extent, tables use converted dimensions and frame anchors,
+/// and pictures sit at their resolved frame position.
 fn generate_page_anchored_hf_elements(
     out: &mut String,
     hf: &HeaderFooter,
@@ -3776,6 +4435,21 @@ fn generate_page_anchored_hf_elements(
                 result?;
                 out.push(']');
             }
+            HeaderFooterShapeContent::Picture(picture) => {
+                if element.behind_text != behind_text {
+                    continue;
+                }
+                let x: f64 = page_relative_hf_table_x(element, page, page_size);
+                let y: f64 = page_relative_hf_table_y(element, hf, page, page_size, is_footer);
+                let _ = write!(
+                    out,
+                    "#place(top + left, dx: {}pt, dy: {}pt)[",
+                    format_f64(x),
+                    format_f64(y)
+                );
+                generate_image(out, &picture.image, ctx);
+                out.push_str("]\n");
+            }
         }
     }
     Ok(())
@@ -3834,39 +4508,72 @@ fn page_relative_hf_table_y(
     }
 }
 
-fn generate_flow_hf_content(out: &mut String, hf: &HeaderFooter, ctx: &mut GenCtx) {
-    // The story's paragraphs are joined by a `\\` line break below, so they are
-    // one Typst paragraph and `par(leading:)` is what separates their lines.
-    // Typst advances a line by `top-edge + bottom-edge + leading`, and the story
-    // set no leading, so it took the 0.65em default: an 8pt Arial header advanced
-    // 10.9305pt where Word advances 9.1992pt. Stating the remainder after the
-    // edges leaves the first baseline — seated against the top edge by #629 —
+/// `bottom_edge_em` is how far below the baseline the enclosing band set the
+/// text's bottom edge, in em; zero where it kept the baseline.
+fn generate_flow_hf_content(
+    out: &mut String,
+    hf: &HeaderFooter,
+    bottom_edge_em: f64,
+    ctx: &mut GenCtx,
+) {
+    // `par(leading:)` is what separates a paragraph's lines. Typst advances a
+    // line by `top-edge + bottom-edge + leading`, and the story set no leading,
+    // so it took the 0.65em default: an 8pt Arial header advanced 10.9305pt
+    // where Word advances 9.1992pt. Stating the remainder after the edges
+    // leaves the first baseline — seated against the top edge by #629 —
     // exactly where it was, and corrects only the advance between lines (#735).
+    // A pinned footer band's descender edge is one of those edges: a leading
+    // that ignored it advanced two 11pt Arial footer lines 14.98pt against
+    // Word's 12.65pt (issue #2326).
     //
-    // Set once for the story rather than per paragraph: wrapping each paragraph
-    // in its own content block makes it a block, and Typst then puts
-    // `par(spacing:)` between them — a different and much larger gap.
-    // A ruled paragraph is block-level, which splits the joined story into
-    // separate Typst paragraphs with the default paragraph gap between them —
-    // the second line of a ruled header landed 20pt low, over the first body
-    // line, and the taller measured story clamped the band shift away and
-    // lifted the first line 2.49pt (issue #1824). Such a story is laid out as
-    // the stack of blocks it already is, each carrying Word's own line box, so
-    // the flow advances by Word's line and needs no shift to seat it.
+    // Word advances to the next paragraph's line by the same pitch, so the
+    // story's paragraphs are separate Typst paragraphs whose `par(spacing:)`
+    // is that leading too. Joining them with `\` line breaks into one Typst
+    // paragraph did not survive a stated `w:jc`, a stop-placed tab, an indent
+    // or a right `w:ptab`: each wraps its paragraph in a block-level element,
+    // which split the story around it, and the line break became an empty
+    // paragraph with the default paragraph gap on both sides. Two `jc="both"`
+    // tabbed footer lines Word draws 13.52pt apart came out 46.6pt apart, the
+    // upper one over the last body line (issue #2222). A block that states no
+    // spacing of its own takes `par(spacing:)`, so the leading separates every
+    // paragraph whatever wraps it.
+    //
+    // A ruled paragraph also reserves its rules and their `w:space` gaps,
+    // which no leading expresses. When the story was still joined by line
+    // breaks, the second line of a ruled header landed 20pt low, over the
+    // first body line, and the taller measured story clamped the band shift
+    // away and lifted the first line 2.49pt (issue #1824). Such a story is
+    // laid out as the stack of blocks it already is, each carrying Word's own
+    // line box, so the flow advances by Word's line and needs no shift to
+    // seat it.
     if hf_story_rules_a_paragraph(hf) {
         generate_stacked_hf_paragraphs(out, hf, ctx);
         return;
     }
-    if let Some(leading) = hf
+    let mut emitted = hf
         .paragraphs
         .iter()
-        .find(|paragraph| hf_paragraph_is_emitted(paragraph))
-        .and_then(|paragraph| {
-            let runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
-            text::word_hf_line_leading_pt(&runs, 0.0)
-        })
-    {
+        .filter(|paragraph| hf_paragraph_is_emitted(paragraph));
+    let has_several_paragraphs: bool = emitted.clone().nth(1).is_some();
+    let leading: Option<f64> = emitted.next().and_then(|paragraph| {
+        let runs: Vec<Run> = hf_paragraph_metric_runs(paragraph);
+        text::word_hf_line_leading_pt(&runs, bottom_edge_em)
+    });
+    if let Some(leading) = leading {
         let _ = writeln!(out, "#set par(leading: {}pt)", format_f64(leading));
+    }
+    if has_several_paragraphs {
+        // Typst's own 0.65em leading where the face's metrics are unknown.
+        let spacing: String = leading.map_or_else(
+            || "0.65em".to_string(),
+            |leading| format!("{}pt", format_f64(leading)),
+        );
+        let _ = writeln!(out, "#set par(spacing: {spacing})");
+        // A story taller than its band overflows it, as Word lets it, but a
+        // breakable block would rather shrink the gap above it to fit: two
+        // indented 11pt Arial footer lines in a 21.6pt band advanced only
+        // 11.70pt (issue #2222).
+        out.push_str("#set block(breakable: false)\n");
     }
     let mut is_first: bool = true;
     for paragraph in &hf.paragraphs {
@@ -3874,7 +4581,7 @@ fn generate_flow_hf_content(out: &mut String, hf: &HeaderFooter, ctx: &mut GenCt
             continue;
         }
         if !is_first {
-            out.push_str("\\\n");
+            out.push_str("\n#parbreak()\n");
         }
         generate_hf_styled_paragraph(out, paragraph, ctx);
         is_first = false;
@@ -3966,7 +4673,9 @@ fn hf_paragraph_story_height_pt(paragraph: &crate::ir::HeaderFooterParagraph) ->
         return height;
     }
     match paragraph.style.line_spacing {
-        Some(crate::ir::LineSpacing::Exact(height)) => height.max(0.0),
+        Some(crate::ir::LineSpacing::Exact(height) | crate::ir::LineSpacing::AtLeast(height)) => {
+            height.max(0.0)
+        }
         Some(crate::ir::LineSpacing::Proportional(multiplier)) => (11.0 * multiplier).max(0.0),
         None => 11.0,
     }
@@ -3991,7 +4700,7 @@ fn hf_story_rules_a_paragraph(hf: &HeaderFooter) -> bool {
 /// The height is stated rather than left to the content because the text cell
 /// carries Typst's cap-height top edge, which is shorter than Word's line by
 /// the seat the band shift already corrects for the story's first baseline.
-/// Stating it keeps every baseline exactly where the joined story form puts
+/// Stating it keeps every baseline exactly where the flowed story form puts
 /// it — [`hf_content_height_pt`] measures the band against these same terms —
 /// and only moves what the rule adds.
 fn generate_stacked_hf_paragraphs(out: &mut String, hf: &HeaderFooter, ctx: &mut GenCtx) {
@@ -4009,10 +4718,84 @@ fn generate_stacked_hf_paragraphs(out: &mut String, hf: &HeaderFooter, ctx: &mut
     }
 }
 
+/// Write a header story's content, as Word's own line boxes where it has an
+/// exact line.
+fn generate_flow_header_content(out: &mut String, header: &HeaderFooter, ctx: &mut GenCtx) {
+    if header_story_draws_line_boxes(header) {
+        generate_line_boxed_header_paragraphs(out, header, ctx);
+    } else {
+        generate_flow_hf_content(out, header, 0.0, ctx);
+    }
+}
+
+/// Whether a header story is drawn as Word's own line boxes.
+///
+/// Only a story with an exact line needs them, and only when every paragraph
+/// it emits has a box to give: a natural line whose face does not resolve
+/// keeps the flowed story's estimates. A ruled story keeps its stacked form,
+/// which seats each rule against the face's natural line (issue #1824).
+fn header_story_draws_line_boxes(header: &HeaderFooter) -> bool {
+    let mut emitted = header
+        .paragraphs
+        .iter()
+        .filter(|paragraph| hf_paragraph_is_emitted(paragraph));
+    !hf_story_rules_a_paragraph(header)
+        && emitted
+            .clone()
+            .any(|paragraph| hf_paragraph_exact_line_pt(paragraph).is_some())
+        && emitted.all(|paragraph| hf_paragraph_line_box_pt(paragraph).is_some())
+}
+
+/// The ascent and descent, in points, Word gives each line of a header
+/// paragraph: its exact line where it states one, otherwise its face's
+/// natural line.
+fn hf_paragraph_line_box_pt(paragraph: &crate::ir::HeaderFooterParagraph) -> Option<(f64, f64)> {
+    match hf_paragraph_exact_line_pt(paragraph) {
+        Some(line_pt) => Some(text::word_exact_line_box_pt(line_pt)),
+        None => text::word_header_line_box_pt(&hf_paragraph_metric_runs(paragraph)),
+    }
+}
+
+/// Emit a header story as one block per paragraph, each line in Word's box.
+///
+/// The flowed story cannot draw an exact line: its one leading and the band
+/// shift seat every line one face ascent down and advance it by the face's
+/// natural line, so a 160pt exact line's text sat one face ascent below the
+/// band top where Word seats it 128pt down (issue #2214). Stating each line's
+/// ascent and descent as the text edges, with no leading, has Typst lay Word's
+/// boxes out directly. The first baseline then sits its own ascent below the
+/// band top, so the story takes no band shift, and each line advances by its
+/// own height.
+fn generate_line_boxed_header_paragraphs(
+    out: &mut String,
+    header: &HeaderFooter,
+    ctx: &mut GenCtx,
+) {
+    for paragraph in &header.paragraphs {
+        if !hf_paragraph_is_emitted(paragraph) {
+            continue;
+        }
+        out.push_str("#block(width: 100%, above: 0pt, below: 0pt)[");
+        if let Some((ascent_pt, descent_pt)) = hf_paragraph_line_box_pt(paragraph) {
+            let _ = write!(
+                out,
+                "#set text(top-edge: {}pt, bottom-edge: -{}pt)\n#set par(leading: 0pt)\n",
+                format_f64(ascent_pt),
+                format_f64(descent_pt)
+            );
+        }
+        ctx.hf_lines_are_word_boxes = true;
+        generate_hf_styled_paragraph(out, paragraph, ctx);
+        ctx.hf_lines_are_word_boxes = false;
+        out.push_str("]\n");
+    }
+}
+
 /// Whether [`generate_flow_hf_content`] writes this paragraph into the story.
 ///
 /// Page-anchored frames are drawn separately in the page background, and an
-/// empty paragraph carrying neither content nor a border produces nothing.
+/// empty paragraph carrying neither content, a border, a horizontal rule nor
+/// an anchored drawing produces nothing.
 /// Shared with the band placement so the two cannot disagree about which
 /// paragraph comes first (issue #629).
 fn hf_paragraph_is_emitted(paragraph: &crate::ir::HeaderFooterParagraph) -> bool {
@@ -4044,8 +4827,12 @@ const MIN_HEADER_BAND_SHIFT_PT: f64 = 0.02;
 /// the one whose top the header distance pins. `None` when that paragraph gives
 /// nothing to measure: no styled text at all, a family that does not resolve,
 /// or an image, whose height rather than the text's would set the compiler's
-/// line ascent.
+/// line ascent. Also `None` for a story drawn as Word's line boxes, whose
+/// first line seats its own baseline (issue #2214).
 fn header_band_shift_pt(hf: &HeaderFooter) -> Option<f64> {
+    if header_story_draws_line_boxes(hf) {
+        return None;
+    }
     let first: &crate::ir::HeaderFooterParagraph =
         hf.paragraphs.iter().find(|p| hf_paragraph_is_emitted(p))?;
     if first
@@ -4068,8 +4855,24 @@ fn header_band_shift_pt(hf: &HeaderFooter) -> Option<f64> {
 /// and shapes as digits, so it folds in as a synthetic run: a header whose first
 /// paragraph is nothing but a page number still has an ascent to seat, and
 /// without this the decision would leak onto the second paragraph (issue #629).
-/// Positioned tabs contribute no glyphs.
+/// Positioned tabs contribute no glyphs. A paragraph whose only content is a
+/// horizontal rule or anchored drawings is a line of its paragraph mark, so it
+/// measures as an empty run in the mark's style (issues #2251 and #2327).
 fn hf_paragraph_metric_runs(paragraph: &crate::ir::HeaderFooterParagraph) -> Vec<Run> {
+    if hf_paragraph_is_mark_line(paragraph) {
+        return vec![Run {
+            text: String::new(),
+            style: paragraph
+                .style
+                .paragraph_mark_text_style
+                .as_deref()
+                .cloned()
+                .unwrap_or_default(),
+            href: None,
+            footnote: None,
+            inline_box: None,
+        }];
+    }
     paragraph
         .elements
         .iter()
@@ -4116,7 +4919,7 @@ fn write_shifted_header_band(
     // Keep float noise (595.28 - 70.85 - 70.85) out of the emitted source.
     let text_width: f64 = (text_width * 100.0).round() / 100.0;
     out.push_str("context { let header_content = block(width: 100%)[");
-    generate_flow_hf_content(out, header, ctx);
+    generate_flow_header_content(out, header, ctx);
     let _ = write!(
         out,
         "]; block(width: 100%, height: {band}pt)[#place(top, dy: calc.min({shift}pt, calc.max(0pt, {band}pt - measure(header_content, width: {text_width}pt).height)), header_content)] }}",
@@ -4818,9 +5621,15 @@ fn generate_hf_styled_paragraph(
         // Header/footer alignment uses the paragraph's own line measure, just
         // like body paragraphs. Keeping signed indents lets a negative Word
         // indent expand that measure into the corresponding margin.
+        //
+        // The block states no spacing, so in a story of several paragraphs it
+        // takes the story's `par(spacing:)` and advances by Word's pitch like
+        // the paragraphs around it (issue #2222). The other callers wrap it
+        // alone, where Typst trims that spacing; worksheet sections state no
+        // indent.
         let _ = write!(
             out,
-            "#block(width: 100%, above: 0pt, below: 0pt, inset: (left: {}pt, right: {}pt))[",
+            "#block(width: 100%, inset: (left: {}pt, right: {}pt))[",
             format_f64(indent_left),
             format_f64(indent_right)
         );
@@ -4941,7 +5750,14 @@ fn generate_hf_paragraph(
         bottom_border_extension_pt,
     );
 
-    if let Some(index) = right_tab {
+    if hf_paragraph_is_mark_line(paragraph) {
+        write_hf_mark_line(
+            out,
+            paragraph,
+            hf_paragraph_rule(paragraph),
+            ctx.hf_lines_are_word_boxes,
+        );
+    } else if let Some(index) = right_tab {
         out.push_str("#grid(columns: (1fr, auto), [");
         generate_hf_elements(out, &paragraph.elements[..index], ctx);
         out.push_str("], [");
@@ -4966,14 +5782,24 @@ fn generate_hf_paragraph(
                     .collect()
             })
             .collect();
+        let tab_styles: Vec<&TextStyle> = paragraph
+            .elements
+            .iter()
+            .filter_map(|element| match element {
+                HFInline::Run(run) if is_hf_tab(element) => Some(&run.style),
+                _ => None,
+            })
+            .collect();
         let default_tab_width_pt: f64 =
             paragraph_default_tab_width_pt(&paragraph.style, ctx.default_tab_width_pt);
         write_measured_tab_segments(
             out,
             &segment_runs,
+            &tab_styles,
             paragraph.style.tab_stops.as_deref(),
             default_tab_width_pt,
             |out, index| generate_hf_elements(out, segments[index], ctx),
+            text::generate_run,
         );
     } else {
         generate_hf_elements(out, &paragraph.elements, ctx);
@@ -4992,6 +5818,60 @@ fn generate_hf_paragraph(
     if stacks_rules {
         out.push(')');
     }
+}
+
+/// Draw a header or footer paragraph that is a line of its mark, and its
+/// horizontal rule on the bottom of that line (issues #2251 and #2327).
+///
+/// A zero-width strut in the mark's style lays that line out wherever the
+/// story's form puts a line of text, so the lines around it keep their places.
+/// A zero-height box as wide as the line stands on its baseline and carries
+/// the rule, which Word stands on the line's bottom, one Word descent below
+/// the baseline. That descent is the exact line's share where the story draws
+/// Word's line boxes, and the face's natural one in the flowed and stacked
+/// forms, which lay every line out on its face's natural line.
+///
+/// TODO(unknown mark face): with no metrics for the mark's face, that descent
+/// is unknown and the rule stands on the baseline.
+fn write_hf_mark_line(
+    out: &mut String,
+    paragraph: &crate::ir::HeaderFooterParagraph,
+    rule: Option<&crate::ir::HorizontalRule>,
+    lines_are_word_boxes: bool,
+) {
+    let mark: TextStyle = paragraph
+        .style
+        .paragraph_mark_text_style
+        .as_deref()
+        .cloned()
+        .unwrap_or_default();
+    if has_text_properties(&mark) {
+        out.push_str("#text(");
+        write_text_params(out, &mark);
+        out.push_str(")[\u{2060}]");
+    } else {
+        out.push('\u{2060}');
+    }
+    let Some(rule) = rule else {
+        return;
+    };
+    let line_box: Option<(f64, f64)> = if lines_are_word_boxes {
+        hf_paragraph_line_box_pt(paragraph)
+    } else {
+        text::word_header_line_box_pt(&hf_paragraph_metric_runs(paragraph))
+    };
+    let descent_pt: f64 = match line_box {
+        Some((_, descent_pt)) => descent_pt,
+        None => {
+            tracing::debug!(
+                "horizontal rule's line has no face metrics; standing it on the baseline"
+            );
+            0.0
+        }
+    };
+    out.push_str("#box(width: 100%, height: 0pt)[");
+    write_horizontal_rule(out, rule, descent_pt);
+    out.push(']');
 }
 
 /// Emit the one or two `line()` blocks a single paragraph-border side needs.
@@ -5193,6 +6073,15 @@ fn generate_blocks_with_layout_space_before(
         let after_shading_space_pt: Option<f64> = joins_next
             .then(|| take_joined_paragraph_after_shading_space(&mut block))
             .flatten();
+        ctx.flow_anchor_gap_pt = flow_anchor_gap(blocks, index, ctx);
+        ctx.top_margin_frame_box_follows = matches!(
+            blocks.get(index + 1),
+            Some(Block::TextFrame(frame)) if frame.vertical_anchor != FrameAnchor::Text
+                && !frame.text_below
+        );
+        if !matches!(blocks[index], Block::TextFrame(_)) {
+            ctx.frame_box_carry_text_bottom_pt = None;
+        }
         let follows_column_break: bool =
             index > 0 && matches!(blocks[index - 1], Block::ColumnBreak);
         let follows_source_paragraph_page_break: bool = index > 0
@@ -5248,6 +6137,33 @@ fn generate_blocks_with_layout_space_before(
     }
 
     Ok(())
+}
+
+/// The gap Typst lays after the flow block before the text-anchored text
+/// frame or placed floating table at `index`, or `None` when no block before
+/// it on its page or column takes flow space (issues #2231, #2236). A
+/// top-margin frame box and a margin- or page-anchored table are placed from
+/// the top of the text area, not from the flow, so they get `None` too, and so
+/// does a table laid out in the flow, whose own gaps are zero.
+fn flow_anchor_gap(blocks: &[Block], index: usize, ctx: &GenCtx) -> Option<f64> {
+    let at_flow_root: bool = ctx.in_flow_body && ctx.block_depth == 0;
+    let hangs_from_the_flow: bool = match &blocks[index] {
+        Block::TextFrame(frame) => frame.vertical_anchor == FrameAnchor::Text,
+        Block::FloatingTable(table) => {
+            table.frame.anchored_to_text
+                && !floating_table_lays_out_in_flow(table, at_flow_root, ctx)
+        }
+        _ => false,
+    };
+    if !hangs_from_the_flow {
+        return None;
+    }
+    let previous: &Block = blocks[..index]
+        .iter()
+        .rev()
+        .find(|block| !leaves_flow_gap_unchanged(block, at_flow_root, ctx))
+        .filter(|block| !is_layout_break(block))?;
+    Some(section_alignment::paragraph_edge_spacing(previous).map_or(0.0, |(_, after)| after))
 }
 
 fn reduce_paragraph_space_before(block: &mut Block, preceding_after_space_pt: f64) {
@@ -5628,7 +6544,8 @@ fn write_page_format_state(out: &mut String) {
     // breaker instead, which never squeezes to seat a token. The gate is
     // `justified_lines_use_first_fit_breaker`: it covers legacy East Asian
     // paragraphs and legacy table-cell paragraphs while leaving Latin body
-    // paragraphs on the optimized breaker (issues #1130, #2020).
+    // paragraphs on the optimized breaker (issues #1130, #2020). A justified
+    // list item always breaks first-fit (issue #2336).
     //
     // Set for the document, next to the overhang rule above, so every
     // justified paragraph is covered whether it comes through the body, a
@@ -5774,9 +6691,17 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
         let residual_before: f64 = (before - ctx.flow_previous_after_spacing).max(0.0);
         let _ = writeln!(out, "#v({}pt, weak: true)", format_f64(residual_before));
     }
+    ctx.float_wrap_pending = is_root_flow_block
+        && !ctx.body_floats.is_empty()
+        && matches!(block, Block::Paragraph(_) | Block::Caption(_));
     ctx.block_depth += 1;
     let result = generate_block_inner(out, block, ctx);
     ctx.block_depth -= 1;
+    ctx.float_wrap_pending = false;
+    // A float only reaches the text on its own page and in its own column.
+    if is_root_flow_block && matches!(block, Block::PageBreak | Block::ColumnBreak) {
+        ctx.body_floats.clear();
+    }
     if is_root_flow_block && matches!(block, Block::PageBreak) {
         advance_flow_body_alignment(out, ctx);
     }
@@ -5785,7 +6710,7 @@ fn generate_block(out: &mut String, block: &Block, ctx: &mut GenCtx) -> Result<(
             out.push_str("#v(0pt, weak: true)\n");
             let _ = writeln!(out, "#v({}pt, weak: false)", format_f64(after));
             ctx.flow_previous_after_spacing = after;
-        } else if !section_alignment::leaves_flow_gap_unchanged(block) {
+        } else if !leaves_flow_gap_unchanged(block, is_root_flow_block, ctx) {
             ctx.flow_previous_after_spacing = 0.0;
         }
     }
@@ -5816,19 +6741,8 @@ fn generate_block_inner(
             out.push_str("#pagebreak()\n");
             Ok(())
         }
-        Block::FloatingTable(floating_table) => {
-            let offset_x: f64 = floating_table.frame.x.unwrap_or_default();
-            let offset_y: f64 = floating_table.frame.y.unwrap_or_default();
-            let _ = writeln!(
-                out,
-                "#place(top + left, dx: {}pt, dy: {}pt)[",
-                format_f64(offset_x),
-                format_f64(offset_y)
-            );
-            let result: Result<(), ConvertError> = generate_table(out, &floating_table.table, ctx);
-            out.push_str("]\n");
-            result
-        }
+        Block::FloatingTable(floating_table) => generate_floating_table(out, floating_table, ctx),
+        Block::TextFrame(frame) => generate_text_frame(out, frame, ctx),
         Block::Table(table) => {
             // Word gives a table no vertical spacing of its own: the gap above
             // it is the preceding paragraph's `w:after` and the gap below it is
@@ -5852,9 +6766,38 @@ fn generate_block_inner(
             // column so a `w:tblPr/w:jc` table still centres in it, and the
             // table's own `auto` gaps vanish against the wrapper's edges, where
             // the same routine drops weak spacing that no frame precedes.
+            let column_width_pt: Option<f64> = ctx
+                .float_wrap_text_area_pt
+                .filter(|_| ctx.clears_top_margin_frame_boxes && ctx.block_depth == 1)
+                .map(|(width_pt, _)| width_pt);
+            let clears_frame_boxes: bool = column_width_pt
+                .is_some_and(|width_pt| table.column_widths.iter().sum::<f64>() >= width_pt - 0.05);
+            if clears_frame_boxes {
+                float_wrap::write_top_margin_frame_box_clearance(out);
+            }
+            // Read before the cells' own block lists overwrite the flag.
+            let text_bottom_pt: Option<f64> = ctx
+                .active_page_size
+                .zip(ctx.active_page_margins)
+                .map(|(size, margins)| size.height - margins.bottom)
+                .filter(|_| clears_frame_boxes && ctx.top_margin_frame_box_follows);
             out.push_str("#block(width: 100%, above: 0pt, below: 0pt)[\n");
+            if text_bottom_pt.is_some() {
+                float_wrap::write_frame_box_table_label(out, "start");
+            }
+            // Only a table written straight into a breakable section body
+            // meets a page break itself. A table inside a placed, boxed or
+            // otherwise single-frame container keeps its rows whole: Typst
+            // stacks a split row's remainder on its first part there.
+            let enclosing_rows_may_split: bool = ctx.table_rows_may_split;
+            ctx.table_rows_may_split = ctx.flow_body_is_breakable && ctx.block_depth == 1;
             let result = generate_table(out, table, ctx);
+            ctx.table_rows_may_split = enclosing_rows_may_split;
+            if text_bottom_pt.is_some() {
+                float_wrap::write_frame_box_table_label(out, "end");
+            }
             out.push_str("]\n");
+            ctx.frame_box_carry_text_bottom_pt = text_bottom_pt;
             result
         }
         Block::Image(img) => {
@@ -5864,7 +6807,13 @@ fn generate_block_inner(
             // around an inline figure (issues #463, #491) - so both gaps stay
             // pinned, but to the declared spacing rather than to zero, which
             // dropped the gap Word actually draws (issue #499).
-            write_image_block_open(out, img.paragraph_spacing);
+            // The picture is its paragraph's only line, so it spans that
+            // line's measure: from `left + first_line` to `right`, inside
+            // which the alignment works, as for a line of text (issue #2201).
+            let inset: Option<(f64, f64)> = img
+                .paragraph_indent
+                .map(|indent| (indent.left + indent.first_line, indent.right));
+            write_image_block_open(out, img.paragraph_spacing, inset);
             let align_str: Option<&str> = match img.alignment {
                 Some(Alignment::Center) => Some("center"),
                 Some(Alignment::Right) => Some("right"),
@@ -5901,8 +6850,26 @@ fn generate_block_inner(
                         .and_then(|last| last.paragraph_spacing)
                         .and_then(|last| last.after),
                 });
-            write_image_block_open(out, spacing);
+            // The pictures wrap like words: every line spans the paragraph's
+            // `left` to `right`, and only the first also takes `first_line`.
+            let indent: Option<ImageParagraphIndent> =
+                images.first().and_then(|first| first.paragraph_indent);
+            write_image_block_open(
+                out,
+                spacing,
+                indent.map(|indent| (indent.left, indent.right)),
+            );
             out.push('\n');
+            let first_line: Option<f64> = indent
+                .map(|indent| indent.first_line)
+                .filter(|first_line| first_line.abs() > 0.0001);
+            if let Some(first_line) = first_line {
+                let _ = write!(
+                    out,
+                    "#par(first-line-indent: (amount: {}pt, all: true))[",
+                    format_f64(first_line)
+                );
+            }
             for (index, image) in images.iter().enumerate() {
                 if index > 0 {
                     out.push(' ');
@@ -5910,6 +6877,9 @@ fn generate_block_inner(
                 out.push_str("#box[");
                 generate_image(out, image, ctx);
                 out.pop();
+                out.push(']');
+            }
+            if first_line.is_some() {
                 out.push(']');
             }
             out.push_str("\n]\n");
@@ -5946,6 +6916,8 @@ fn generate_block_inner(
                     line_box_em,
                     available_measure_pt: ctx.available_measure_pt,
                     baseline_snap: None,
+                    // A Word list hangs into the margin like its paragraphs.
+                    hangs_into_margin: ctx.breaks_hangul_at_eojeol,
                 },
                 ctx,
             )
@@ -6015,15 +6987,33 @@ fn border_line_style_to_typst(style: BorderLineStyle) -> &'static str {
 ///
 /// Both are always written. An absent `w:spacing` means Word draws no gap, not
 /// that Typst should fall back to its 1.2em default, so `None` maps to `0pt`.
-fn write_image_block_open(out: &mut String, spacing: Option<ImageParagraphSpacing>) {
+/// A `(left, right)` inset narrows the picture's measure to its paragraph's
+/// indents. A negative one widens it into the margin, as Word does, the same
+/// way a body paragraph's negative indent widens its text lines (issue #2233).
+fn write_image_block_open(
+    out: &mut String,
+    spacing: Option<ImageParagraphSpacing>,
+    inset: Option<(f64, f64)>,
+) {
     let above: f64 = spacing.and_then(|gap| gap.before).unwrap_or(0.0);
     let below: f64 = spacing.and_then(|gap| gap.after).unwrap_or(0.0);
     let _ = write!(
         out,
-        "#block(width: 100%, above: {}pt, below: {}pt)[",
+        "#block(width: 100%, above: {}pt, below: {}pt",
         format_f64(above),
         format_f64(below)
     );
+    if let Some((left, right)) =
+        inset.filter(|(left, right)| left.abs() > 0.0001 || right.abs() > 0.0001)
+    {
+        let _ = write!(
+            out,
+            ", inset: (left: {}pt, right: {}pt)",
+            format_f64(left),
+            format_f64(right)
+        );
+    }
+    out.push_str(")[");
 }
 
 fn generate_image(out: &mut String, img: &ImageData, ctx: &mut GenCtx) {
@@ -6221,6 +7211,484 @@ fn generate_floating_image_content(out: &mut String, image: &ImageData, path: &s
     if pivot_shift.is_some() {
         out.push(']');
     }
+}
+
+/// Whether a root text-anchored floating table leaves no room beside it in
+/// the one text column, so that Word starts every line of its anchor
+/// paragraph and after it that meets it below it. Such a table is laid out in
+/// the flow, where Typst continues it on the next page as Word does (issue
+/// #2236). A table hung above its anchor is placed, as the flow cannot go back
+/// up to it.
+fn floating_table_lays_out_in_flow(
+    floating_table: &FloatingTable,
+    at_flow_root: bool,
+    ctx: &GenCtx,
+) -> bool {
+    floating_table.frame.anchored_to_text
+        && at_flow_root
+        && floating_table.frame.y.unwrap_or_default() >= 0.0
+        && ctx.float_wrap_text_area_pt.is_some_and(|(width_pt, _)| {
+            float_wrap::leaves_no_room_beside(
+                float_wrap::FloatExtent::of_table(floating_table),
+                width_pt,
+            )
+        })
+}
+
+/// Whether `block` leaves the gap between the flow blocks around it as it
+/// was, taking no flow space of its own. A floating table laid out in the
+/// flow takes some.
+fn leaves_flow_gap_unchanged(block: &Block, at_flow_root: bool, ctx: &GenCtx) -> bool {
+    section_alignment::leaves_flow_gap_unchanged(block)
+        && !matches!(block, Block::FloatingTable(table)
+            if floating_table_lays_out_in_flow(table, at_flow_root, ctx))
+}
+
+/// Draw a `w:tblpPr` floating table where Word does. A margin- or
+/// page-anchored table's offsets are measured from the text area's top left.
+/// A text-anchored one hangs `y` below the top edge of its anchor paragraph,
+/// the one after it (issue #2236). That edge is the end of the gap after the
+/// block before the table: Word's exports of docxide-pdf's `case32` and
+/// `empty-float-float-indent-*` add that block's `w:after` to the offset and
+/// not the anchor paragraph's own `w:before`.
+///
+/// A text-anchored table that leaves no room beside it is laid out in the
+/// flow, after fixed space as tall as its offset, which adds to the gap before
+/// it rather than merging with it. Word continues such a table on the next
+/// page when it runs past the text area, as its exports of docxide-pdf's
+/// `scraped/bulgarian_road_safety_program` and
+/// `scraped/croatian_grant_guidelines` show, which a `#place` cannot, and
+/// starts the anchor paragraph below its bottom edge. Any other text-anchored
+/// table is placed by a `#place` without a vertical alignment, which finds the
+/// anchor in the flow. As for a text-anchored text frame, the gap is collapsed
+/// to nothing above the table and added to its offset, and a zero-height block
+/// after it lays the gap again. At the flow root, the paragraphs after a
+/// placed table wrap around it (issue #2229).
+///
+/// TODO(anchor lines above a full-width table's offset): Word keeps a line of
+/// the anchor paragraph that ends above the table's top edge above it, as the
+/// wrap does beside a placed table; here the whole paragraph starts below the
+/// table. No corpus document hangs a full-width table more than a line below
+/// a non-empty anchor.
+fn generate_floating_table(
+    out: &mut String,
+    floating_table: &FloatingTable,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    let offset_x: f64 = floating_table.frame.x.unwrap_or_default();
+    let offset_y: f64 = floating_table.frame.y.unwrap_or_default();
+    if floating_table_lays_out_in_flow(
+        floating_table,
+        ctx.in_flow_body && ctx.block_depth == 1,
+        ctx,
+    ) {
+        return generate_floating_table_in_flow(out, floating_table, offset_x, offset_y, ctx);
+    }
+    // A vertically centred section writes its own explicit gaps between root
+    // blocks; there the table lands below them.
+    let anchor_gap: Option<f64> = std::mem::take(&mut ctx.flow_anchor_gap_pt)
+        .filter(|_| ctx.block_depth == 1 && !ctx.preserve_page_after_spacing);
+    // Only a table placed at the flow root has root paragraphs after it to
+    // wrap around it.
+    let wrap: Option<float_wrap::BodyFloat> = ctx
+        .float_wrap_text_area_pt
+        .filter(|_| ctx.in_flow_body && ctx.block_depth == 1)
+        .map(|(width_pt, height_pt)| {
+            let id: usize = ctx.next_body_float_id;
+            ctx.next_body_float_id += 1;
+            float_wrap::BodyFloat::new(
+                id,
+                float_wrap::FloatExtent::of_table(floating_table),
+                width_pt,
+                height_pt,
+                false,
+            )
+        });
+    // The labels mark the band the paragraphs after the table keep clear
+    // of: the table widened by `w:topFromText` above and `w:bottomFromText`
+    // below, as `w:vSpace` widens a text frame's. Word's exports of
+    // docxide-pdf's `case164` and `case165`, one factor apart, lay a line
+    // that ends 6pt above the table at the margin with no `topFromText` and
+    // beside the table with 9pt of it.
+    // FIXME(unprobed bottomFromText): no Word reference in the corpus
+    // varies it on its own; it follows ECMA-376's wording, as `topFromText`
+    // does.
+    let (band_top_pt, band_bottom_pt): (f64, f64) = if wrap.is_some() {
+        (
+            floating_table.frame.top_from_text,
+            floating_table.frame.bottom_from_text,
+        )
+    } else {
+        (0.0, 0.0)
+    };
+    if floating_table.frame.anchored_to_text {
+        if anchor_gap.is_some() {
+            out.push_str("#v(0pt, weak: true)\n");
+        }
+        let _ = writeln!(
+            out,
+            "#place(left, dx: {}pt, dy: {}pt)[",
+            format_f64(offset_x),
+            format_f64(offset_y + anchor_gap.unwrap_or(0.0) - band_top_pt)
+        );
+    } else {
+        let _ = writeln!(
+            out,
+            "#place(top + left, dx: {}pt, dy: {}pt)[",
+            format_f64(offset_x),
+            format_f64(offset_y - band_top_pt)
+        );
+    }
+    let write_band_space = |out: &mut String, height_pt: f64| {
+        if height_pt > 0.0 {
+            let _ = writeln!(
+                out,
+                "#block(height: {}pt, above: 0pt, below: 0pt)",
+                format_f64(height_pt)
+            );
+        }
+    };
+    if let Some(wrap) = wrap {
+        float_wrap::write_float_top_label(out, wrap.id());
+    }
+    write_band_space(out, band_top_pt);
+    let result: Result<(), ConvertError> = generate_table(out, &floating_table.table, ctx);
+    write_band_space(out, band_bottom_pt);
+    if let Some(wrap) = wrap {
+        float_wrap::write_float_bottom_label(out, wrap.id());
+        ctx.body_floats.push(wrap);
+    }
+    out.push_str("]\n");
+    if let Some(gap) = anchor_gap {
+        let _ = writeln!(
+            out,
+            "#block(height: 0pt, above: 0pt, below: {}pt)",
+            format_f64(gap)
+        );
+    }
+    result
+}
+
+/// Lay a text-anchored floating table that leaves no room beside it out in
+/// the flow, `offset_y` below the end of the gap before it and `offset_x`
+/// from the text area's left edge. Its rows may continue on the next page, as
+/// a flow table's do. `offset_x` already places the table where its
+/// `w:tblPr/w:jc` puts it, so the table is not aligned again.
+fn generate_floating_table_in_flow(
+    out: &mut String,
+    floating_table: &FloatingTable,
+    offset_x: f64,
+    offset_y: f64,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    tracing::debug!(
+        offset_x_pt = offset_x,
+        offset_y_pt = offset_y,
+        rows = floating_table.table.rows.len(),
+        "laying a text-anchored floating table out in the flow"
+    );
+    if offset_y > 0.0 {
+        write_explicit_vertical_space(out, offset_y);
+    }
+    let _ = writeln!(
+        out,
+        "#block(width: 100%, above: 0pt, below: 0pt, inset: (left: {}pt))[",
+        format_f64(offset_x)
+    );
+    let mut table: Table = floating_table.table.clone();
+    table.alignment = None;
+    let enclosing_rows_may_split: bool = ctx.table_rows_may_split;
+    ctx.table_rows_may_split = ctx.flow_body_is_breakable;
+    let result: Result<(), ConvertError> = generate_table(out, &table, ctx);
+    ctx.table_rows_may_split = enclosing_rows_may_split;
+    out.push_str("]\n");
+    // The text after the table starts `w:bottomFromText` below it, as a line
+    // that meets a placed table's band does.
+    // FIXME(unprobed bottomFromText): no Word reference in the corpus
+    // states it on a table that leaves no room beside it.
+    // TODO(bottomFromText across a page break): the space is fixed, so it
+    // still opens the next page when the table ends at the bottom of one.
+    if floating_table.frame.bottom_from_text > 0.0 {
+        write_explicit_vertical_space(out, floating_table.frame.bottom_from_text);
+    }
+    result
+}
+
+/// Draw a lifted `w:framePr` frame where Word does (issue #2231): `y` below
+/// its anchor, which a `#place` without a vertical alignment finds in the
+/// flow, and `x` from the text area's left edge. At the flow root, the
+/// paragraphs after the frame wrap around it as they do around a floating
+/// table, with `w:vSpace` widening the band they keep clear of.
+///
+/// The frame takes no flow space. A bare placed item does not either, but
+/// Typst merges the gaps on both sides of it and lands it below the merged
+/// gap, where Word hangs the frame from the end of the gap after the block
+/// before it: docxide-pdf's `paragraph-offset-frame-exact` puts its frame
+/// where the immediate case does, though the paragraph after it states a
+/// 12pt `w:before`. So the frame is placed with the previous block's gap
+/// collapsed to nothing above it and that gap added to its offset, and a
+/// zero-height block after it lays the gap again, where it still merges with
+/// the next block's gap as before.
+fn generate_text_frame(
+    out: &mut String,
+    frame: &TextFrame,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    if frame.text_below {
+        return generate_fixed_text_frame(out, frame, ctx);
+    }
+    if frame.vertical_anchor != FrameAnchor::Text {
+        return generate_top_margin_frame_box(out, frame, ctx);
+    }
+    // A vertically centred section writes its own explicit gaps between root
+    // blocks; there the frame lands below them.
+    let anchor_gap: Option<f64> = std::mem::take(&mut ctx.flow_anchor_gap_pt)
+        .filter(|_| ctx.block_depth == 1 && !ctx.preserve_page_after_spacing);
+    if anchor_gap.is_some() {
+        // The strongest weak spacing replaces the gap the previous block
+        // left, and no gap a later block brings outweighs it.
+        out.push_str("#v(0pt, weak: true)\n");
+    }
+    let vertical_space: f64 = frame.vertical_space;
+    let _ = writeln!(
+        out,
+        "#place(left, dx: {}pt, dy: {}pt)[",
+        format_f64(frame.x),
+        format_f64(frame.y + anchor_gap.unwrap_or(0.0) - vertical_space)
+    );
+    // The paragraphs after an exact frame start at its anchor, so once they
+    // have advanced past its bottom edge none of them can meet it; an
+    // at-least frame's content can reach further, to the page's end.
+    let frame_bottom_pt: f64 = frame.y + anchor_gap.unwrap_or(0.0) + frame.height + vertical_space;
+    let wrap: Option<float_wrap::BodyFloat> = ctx
+        .float_wrap_text_area_pt
+        .filter(|_| ctx.in_flow_body && ctx.block_depth == 1)
+        .map(|(width_pt, height_pt)| {
+            let id: usize = ctx.next_body_float_id;
+            ctx.next_body_float_id += 1;
+            let reach_pt: f64 = if frame.exact_height {
+                frame_bottom_pt.clamp(0.0, height_pt)
+            } else {
+                height_pt
+            };
+            float_wrap::BodyFloat::new(
+                id,
+                float_wrap::FloatExtent::of_text_frame(frame),
+                width_pt,
+                reach_pt,
+                true,
+            )
+        });
+    if let Some(wrap) = wrap {
+        float_wrap::write_float_top_label(out, wrap.id());
+    }
+    let write_vertical_space = |out: &mut String| {
+        if vertical_space > 0.0 {
+            let _ = writeln!(
+                out,
+                "#block(height: {}pt, above: 0pt, below: 0pt)",
+                format_f64(vertical_space)
+            );
+        }
+    };
+    write_vertical_space(out);
+    let width: String = format_f64(frame.width);
+    let height: String = format_f64(frame.height);
+    if frame.exact_height {
+        let _ = writeln!(
+            out,
+            "#block(width: {width}pt, height: {height}pt, above: 0pt, below: 0pt)["
+        );
+    } else {
+        // A least height: the frame is as tall as the taller of its stated
+        // height and its content.
+        let _ = writeln!(
+            out,
+            "#block(above: 0pt, below: 0pt, stack(dir: ltr, box(height: {height}pt), \
+             block(width: {width}pt)["
+        );
+    }
+    // A frame's content starts at its top, whatever the vertical alignment of
+    // the section around it.
+    out.push_str("#set align(top)\n");
+    let enclosing_measure_pt: Option<f64> = ctx.available_measure_pt.replace(frame.width);
+    let result: Result<(), ConvertError> = frame
+        .content
+        .iter()
+        .try_for_each(|block| generate_block(out, block, ctx));
+    ctx.available_measure_pt = enclosing_measure_pt;
+    out.push_str(if frame.exact_height { "]\n" } else { "]))\n" });
+    write_vertical_space(out);
+    if let Some(wrap) = wrap {
+        float_wrap::write_float_bottom_label(out, wrap.id());
+        ctx.body_floats.push(wrap);
+    }
+    out.push_str("]\n");
+    if let Some(gap) = anchor_gap {
+        let _ = writeln!(
+            out,
+            "#block(height: 0pt, above: 0pt, below: {}pt)",
+            format_f64(gap)
+        );
+    }
+    result
+}
+
+/// Draw a frame Word keeps at a fixed place on its page and keeps body text
+/// off the sides of (issue #2231): its content at `x` and `y` from the text
+/// area's top left, `w:w` wide. At the root of a one-column flow, labels mark
+/// its band, `w:vSpace` above and below it, and a root paragraph after it on
+/// its page whose first line meets the band starts below it.
+///
+/// FIXME(auto frame width): Word makes a frame without `w:w` as wide as its
+/// widest line or table. Its paragraphs here span the text area's width from
+/// the frame's left edge, the width `measure` cannot find for blocks
+/// `100%` wide, so a line centred or aligned right in it lands further right.
+///
+/// TODO(text before a fixed frame on its page): Word keeps body text that
+/// comes before the frame in the document out of its band too; here only the
+/// paragraphs after it move, and a table after it does not.
+///
+/// TODO(band reaching the page's end): a paragraph whose first line would
+/// start below the band but end past the text area belongs on the next page;
+/// the wrap's top pad does not move it there, so it overhangs the bottom
+/// margin or, when the move would change its page, stays beside the band
+/// (bulk `tdf104394_lostTextbox`).
+fn generate_fixed_text_frame(
+    out: &mut String,
+    frame: &TextFrame,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    let vertical_space: f64 = frame.vertical_space;
+    let _ = writeln!(
+        out,
+        "#place(top + left, dx: {}pt, dy: {}pt)[",
+        format_f64(frame.x),
+        format_f64(frame.y - vertical_space)
+    );
+    let wrap: Option<float_wrap::BodyFloat> = ctx
+        .float_wrap_text_area_pt
+        .filter(|_| ctx.in_flow_body && ctx.block_depth == 1)
+        .map(|(_, height_pt)| {
+            let id: usize = ctx.next_body_float_id;
+            ctx.next_body_float_id += 1;
+            float_wrap::BodyFloat::below(id, height_pt)
+        });
+    if let Some(wrap) = wrap {
+        float_wrap::write_float_top_label(out, wrap.id());
+    }
+    let write_vertical_space = |out: &mut String| {
+        if vertical_space > 0.0 {
+            let _ = writeln!(
+                out,
+                "#block(height: {}pt, above: 0pt, below: 0pt)",
+                format_f64(vertical_space)
+            );
+        }
+    };
+    write_vertical_space(out);
+    let width: String = if frame.width > 0.0 {
+        format!("width: {}pt, ", format_f64(frame.width))
+    } else {
+        String::new()
+    };
+    let height: String = format_f64(frame.height);
+    if frame.exact_height {
+        let _ = writeln!(
+            out,
+            "#block({width}height: {height}pt, above: 0pt, below: 0pt)["
+        );
+    } else {
+        let _ = writeln!(
+            out,
+            "#block(above: 0pt, below: 0pt, stack(dir: ltr, box(height: {height}pt), \
+             block({width}above: 0pt, below: 0pt)["
+        );
+    }
+    out.push_str("#set align(top)\n");
+    let enclosing_measure_pt: Option<f64> = ctx.available_measure_pt;
+    if frame.width > 0.0 {
+        ctx.available_measure_pt = Some(frame.width);
+    }
+    let result: Result<(), ConvertError> = frame
+        .content
+        .iter()
+        .try_for_each(|block| generate_block(out, block, ctx));
+    ctx.available_measure_pt = enclosing_measure_pt;
+    out.push_str(if frame.exact_height { "]\n" } else { "]))\n" });
+    write_vertical_space(out);
+    if let Some(wrap) = wrap {
+        float_wrap::write_float_bottom_label(out, wrap.id());
+        ctx.body_floats.push(wrap);
+    }
+    out.push_str("]\n");
+    result
+}
+
+/// Draw the box Word keeps at the top margin for a group of empty framed
+/// paragraphs (issue #2231): their lines at the frame's width, placed from the
+/// top of the text area on the page the group lands on. At the root of a
+/// one-column flow that pages, labels mark the box's top edge and its bottom
+/// edge, `w:vSpace` below it, which a full-width table that starts between
+/// them clears. The box takes no flow space, except above the rows a
+/// full-width table it directly follows carries onto its page.
+///
+/// TODO(body text beside an empty frame's box, #2355): Word lays a body line
+/// the box meets out on both sides of it, as docxide-pdf's
+/// `empty-frame-control` shows; here the line runs as though the box were
+/// absent.
+fn generate_top_margin_frame_box(
+    out: &mut String,
+    frame: &TextFrame,
+    ctx: &mut GenCtx,
+) -> Result<(), ConvertError> {
+    // A continuous section's frame is a `#move` whose top is not the page's
+    // text area top.
+    let labelled: bool = ctx.in_flow_body
+        && ctx.block_depth == 1
+        && ctx.flow_body_is_breakable
+        && ctx.float_wrap_text_area_pt.is_some();
+    let carry_text_bottom_pt: Option<f64> = ctx
+        .frame_box_carry_text_bottom_pt
+        .take()
+        .filter(|_| labelled);
+    if let Some(text_bottom_pt) = carry_text_bottom_pt {
+        float_wrap::write_top_margin_frame_box_carry_open(out, text_bottom_pt, frame.x, frame.y);
+    } else {
+        let _ = writeln!(
+            out,
+            "#place(top + left, dx: {}pt, dy: {}pt)[",
+            format_f64(frame.x),
+            format_f64(frame.y)
+        );
+    }
+    if labelled {
+        float_wrap::write_top_margin_frame_box_label(out, "top");
+    }
+    let _ = writeln!(
+        out,
+        "#block(width: {}pt, above: 0pt, below: 0pt)[",
+        format_f64(frame.width)
+    );
+    let enclosing_measure_pt: Option<f64> = ctx.available_measure_pt.replace(frame.width);
+    let result: Result<(), ConvertError> = frame
+        .content
+        .iter()
+        .try_for_each(|block| generate_block(out, block, ctx));
+    ctx.available_measure_pt = enclosing_measure_pt;
+    out.push_str("]\n");
+    if frame.vertical_space > 0.0 {
+        let _ = writeln!(
+            out,
+            "#block(height: {}pt, above: 0pt, below: 0pt)",
+            format_f64(frame.vertical_space)
+        );
+    }
+    if labelled {
+        float_wrap::write_top_margin_frame_box_label(out, "bottom");
+    }
+    out.push_str("]\n");
+    result
 }
 
 fn generate_floating_text_box(
@@ -6753,7 +8221,9 @@ fn estimate_single_line_height_pt(paragraph: &Paragraph) -> f64 {
     let default_line_height_pt: f64 = max_font_size_pt * 1.2;
 
     match paragraph.style.line_spacing {
-        Some(LineSpacing::Exact(points)) => default_line_height_pt.max(points),
+        Some(LineSpacing::Exact(points) | LineSpacing::AtLeast(points)) => {
+            default_line_height_pt.max(points)
+        }
         Some(LineSpacing::Proportional(factor)) => {
             default_line_height_pt.max(max_font_size_pt * factor)
         }
@@ -7094,7 +8564,7 @@ fn powerpoint_paragraph_line_advance_pt(
         .unwrap_or(crate::render::pdf::POWERPOINT_LINE_HEIGHT_FACTOR * fallback_font_size_pt);
     match paragraph_style.line_spacing {
         Some(LineSpacing::Proportional(factor)) if factor > 0.0 => plain_line_height_pt * factor,
-        Some(LineSpacing::Exact(points)) if points > 0.0 => points,
+        Some(LineSpacing::Exact(points) | LineSpacing::AtLeast(points)) if points > 0.0 => points,
         _ => plain_line_height_pt,
     }
 }
@@ -7105,3 +8575,6 @@ mod tests;
 
 #[path = "typst_gen_section_alignment.rs"]
 mod section_alignment;
+
+#[path = "typst_gen_float_wrap.rs"]
+mod float_wrap;

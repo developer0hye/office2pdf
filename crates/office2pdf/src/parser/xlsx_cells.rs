@@ -971,8 +971,9 @@ fn read_theme_ui_script_faces(
         Some(_) => None,
         None => archive
             .file_names()
+            .filter_map(Result::ok)
             .find(|name| name.starts_with("xl/theme/") && name.ends_with(".xml"))
-            .map(str::to_string),
+            .map(|name| name.into_owned()),
     };
     let Some(part): Option<String> = part else {
         return ThemeUiScriptFaces::default();
@@ -3980,6 +3981,7 @@ pub(super) fn build_rows_for_range(
         let height: Option<f64> = printed_row_height(sheet, row_idx, row_wraps_past_one_line, ctx);
 
         rows.push(TableRow {
+            cant_split: false,
             cells,
             height,
             minimum_height: None,

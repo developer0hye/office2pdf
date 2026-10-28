@@ -104,6 +104,20 @@ pub(super) fn write_powerpoint_ligature_state(out: &mut String) {
     let _ = writeln!(out, "#set text(ligatures: false)");
 }
 
+/// Emit the ligature default a Word document states for all of its text.
+///
+/// Every run carries its own decision, so this reaches only the text no run
+/// style does: a generated table of contents shapes its entries from bare
+/// metadata, and a VML text box's paragraphs are rebuilt without one. Left to
+/// the engine's default, a deed in docxide's scraped corpus that states no
+/// ligatures drew 99 `ti` and `fi` ligatures in its contents (issue #2205).
+pub(super) fn write_document_ligature_state(out: &mut String, ligatures: crate::ir::Ligatures) {
+    out.push_str("#set text(");
+    let mut first = true;
+    write_ligature_params(out, &mut first, ligatures);
+    out.push_str(")\n");
+}
+
 /// Emit the contextual Typst helpers used by fixed-page (PowerPoint) text.
 ///
 /// A word stays one shaped item, preserving its kerning and PDF text mapping.
@@ -211,7 +225,10 @@ fn inline_numbering_prefix_len(style: &ParagraphStyle) -> Option<usize> {
 
 fn word_inline_numbering_runs(para: &Paragraph, line_grid_pitch: Option<f64>) -> Option<Vec<Run>> {
     if para.style.line_box.is_some()
-        || matches!(para.style.line_spacing, Some(LineSpacing::Exact(_)))
+        || matches!(
+            para.style.line_spacing,
+            Some(LineSpacing::Exact(_) | LineSpacing::AtLeast(_))
+        )
     {
         return None;
     }
@@ -256,6 +273,8 @@ pub(super) fn generate_paragraph(
     let default_tab_width_pt: f64 = ctx.default_tab_width_pt;
     let breaks_hangul_at_eojeol: bool = ctx.breaks_hangul_at_eojeol;
     let available_measure_pt: Option<f64> = ctx.available_measure_pt;
+    let wraps_beside_floats: bool = std::mem::take(&mut ctx.float_wrap_pending);
+    let clears_floats: Option<BreakClear> = ctx.float_wrap_clear.take();
     let style = &para.style;
     let inline_numbering_runs: Option<Vec<Run>> = word_inline_numbering_runs(para, line_grid_pitch);
     let runs: &[Run] = inline_numbering_runs.as_deref().unwrap_or(&para.runs);
@@ -307,7 +326,9 @@ pub(super) fn generate_paragraph(
     let has_para_style = needs_block_wrapper(style) || line_height_settings.is_some();
     let empty_paragraph_line_height_pt: f64 = if is_empty_paragraph {
         match style.line_spacing {
-            Some(LineSpacing::Exact(points)) if points > 0.0 => points,
+            Some(LineSpacing::Exact(points) | LineSpacing::AtLeast(points)) if points > 0.0 => {
+                points
+            }
             // An absent `w:line` is single spacing, so a paragraph that
             // states none still takes its mark's line, as a proportional one
             // does; a flat 12pt fell 1.8pt short for a 12pt Arial mark.
@@ -339,7 +360,66 @@ pub(super) fn generate_paragraph(
     } else {
         indent
     };
-    let has_outer_spacing_block: bool = outer_indent.is_some();
+    let page_top_gap: Option<(f64, f64)> = style
+        .space_before
+        .filter(|gap| style.keeps_space_before_at_page_top && *gap > 0.0)
+        .zip(ctx.active_body_top_pt);
+    // The page-top gap goes inside the outermost block, so that block is
+    // written even without an indent.
+    let has_outer_spacing_block: bool = outer_indent.is_some() || page_top_gap.is_some();
+    // Each part of a paragraph split at a clearing break wraps on its own, so
+    // the one after the break can start below the tables it clears. A heading
+    // stays whole: it is one outline entry.
+    if wraps_beside_floats
+        && (has_para_style || has_outer_spacing_block)
+        && style.heading_level.is_none()
+        && let Some((head, clear, tail)) = super::float_wrap::split_at_clearing_break(para)
+    {
+        for (part, part_clear) in [(head, clears_floats), (tail, Some(clear))] {
+            ctx.float_wrap_pending = !ctx.body_floats.is_empty();
+            ctx.float_wrap_clear = part_clear;
+            generate_paragraph(out, &part, ctx)?;
+        }
+        return Ok(());
+    }
+    // The wrap goes inside the paragraph's outermost block, where the block's
+    // own spacing has already been laid and its content starts at the first
+    // line's top. A paragraph that writes no block of its own is left as it
+    // is.
+    // TODO(bare paragraph beside a float): such a paragraph, which states no
+    // spacing, line or decoration, still runs under a floating table or text
+    // frame.
+    let float_wrap: Option<(String, f64)> =
+        (wraps_beside_floats && (has_para_style || has_outer_spacing_block)).then(|| {
+            let first_line_pt: f64 = if is_empty_paragraph {
+                empty_paragraph_line_height_pt
+            } else {
+                let font_size_pt: f64 = paragraph_font_size_pt(line_metric_runs);
+                word_line_box_em(line_metric_runs, style, line_grid_pitch)
+                    .map(|(top, bottom)| (top + bottom) * font_size_pt)
+                    .unwrap_or(font_size_pt)
+            };
+            let space_before_pt: f64 = style.space_before.unwrap_or(0.0).max(0.0);
+            let mut open = String::new();
+            super::float_wrap::write_float_wrap_open(
+                &mut open,
+                &ctx.body_floats,
+                clears_floats,
+                first_line_pt,
+                space_before_pt,
+            );
+            // The least this paragraph advances the flow: its before-gap and
+            // one line, which a multiple below single makes shorter.
+            let line_multiple: f64 = match style.line_spacing {
+                Some(LineSpacing::Proportional(multiple)) => multiple.clamp(0.0, 1.0),
+                _ => 1.0,
+            };
+            (open, first_line_pt * line_multiple + space_before_pt)
+        });
+    if let Some((_, advance_pt)) = float_wrap {
+        super::float_wrap::advance_past_floats(&mut ctx.body_floats, advance_pt);
+    }
+    let float_wrap: Option<String> = float_wrap.map(|(open, _)| open);
     let should_move_empty_top_border_to_before_spacing: bool = is_empty_paragraph
         && style.decoration_before_spacing.is_some()
         && style.background.is_some()
@@ -348,13 +428,30 @@ pub(super) fn generate_paragraph(
             .as_deref()
             .and_then(|border| border.top.as_ref())
             .is_some_and(|side| side.style != BorderLineStyle::Double);
+    let wraps_in_outer_block: bool = has_outer_spacing_block && float_wrap.is_some();
+    let wraps_in_style_block: bool =
+        !has_outer_spacing_block && has_para_style && float_wrap.is_some();
     if has_outer_spacing_block {
+        let page_top_gap_label: Option<String> = page_top_gap.map(|_| {
+            let id: usize = ctx.next_page_top_gap_id;
+            ctx.next_page_top_gap_id += 1;
+            let label: String = format!("o2p-page-top-gap-{id}");
+            let _ = writeln!(out, "#metadata(none) <{label}>");
+            label
+        });
         out.push_str("#block(width: 100%");
         write_block_spacing_params(out, style, true, empty_paragraph_bottom_border_extent_pt);
         if outer_indent.is_some() {
             write_paragraph_indent_inset(out, outer_indent);
         }
+        write_empty_paragraph_unbreakable(out, is_empty_paragraph);
         out.push_str(")[\n");
+        if let Some((label, (gap, body_top_pt))) = page_top_gap_label.zip(page_top_gap) {
+            write_page_top_gap(out, &label, gap, body_top_pt);
+        }
+        if let Some(open) = float_wrap.as_deref().filter(|_| wraps_in_outer_block) {
+            out.push_str(open);
+        }
     }
 
     if has_para_style {
@@ -368,12 +465,16 @@ pub(super) fn generate_paragraph(
             write_block_spacing_params(out, style, true, empty_paragraph_bottom_border_extent_pt);
         }
         write_block_decoration_params(out, style, should_move_empty_top_border_to_before_spacing);
+        write_empty_paragraph_unbreakable(out, is_empty_paragraph);
         out.push_str(")[\n");
         write_paragraph_double_border_overlays(
             out,
             &style.border,
             style.border_space.as_deref().copied().unwrap_or_default(),
         );
+        if let Some(open) = float_wrap.as_deref().filter(|_| wraps_in_style_block) {
+            out.push_str(open);
+        }
         if is_framed_inline_list_number {
             out.push_str("#block(width: 100%, above: 0pt, below: 0pt");
             write_paragraph_indent_inset(out, indent);
@@ -402,7 +503,17 @@ pub(super) fn generate_paragraph(
             "#v({}pt)",
             format_f64(empty_paragraph_placeholder_height_pt)
         );
+        if let Some(rule) = style.horizontal_rule.as_deref() {
+            out.push('\n');
+            write_horizontal_rule(out, rule, 0.0);
+        }
+        if wraps_in_style_block {
+            out.push_str("\n]");
+        }
         if has_para_style {
+            out.push_str("\n]");
+        }
+        if wraps_in_outer_block {
             out.push_str("\n]");
         }
         if has_outer_spacing_block {
@@ -459,6 +570,15 @@ pub(super) fn generate_paragraph(
         line_box_em,
         available_measure_pt,
     );
+    let tab_lines: Option<WordTabLines> =
+        word_paragraph_tab_lines(style, indent, first_line_indent, available_measure_pt);
+    let tab_stops: Option<Vec<TabStop>> =
+        with_hanging_indent_stop(style.tab_stops.as_deref(), tab_lines);
+    let exact_line_ascent_pt: Option<f64> = exact_line_ascent_pt(
+        style,
+        line_box_em.map(|(top_em, _)| top_em),
+        paragraph_font_size_pt(line_metric_runs),
+    );
     match style.heading_level {
         // The runs keep the plain emitter: the per-run line boxes of issue
         // #638 were measured on mixed-face body paragraphs only.
@@ -468,11 +588,15 @@ pub(super) fn generate_paragraph(
             generate_runs_with_tabs_and_metrics_in_context(
                 out,
                 runs,
-                style.tab_stops.as_deref(),
+                tab_stops.as_deref(),
                 paragraph_tab_width_pt,
+                TabPen::from_word_lines(tab_lines),
                 eojeol_wrap,
                 None,
-                style.line_spacing,
+                InlineBoxLine {
+                    line_spacing: style.line_spacing,
+                    exact_ascent_pt: exact_line_ascent_pt,
+                },
                 ctx,
             )?;
             write_terminal_word_paragraph_mark(out, runs, style, line_grid_pitch);
@@ -483,11 +607,13 @@ pub(super) fn generate_paragraph(
             generate_word_runs_with_tabs_in_context(
                 out,
                 runs,
-                style.tab_stops.as_deref(),
+                tab_stops.as_deref(),
                 paragraph_tab_width_pt,
                 eojeol_wrap,
                 style,
                 line_grid_pitch,
+                tab_lines,
+                exact_line_ascent_pt,
                 ctx,
             )?;
             write_terminal_word_paragraph_mark(out, runs, style, line_grid_pitch);
@@ -506,7 +632,13 @@ pub(super) fn generate_paragraph(
         out.push_str("\n]");
     }
 
+    if wraps_in_style_block {
+        out.push_str("\n]");
+    }
     if has_para_style {
+        out.push_str("\n]");
+    }
+    if wraps_in_outer_block {
         out.push_str("\n]");
     }
     if has_outer_spacing_block {
@@ -619,6 +751,72 @@ pub(super) fn powerpoint_trailing_letter_space_pt(
         .filter(|spacing| *spacing != 0.0)
 }
 
+/// Where a Word paragraph's lines start and end from the margin, as
+/// [`generate_paragraph`] lays them out: `indent` is the paragraph's
+/// [`paragraph_indent_pt`], `first_line_indent` the first-line indent it
+/// emits, and `container_measure_pt` the width the container gives a line.
+///
+/// Word counts tab stops and the default grid from the margin, not from the
+/// indent (ECMA-376 Part 1, 17.3.1.37: a stop's position is "with respect to
+/// the current page margins"). Only a start-aligned left-to-right paragraph
+/// qualifies: a centred or right-aligned line, or a right-to-left one, does
+/// not start at its indent.
+pub(super) fn word_paragraph_tab_lines(
+    style: &ParagraphStyle,
+    indent: Option<(f64, f64)>,
+    first_line_indent: Option<f64>,
+    container_measure_pt: Option<f64>,
+) -> Option<WordTabLines> {
+    if matches!(style.direction, Some(TextDirection::Rtl))
+        || matches!(style.alignment, Some(Alignment::Center | Alignment::Right))
+    {
+        return None;
+    }
+    let (left, right): (f64, f64) = indent.unwrap_or((0.0, 0.0));
+    Some(WordTabLines {
+        first_origin_pt: left + first_line_indent.unwrap_or(0.0),
+        continuation_origin_pt: left,
+        end_pt: container_measure_pt
+            .map(|measure| measure - right)
+            .filter(|end| *end > left),
+    })
+}
+
+/// The paragraph's stops plus the one a hanging indent makes: Word sends a
+/// first-line tab to the left indent before any default stop, unless an
+/// explicit stop comes first (issue #2226). Later lines start at that indent,
+/// so the stop only ever serves the first.
+fn with_hanging_indent_stop(
+    tab_stops: Option<&[TabStop]>,
+    tab_lines: Option<WordTabLines>,
+) -> Option<Vec<TabStop>> {
+    let Some(lines) =
+        tab_lines.filter(|lines| lines.first_origin_pt < lines.continuation_origin_pt - 0.0001)
+    else {
+        return tab_stops.map(<[TabStop]>::to_vec);
+    };
+    let position: f64 = lines.continuation_origin_pt;
+    let mut stops: Vec<TabStop> = tab_stops.map(<[TabStop]>::to_vec).unwrap_or_default();
+    if !stops
+        .iter()
+        .any(|stop| (stop.position - position).abs() < 0.01)
+    {
+        let at: usize = stops
+            .iter()
+            .position(|stop| stop.position > position)
+            .unwrap_or(stops.len());
+        stops.insert(
+            at,
+            TabStop {
+                position,
+                alignment: TabAlignment::Left,
+                leader: TabLeader::None,
+            },
+        );
+    }
+    Some(stops)
+}
+
 pub(super) fn paragraph_default_tab_width_pt(style: &ParagraphStyle, fallback_pt: f64) -> f64 {
     style
         .default_tab_stop_pt
@@ -626,13 +824,62 @@ pub(super) fn paragraph_default_tab_width_pt(style: &ParagraphStyle, fallback_pt
         .unwrap_or(fallback_pt)
 }
 
-/// The paragraph's `(left, right)` indent in points, or `None` when it has
-/// neither. Negative indents — Word lets a paragraph hang into the margin —
-/// are clamped to zero, because a Typst inset cannot be negative.
+/// The paragraph's signed `(left, right)` indent in points, or `None` when it
+/// has neither. Word lets a paragraph hang into the margin, and a negative
+/// block inset widens the line into it the same way (issue #2233).
 pub(super) fn paragraph_indent_pt(style: &ParagraphStyle) -> Option<(f64, f64)> {
-    let left: f64 = style.indent_left.unwrap_or(0.0).max(0.0);
-    let right: f64 = style.indent_right.unwrap_or(0.0).max(0.0);
-    (left > 0.0 || right > 0.0).then_some((left, right))
+    let left: f64 = style.indent_left.unwrap_or(0.0);
+    let right: f64 = style.indent_right.unwrap_or(0.0);
+    (left != 0.0 || right != 0.0).then_some((left, right))
+}
+
+/// The black outline Word for Mac paints around a shaded horizontal rule,
+/// whatever its `fillcolor`, and how far inside the rule's top and bottom its
+/// path runs. In docxide-pdf's `isla_language_lesson_plan`, a 1.5pt rule in an
+/// Arial 12pt header paragraph below an 18.95pt table row is stroked at y
+/// 67.40–68.50, where that 13.8pt line ends at 68.75. A body rule in
+/// `croatian_grant_guidelines` and a 60.9% header rule in
+/// `slovak_pedagogical_practice_agreement` are stroked alike: a 1.10pt-tall
+/// path under a 0.75pt black line (issue #2251). Measured on 1.5pt rules only.
+const SHADED_RULE_OUTLINE_PT: f64 = 0.75;
+const SHADED_RULE_INSET_PT: f64 = 0.2;
+
+/// Place a paragraph's horizontal rule on the bottom of its line, which lies
+/// `line_bottom_pt` below the bottom of the block it is written into; that
+/// block spans the paragraph's line between its indents (issue #2251). Word
+/// stands the rule on the bottom of its line.
+pub(super) fn write_horizontal_rule(out: &mut String, rule: &HorizontalRule, line_bottom_pt: f64) {
+    let width: String = match rule.width {
+        HorizontalRuleWidth::Fraction(fraction) => format!("{}%", format_f64(fraction * 100.0)),
+        HorizontalRuleWidth::Points(points) => format!("{}pt", format_f64(points)),
+    };
+    let alignment: &str = match rule.alignment {
+        Alignment::Center => "center",
+        Alignment::Right => "right",
+        Alignment::Left | Alignment::Justify => "left",
+    };
+    match rule.paint {
+        HorizontalRulePaint::Shaded => {
+            let _ = write!(
+                out,
+                "#place(bottom + {alignment}, dy: {}pt, rect(width: {width}, height: {}pt, \
+                 fill: none, stroke: {}pt + rgb(0, 0, 0)))",
+                format_f64(line_bottom_pt - SHADED_RULE_INSET_PT),
+                format_f64((rule.height - 2.0 * SHADED_RULE_INSET_PT).max(0.0)),
+                format_f64(SHADED_RULE_OUTLINE_PT),
+            );
+        }
+        HorizontalRulePaint::Solid(color) => {
+            let _ = write!(
+                out,
+                "#place(bottom + {alignment}, dy: {}pt, rect(width: {width}, height: {}pt, \
+                 fill: {}, stroke: none))",
+                format_f64(line_bottom_pt),
+                format_f64(rule.height),
+                rgb(&color),
+            );
+        }
+    }
 }
 
 fn write_paragraph_indent_inset(out: &mut String, indent: Option<(f64, f64)>) {
@@ -652,7 +899,10 @@ fn write_paragraph_indent_inset(out: &mut String, indent: Option<(f64, f64)>) {
 /// first-line origin separately. Counting it here would add a duplicate bare
 /// wrapper that only leaks Typst's default block spacing.
 pub(super) fn needs_block_wrapper(style: &ParagraphStyle) -> bool {
-    style.space_before.is_some()
+    // A horizontal rule is placed against the bottom of its paragraph's own
+    // block (issue #2251).
+    style.horizontal_rule.is_some()
+        || style.space_before.is_some()
         || style.space_after.is_some()
         || style.background.is_some()
         || style.border.is_some()
@@ -712,7 +962,7 @@ pub(super) fn word_line_box_em(
     style: &ParagraphStyle,
     line_grid_pitch: Option<f64>,
 ) -> Option<(f64, f64)> {
-    if let Some(LineSpacing::Exact(points)) = style.line_spacing
+    if let Some(LineSpacing::Exact(points) | LineSpacing::AtLeast(points)) = style.line_spacing
         && points > 0.0
     {
         let family: &str = word_paragraph_metric_family(runs, style)?;
@@ -934,7 +1184,7 @@ impl PowerPointHardBreakLineMetrics {
 /// equivalent scale of PowerPoint's plain 1.2em line so it retains the same
 /// baseline-seating model while replacing the advance.
 fn powerpoint_paragraph_line_box_em(runs: &[Run], style: &ParagraphStyle) -> Option<(f64, f64)> {
-    if let Some(LineSpacing::Exact(points)) = style.line_spacing
+    if let Some(LineSpacing::Exact(points) | LineSpacing::AtLeast(points)) = style.line_spacing
         && points > 0.0
         && style.line_box.is_none()
     {
@@ -1354,7 +1604,7 @@ pub(super) fn powerpoint_baseline_snap(
     }
 
     let raw_seat_em: f64 = match style.line_spacing {
-        Some(LineSpacing::Exact(points)) if points > 0.0 => {
+        Some(LineSpacing::Exact(points) | LineSpacing::AtLeast(points)) if points > 0.0 => {
             let families: Vec<&str> = powerpoint_line_families(runs, style);
             let (ascent_em, _descent_em) =
                 crate::render::pdf::powerpoint_line_box_em_for_families(&families)?;
@@ -1796,17 +2046,20 @@ pub(super) fn word_header_band_shift_pt(runs: &[Run]) -> Option<f64> {
 /// The leading is the remainder after the edges, not a replacement for them.
 /// That matters: the top edge is what #629's `word_header_band_shift_pt` seats
 /// the first baseline against, so leaving it alone keeps that seat exactly
-/// where it was and confines this to the advance *between* lines. `bottom_edge_em`
-/// is whatever the caller set, which is nonzero only where a `w:pBdr` wrapper
-/// pinned it (#737).
+/// where it was and confines this to the advance *between* lines.
+/// `bottom_edge_em` is how far below the baseline the caller set the bottom
+/// edge, which is nonzero where a pinned footer band sets its last line's
+/// descent there (issue #2326).
 ///
 /// Not to be confused with [`word_line_leading_pt`], which answers a different
 /// question for body paragraphs: that one is folded into a fixed line box,
 /// this one is emitted directly as `par(leading:)` for a header or footer
 /// story.
 ///
-/// `None` where the face's metrics are unknown, or where the edges already
-/// exceed Word's pitch and no leading could shrink the advance to it.
+/// `None` where the face's metrics are unknown. Where the edges already
+/// exceed Word's pitch — a band edge taken from a deeper face than this
+/// paragraph's — no leading shrinks the advance to it, and none at all comes
+/// closest.
 pub(super) fn word_hf_line_leading_pt(runs: &[Run], bottom_edge_em: f64) -> Option<f64> {
     let family: &str = east_asian_aware_metric_family(runs)?;
     let (_ascender_em, _descender_em, pitch_em) =
@@ -1819,7 +2072,7 @@ pub(super) fn word_hf_line_leading_pt(runs: &[Run], bottom_edge_em: f64) -> Opti
     let top_edge_em: f64 = crate::render::pdf::font_cap_height_em(family)?;
     let advance_em: f64 = word_natural_line_em(runs, pitch_em);
     let leading_em: f64 = advance_em - top_edge_em - bottom_edge_em;
-    (leading_em >= 0.0).then(|| leading_em * paragraph_font_size_pt(runs))
+    Some(leading_em.max(0.0) * paragraph_font_size_pt(runs))
 }
 
 /// The height one header or footer line takes, in points.
@@ -1839,6 +2092,39 @@ pub(super) fn word_line_advance_pt(runs: &[Run]) -> Option<f64> {
         return None;
     }
     Some(word_natural_line_em(runs, pitch_em) * paragraph_font_size_pt(runs))
+}
+
+/// Share of an exact header line Word puts above the baseline.
+///
+/// Word lays a `w:lineRule="exact"` header line out at its stated height and
+/// seats the baseline four fifths of the way down, whatever the face, so a
+/// line shorter than the face clips the tops of its glyphs. docxide-pdf's
+/// first-page header cases seat Aptos 12pt 128.08pt and 9.50pt below the tops
+/// of a 160pt and a 12pt line, the second shorter than Aptos's 14.65pt natural
+/// line (issue #2214). LibreOffice Writer splits its fixed line height the
+/// same way. Body lines still centre the extra height in [`word_line_box_em`],
+/// although docxide-pdf's `continued-gap-cell-after0-before0` reference seats
+/// a 16pt exact body-cell line 0.8 down too, 0.66pt below ours (recorded in
+/// #1874).
+const WORD_EXACT_LINE_ASCENT_SHARE: f64 = 0.8;
+
+/// The ascent and descent, in points, of one exact header line `line_pt` tall.
+pub(super) fn word_exact_line_box_pt(line_pt: f64) -> (f64, f64) {
+    let ascent_pt: f64 = WORD_EXACT_LINE_ASCENT_SHARE * line_pt;
+    (ascent_pt, line_pt - ascent_pt)
+}
+
+/// The ascent and descent, in points, of one natural header line.
+///
+/// The baseline sits one [`word_header_line_ascent_em`] below the line top, as
+/// [`word_header_band_shift_pt`] seats it, and the rest of
+/// [`word_line_advance_pt`] lies below it. `None` where the face's metrics are
+/// unknown.
+pub(super) fn word_header_line_box_pt(runs: &[Run]) -> Option<(f64, f64)> {
+    let family: &str = east_asian_aware_metric_family(runs)?;
+    let ascent_pt: f64 = word_header_line_ascent_em(runs, family)? * paragraph_font_size_pt(runs);
+    let advance_pt: f64 = word_line_advance_pt(runs)?;
+    Some((ascent_pt, (advance_pt - ascent_pt).max(0.0)))
 }
 
 /// The line advance Word gives this paragraph before any grid is consulted:
@@ -2620,7 +2906,9 @@ pub(super) fn word_cell_line_box(
     let advance_em: f64 = match style.line_spacing {
         None => advance_em,
         Some(LineSpacing::Proportional(factor)) if factor > 0.0 => advance_em * factor,
-        Some(LineSpacing::Exact(points)) if points > 0.0 => points / font_size,
+        Some(LineSpacing::Exact(points) | LineSpacing::AtLeast(points)) if points > 0.0 => {
+            points / font_size
+        }
         // A non-positive rule states nothing usable; Word ignores it.
         Some(_) => advance_em,
     };
@@ -2837,7 +3125,10 @@ pub(super) fn word_cell_line_box(
     if in_top_aligned_floating_text_box
         && vertical_align.unwrap_or(CellVerticalAlign::Top) == CellVerticalAlign::Top
         && sheet_print_scale.is_none()
-        && matches!(style.line_spacing, Some(LineSpacing::Exact(points)) if points > 0.0)
+        && matches!(
+            style.line_spacing,
+            Some(LineSpacing::Exact(points) | LineSpacing::AtLeast(points)) if points > 0.0
+        )
         && advance_em > metric_em
     {
         let extra_em: f64 = advance_em - metric_em;
@@ -2987,6 +3278,35 @@ fn write_block_spacing_params(
     {
         let below: f64 = style.space_after.unwrap_or(0.0) + after_spacing_adjustment_pt;
         let _ = write!(out, ", below: {}pt", format_f64(below));
+    }
+}
+
+/// Re-add a paragraph's before-gap where its block opens a page
+/// ([`ParagraphStyle::keeps_space_before_at_page_top`]). Typst drops a
+/// block's `above` there, so the gap becomes fixed space at the top of the
+/// block, written only when the block's label, written just before it, sits
+/// at the body top. Typst lays a tag out with the next frame, so the label
+/// lands at the block's top whether or not the space is there, and the
+/// layout settles. Elsewhere on a page the block's own `above` stands.
+fn write_page_top_gap(out: &mut String, label: &str, gap: f64, body_top_pt: f64) {
+    let _ = writeln!(
+        out,
+        "#context if locate(<{label}>).position().y <= {}pt {{ v({}pt) }}",
+        format_f64(body_top_pt + 0.01),
+        format_f64(gap)
+    );
+}
+
+/// Keeps an empty paragraph's line whole at a page or column break.
+///
+/// The line is a `#v` inside the paragraph's blocks, and Typst cuts spacing
+/// off at the end of a region without carrying the rest over. So an empty
+/// paragraph that did not fit at a page's bottom vanished, and the text after
+/// it started the next page one line high, where Word moves the line to the
+/// next page like any one-line paragraph (issue #2253).
+fn write_empty_paragraph_unbreakable(out: &mut String, is_empty_paragraph: bool) {
+    if is_empty_paragraph {
+        out.push_str(", breakable: false");
     }
 }
 
@@ -3477,21 +3797,32 @@ pub(super) fn write_par_settings(
                 let leading = factor * 0.65;
                 let _ = writeln!(out, "  #set par(leading: {}em)", format_f64(leading));
             }
-            LineSpacing::Exact(pts) => {
+            LineSpacing::Exact(pts) | LineSpacing::AtLeast(pts) => {
                 let _ = writeln!(out, "  #set par(leading: {}pt)", format_f64(*pts));
             }
         }
     }
     if matches!(style.alignment, Some(Alignment::Justify)) {
-        out.push_str("  #set par(justify: true)\n");
-        if justified_lines_use_first_fit_breaker(is_word_table_cell, runs) {
-            out.push_str("  #set par(linebreaks: \"simple\")\n");
-        }
-        write_east_asian_justification_limits(out, runs);
+        write_justification_settings(
+            out,
+            runs,
+            justified_lines_use_first_fit_breaker(is_word_table_cell, runs),
+        );
     }
     if matches!(style.direction, Some(TextDirection::Rtl)) {
         out.push_str("  #set text(dir: rtl)\n");
     }
+}
+
+/// Justify every line of a paragraph but its last, with the East Asian gap
+/// ceiling Word uses for these runs. `first_fit` keeps Typst's first-fit line
+/// breaker, which `justify` would otherwise swap for its optimized one.
+pub(super) fn write_justification_settings(out: &mut String, runs: &[Run], first_fit: bool) {
+    out.push_str("  #set par(justify: true)\n");
+    if first_fit {
+        out.push_str("  #set par(linebreaks: \"simple\")\n");
+    }
+    write_east_asian_justification_limits(out, runs);
 }
 
 /// State the ceiling Word puts on every expandable gap of a justified line
@@ -3998,6 +4329,8 @@ fn generate_word_runs_with_tabs_in_context(
     eojeol_wrap: EojeolWrap,
     style: &ParagraphStyle,
     line_grid_pitch: Option<f64>,
+    tab_lines: Option<WordTabLines>,
+    exact_line_ascent_pt: Option<f64>,
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
     let metrics: Option<WordRunLineMetrics<'_>> =
@@ -4007,11 +4340,102 @@ fn generate_word_runs_with_tabs_in_context(
         runs,
         tab_stops,
         default_tab_width_pt,
+        TabPen::from_word_lines(tab_lines),
         eojeol_wrap,
         metrics.map(RunLineMetrics::Word),
-        style.line_spacing,
+        InlineBoxLine {
+            line_spacing: style.line_spacing,
+            exact_ascent_pt: exact_line_ascent_pt,
+        },
         ctx,
     )
+}
+
+/// Where a Word body paragraph's lines start and end, measured from the
+/// margin its tab stops count from (issue #2226).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) struct WordTabLines {
+    /// Where the first line starts: the left indent plus the signed
+    /// first-line indent.
+    pub(super) first_origin_pt: f64,
+    /// Where every later line starts: the left indent.
+    pub(super) continuation_origin_pt: f64,
+    /// Where every line ends, when the container's measure is known.
+    pub(super) end_pt: Option<f64>,
+}
+
+/// How a run list's tabs find their stops.
+#[derive(Clone, Copy, Debug, Default)]
+struct TabPen<'a> {
+    /// A Typst length expression for where the runs' first line starts,
+    /// measured from the origin the stops count from; `None` measures from
+    /// the runs' own start.
+    origin: Option<&'a str>,
+    /// Where a Word body paragraph's lines start and end. With it, each tab
+    /// carries its run's line height, and a tab that runs past the line's
+    /// end starts the next line.
+    word_lines: Option<WordTabLines>,
+}
+
+impl<'a> TabPen<'a> {
+    fn from_origin(origin: Option<&'a str>) -> Self {
+        Self {
+            origin,
+            word_lines: None,
+        }
+    }
+
+    fn from_word_lines(word_lines: Option<WordTabLines>) -> Self {
+        Self {
+            origin: None,
+            word_lines,
+        }
+    }
+}
+
+/// Bindings a tab segment needs to restart its line when its tab runs past
+/// the line's end.
+#[derive(Clone, Copy, Debug)]
+struct TabLineWrap {
+    continuation_origin_pt: f64,
+    end_pt: f64,
+    /// Whether the line before the tab already holds something. A tab that
+    /// opens the paragraph's first line has nothing to leave behind.
+    can_break: bool,
+    /// Whether `tab_lead_{index}` holds the segment's first word.
+    has_lead: bool,
+}
+
+/// What a paragraph's line box asks of the inline boxes riding its runs.
+#[derive(Clone, Copy, Default)]
+struct InlineBoxLine {
+    /// The paragraph's `w:spacing` rule: an expanded proportional line
+    /// reserves room below a tall inline diagram.
+    line_spacing: Option<LineSpacing>,
+    /// How far an exact line reaches above its baseline, from
+    /// [`exact_line_ascent_pt`].
+    exact_ascent_pt: Option<f64>,
+}
+
+/// How far above its baseline a paragraph's line reaches when the paragraph
+/// states `w:lineRule="exact"`: the top edge of its fixed line box,
+/// `line_box_top_em` at `font_size_pt`. Word keeps such a line at its stated
+/// height whatever it holds, so an inline box taller than this is clipped at
+/// the line's top instead of raising it (issue #2228). `None` for any other
+/// rule: an at-least line only sets a minimum and grows to hold the box.
+pub(super) fn exact_line_ascent_pt(
+    style: &ParagraphStyle,
+    line_box_top_em: Option<f64>,
+    font_size_pt: f64,
+) -> Option<f64> {
+    line_box_top_em
+        .filter(|_| {
+            matches!(
+                style.line_spacing,
+                Some(LineSpacing::Exact(points)) if points > 0.0
+            )
+        })
+        .map(|top_em| (top_em * font_size_pt).max(0.0))
 }
 
 fn word_inline_drawing_spacing_pt(run: &Run, line_spacing: Option<LineSpacing>) -> f64 {
@@ -4039,9 +4463,10 @@ fn generate_runs_with_tabs_and_metrics_in_context(
     runs: &[Run],
     tab_stops: Option<&[TabStop]>,
     default_tab_width_pt: f64,
+    tab_pen: TabPen<'_>,
     eojeol_wrap: EojeolWrap,
     run_line_metrics: Option<RunLineMetrics<'_>>,
-    inline_drawing_line_spacing: Option<LineSpacing>,
+    inline_box_line: InlineBoxLine,
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
     if !paragraph_contains_tabs(runs) {
@@ -4050,55 +4475,209 @@ fn generate_runs_with_tabs_and_metrics_in_context(
             runs,
             eojeol_wrap,
             run_line_metrics,
-            inline_drawing_line_spacing,
+            inline_box_line,
             ctx,
         );
     }
 
     let segments: Vec<Vec<Run>> = split_runs_on_tabs(runs);
-    write_measured_tab_segments_with_result(
-        out,
-        &segments,
-        tab_stops,
-        default_tab_width_pt,
-        |out, index| {
-            generate_runs_with_metrics_in_context(
-                out,
-                &segments[index],
-                eojeol_wrap,
-                run_line_metrics,
-                inline_drawing_line_spacing,
-                ctx,
-            )
-        },
-    )
-}
+    let word_origin: Option<String> = tab_pen
+        .word_lines
+        .map(|lines| lines.first_origin_pt)
+        .filter(|origin| origin.abs() > 0.0001)
+        .map(|origin| format!("{}pt", format_f64(origin)));
+    let tab_origin: Option<&str> = tab_pen.origin.or(word_origin.as_deref());
+    let wrap: Option<(f64, f64)> = tab_pen.word_lines.and_then(|lines| {
+        lines
+            .end_pt
+            .map(|end_pt| (lines.continuation_origin_pt, end_pt))
+    });
+    let tab_styles: Vec<&TextStyle> = tab_run_styles(runs);
+    let struts: Vec<Run> = if wrap.is_some() {
+        tab_strut_runs(&tab_styles)
+    } else {
+        Vec::new()
+    };
 
-fn write_measured_tab_segments_with_result(
-    out: &mut String,
-    segment_runs: &[Vec<Run>],
-    tab_stops: Option<&[TabStop]>,
-    default_tab_width_pt: f64,
-    mut write_segment: impl FnMut(&mut String, usize) -> Result<(), ConvertError>,
-) -> Result<(), ConvertError> {
     out.push_str("#context {\n");
-
-    for (index, segment) in segment_runs.iter().enumerate() {
+    let mut write_runs = |out: &mut String, runs: &[Run]| {
+        generate_runs_with_metrics_in_context(
+            out,
+            runs,
+            eojeol_wrap,
+            run_line_metrics,
+            inline_box_line,
+            ctx,
+        )
+    };
+    for (index, segment) in segments.iter().enumerate() {
         let _ = write!(out, "  let tab_segment_{index} = [");
-        write_segment(out, index)?;
+        write_runs(out, segment)?;
         out.push_str("]\n");
 
         if index == 0 {
             out.push_str("  let tab_prefix_0 = tab_segment_0\n");
+            if wrap.is_some() {
+                let _ = writeln!(
+                    out,
+                    "  let tab_line_0 = tab_segment_0\n  let tab_line_origin_0 = {}\n  let tab_line_struts_0 = []",
+                    tab_origin.unwrap_or("0pt")
+                );
+            }
             continue;
         }
 
-        write_tab_segment_bindings(out, index, segment, tab_stops, default_tab_width_pt);
+        let line_wrap: Option<TabLineWrap> = match wrap {
+            Some((continuation_origin_pt, end_pt)) => {
+                let _ = write!(out, "  let tab_strut_{index} = [");
+                if let Some(strut) = struts.get(index - 1) {
+                    write_runs(out, std::slice::from_ref(strut))?;
+                }
+                out.push_str("]\n");
+                let lead: Vec<Run> = tab_segment_lead_runs(segment);
+                if !lead.is_empty() {
+                    let _ = write!(out, "  let tab_lead_{index} = [");
+                    write_runs(out, &lead)?;
+                    out.push_str("]\n");
+                }
+                Some(TabLineWrap {
+                    continuation_origin_pt,
+                    end_pt,
+                    can_break: index > 1 || !segments[0].is_empty(),
+                    has_lead: !lead.is_empty(),
+                })
+            }
+            None => None,
+        };
+        let mut leaders: Vec<(TabLeader, String)> = Vec::new();
+        for (leader, run) in tab_leader_runs(tab_stops, tab_styles.get(index - 1).copied()) {
+            let mut markup = String::new();
+            write_runs(&mut markup, std::slice::from_ref(&run))?;
+            leaders.push((leader, markup));
+        }
+        write_tab_segment_bindings(
+            out,
+            index,
+            segment,
+            tab_stops,
+            default_tab_width_pt,
+            tab_origin,
+            line_wrap,
+            &leaders,
+        );
     }
 
-    let _ = writeln!(out, "  tab_prefix_{}", segment_runs.len() - 1);
+    let _ = writeln!(out, "  tab_prefix_{}", segments.len() - 1);
     out.push('}');
     Ok(())
+}
+
+/// The style of the run holding each tab of `runs`, in order, so tab
+/// `index - 1` is the one before segment `index` of [`split_runs_on_tabs`].
+/// A run carrying an object is not split there, so its text adds no tab.
+fn tab_run_styles(runs: &[Run]) -> Vec<&TextStyle> {
+    runs.iter()
+        .filter(|run| run.footnote.is_none() && run.inline_box.is_none())
+        .flat_map(|run| run.text.matches('\t').map(move |_| &run.style))
+        .collect()
+}
+
+/// One zero-width run per tab, in the tab's own run style. A tab is a
+/// character of its run, so a line that holds only tabs is as tall as their
+/// runs (issue #2226). U+2060 WORD JOINER paints nothing and adds no break
+/// opportunity.
+fn tab_strut_runs(tab_styles: &[&TextStyle]) -> Vec<Run> {
+    tab_styles
+        .iter()
+        .map(|style| Run {
+            text: "\u{2060}".to_string(),
+            style: (*style).clone(),
+            href: None,
+            footnote: None,
+            inline_box: None,
+        })
+        .collect()
+}
+
+/// The run that draws each leader `tab_stops` name, once per leader, for a
+/// tab in `tab_style`.
+///
+/// A leader is the tab character's own ink, so Word sets it in the face,
+/// size and colour of the run holding the tab rather than the engine's
+/// default face (issue #2244). The run's underline, strike and highlight are
+/// left off: they mark the tab's whole span, not each repeated leader mark.
+fn tab_leader_runs(
+    tab_stops: Option<&[TabStop]>,
+    tab_style: Option<&TextStyle>,
+) -> Vec<(TabLeader, Run)> {
+    let style = TextStyle {
+        underline: None,
+        strikethrough: None,
+        highlight: None,
+        ..tab_style.cloned().unwrap_or_default()
+    };
+    let mut leaders: Vec<(TabLeader, Run)> = Vec::new();
+    for stop in tab_stops.unwrap_or_default() {
+        let Some(text) = tab_leader_text(stop.leader) else {
+            continue;
+        };
+        if leaders.iter().all(|(leader, _)| *leader != stop.leader) {
+            leaders.push((
+                stop.leader,
+                Run {
+                    text: text.to_string(),
+                    style: style.clone(),
+                    href: None,
+                    footnote: None,
+                    inline_box: None,
+                },
+            ));
+        }
+    }
+    leaders
+}
+
+fn tab_leader_text(leader: TabLeader) -> Option<&'static str> {
+    match leader {
+        TabLeader::None => None,
+        TabLeader::Dot => Some("."),
+        TabLeader::Hyphen => Some("-"),
+        TabLeader::Underscore => Some("_"),
+    }
+}
+
+/// A tab segment's runs up to its first break opportunity: the word Word
+/// keeps on the tab's line, so the tab moves with it (issue #2226). An
+/// object ends the word, and an East Asian character is a word of its own.
+fn tab_segment_lead_runs(segment: &[Run]) -> Vec<Run> {
+    let mut lead: Vec<Run> = Vec::new();
+    for run in segment {
+        if run.footnote.is_some() || run.inline_box.is_some() {
+            break;
+        }
+        let end: Option<usize> = run.text.char_indices().find_map(|(at, ch)| {
+            if ch.is_whitespace() {
+                Some(at)
+            } else if is_cjk_like(ch) {
+                Some(at + ch.len_utf8())
+            } else {
+                None
+            }
+        });
+        match end {
+            Some(end) => {
+                if end > 0 {
+                    lead.push(Run {
+                        text: run.text[..end].to_string(),
+                        ..run.clone()
+                    });
+                }
+                break;
+            }
+            None => lead.push(run.clone()),
+        }
+    }
+    lead
 }
 
 pub(super) fn generate_runs_with_context(
@@ -4107,14 +4686,51 @@ pub(super) fn generate_runs_with_context(
     eojeol_wrap: EojeolWrap,
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
-    generate_runs_with_metrics_in_context(out, runs, eojeol_wrap, None, None, ctx)
+    generate_runs_with_metrics_in_context(
+        out,
+        runs,
+        eojeol_wrap,
+        None,
+        InlineBoxLine::default(),
+        ctx,
+    )
 }
 
+/// `exact_line_ascent_pt` is the paragraph's [`exact_line_ascent_pt`].
 pub(super) fn generate_runs_with_tabs_context(
     out: &mut String,
     runs: &[Run],
     tab_stops: Option<&[TabStop]>,
     default_tab_width_pt: f64,
+    eojeol_wrap: EojeolWrap,
+    exact_line_ascent_pt: Option<f64>,
+    ctx: &mut super::GenCtx,
+) -> Result<(), ConvertError> {
+    generate_runs_with_tabs_and_metrics_in_context(
+        out,
+        runs,
+        tab_stops,
+        default_tab_width_pt,
+        TabPen::default(),
+        eojeol_wrap,
+        None,
+        InlineBoxLine {
+            line_spacing: None,
+            exact_ascent_pt: exact_line_ascent_pt,
+        },
+        ctx,
+    )
+}
+
+/// As [`generate_runs_with_tabs_context`], for runs whose first line starts
+/// `tab_origin` (a Typst length expression) past the origin the stops count
+/// from, such as a Word list item's body after its marker.
+pub(super) fn generate_runs_with_tabs_from_origin_context(
+    out: &mut String,
+    runs: &[Run],
+    tab_stops: Option<&[TabStop]>,
+    default_tab_width_pt: f64,
+    tab_origin: &str,
     eojeol_wrap: EojeolWrap,
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
@@ -4123,9 +4739,10 @@ pub(super) fn generate_runs_with_tabs_context(
         runs,
         tab_stops,
         default_tab_width_pt,
+        TabPen::from_origin(Some(tab_origin)),
         eojeol_wrap,
         None,
-        None,
+        InlineBoxLine::default(),
         ctx,
     )
 }
@@ -4136,7 +4753,7 @@ pub(super) fn generate_run_with_context(
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
     if let Some(inline_box) = run.inline_box.as_deref() {
-        return write_inline_text_box(out, inline_box, 0.0, ctx);
+        return write_inline_text_box(out, inline_box, 0.0, None, ctx);
     }
     if let Some(content) = run.footnote.as_deref() {
         out.push_str("#footnote[");
@@ -4162,7 +4779,7 @@ fn generate_runs_with_metrics_in_context(
     runs: &[Run],
     eojeol_wrap: EojeolWrap,
     run_line_metrics: Option<RunLineMetrics<'_>>,
-    inline_drawing_line_spacing: Option<LineSpacing>,
+    inline_box_line: InlineBoxLine,
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
     // A footnote can carry a box indirectly; its nested blocks still need the
@@ -4173,7 +4790,8 @@ fn generate_runs_with_metrics_in_context(
                 write_inline_text_box(
                     out,
                     inline_box,
-                    word_inline_drawing_spacing_pt(run, inline_drawing_line_spacing),
+                    word_inline_drawing_spacing_pt(run, inline_box_line.line_spacing),
+                    inline_box_line.exact_ascent_pt,
                     ctx,
                 )?;
             } else if run.footnote.is_some() {
@@ -4206,10 +4824,19 @@ fn generate_runs_with_tabs_and_metrics(
     write_measured_tab_segments(
         out,
         &segments,
+        &tab_run_styles(runs),
         tab_stops,
         default_tab_width_pt,
         |out, index| {
             generate_runs_with_metrics(out, &segments[index], eojeol_wrap, run_line_metrics)
+        },
+        |out, run| {
+            generate_runs_with_metrics(
+                out,
+                std::slice::from_ref(run),
+                eojeol_wrap,
+                run_line_metrics,
+            )
         },
     );
 }
@@ -4220,18 +4847,23 @@ fn generate_runs_with_tabs_and_metrics(
 /// stop when none is left.
 ///
 /// `segment_runs[index]` is segment `index`'s text, read for its decimal
-/// anchor; `write_segment` emits its content. Header and footer paragraphs
-/// come through here as well as body copy, so a tab lands in the same place in
-/// both. Their segments used to be matched against two running-head shapes
-/// instead, which sent a lone tab to the right margin whenever the last stop
-/// was a right stop, so a header centred on the Header style's centre stop
-/// printed right-aligned (issue #1821).
+/// anchor; `write_segment` emits its content. `tab_styles[index - 1]` is the
+/// style of the tab before that segment, whose leader `write_run` emits as a
+/// run of that style.
+///
+/// Header and footer paragraphs come through here as well as body copy, so a
+/// tab lands in the same place in both. Their segments used to be matched
+/// against two running-head shapes instead, which sent a lone tab to the right
+/// margin whenever the last stop was a right stop, so a header centred on the
+/// Header style's centre stop printed right-aligned (issue #1821).
 pub(super) fn write_measured_tab_segments(
     out: &mut String,
     segment_runs: &[Vec<Run>],
+    tab_styles: &[&TextStyle],
     tab_stops: Option<&[TabStop]>,
     default_tab_width_pt: f64,
     mut write_segment: impl FnMut(&mut String, usize),
+    mut write_run: impl FnMut(&mut String, &Run),
 ) {
     out.push_str("#context {\n");
 
@@ -4245,7 +4877,25 @@ pub(super) fn write_measured_tab_segments(
             continue;
         }
 
-        write_tab_segment_bindings(out, index, segment, tab_stops, default_tab_width_pt);
+        let leaders: Vec<(TabLeader, String)> =
+            tab_leader_runs(tab_stops, tab_styles.get(index - 1).copied())
+                .into_iter()
+                .map(|(leader, run)| {
+                    let mut markup = String::new();
+                    write_run(&mut markup, &run);
+                    (leader, markup)
+                })
+                .collect();
+        write_tab_segment_bindings(
+            out,
+            index,
+            segment,
+            tab_stops,
+            default_tab_width_pt,
+            None,
+            None,
+            &leaders,
+        );
     }
 
     let _ = writeln!(out, "  tab_prefix_{}", segment_runs.len() - 1);
@@ -4283,18 +4933,55 @@ pub(super) fn generate_runs_with_tabs_no_wrap(
 /// Emits Typst variable bindings for a non-first tab segment: measurement,
 /// decimal anchor (if applicable), default remainder, advance, fill, and
 /// the accumulated prefix content variable.
+///
+/// With `wrap`, the pen is measured on the current line only,
+/// `tab_line_{index}`. A tab whose left or default stop leaves no room for the
+/// segment's first word before the line's end breaks the line first and
+/// advances from the continuation origin, as Word moves the tab and that word
+/// to the next line (issue #2226). The line it closes may hold nothing but tabs, so it ends
+/// with their `tab_strut_*` runs and keeps their height. A pen already past
+/// the end belongs to a segment that wrapped by itself, whose line position
+/// the unwrapped measure does not know, so it never breaks.
+///
+/// `leaders` holds the markup of each leader the tab draws, from
+/// [`tab_leader_runs`].
+#[allow(clippy::too_many_arguments)]
 fn write_tab_segment_bindings(
     out: &mut String,
     index: usize,
     segment: &[Run],
     tab_stops: Option<&[TabStop]>,
     default_tab_width_pt: f64,
+    tab_origin: Option<&str>,
+    wrap: Option<TabLineWrap>,
+    leaders: &[(TabLeader, String)],
 ) {
-    let _ = writeln!(
-        out,
-        "  let tab_prefix_width_{index} = measure(tab_prefix_{}).width",
-        index - 1
-    );
+    let previous = index - 1;
+    let pen_var: String = match wrap {
+        Some(_) => format!("tab_pen_{index}"),
+        None => format!("tab_prefix_width_{index}"),
+    };
+    match wrap {
+        Some(_) => {
+            let _ = write!(
+                out,
+                "  let {pen_var} = measure(tab_line_{previous}).width + tab_line_origin_{previous}"
+            );
+        }
+        None => {
+            let _ = write!(
+                out,
+                "  let {pen_var} = measure(tab_prefix_{previous}).width"
+            );
+            // The stops and the default grid count from the origin, not from
+            // where these runs begin, so the pen is the measured prefix past
+            // that origin.
+            if let Some(origin) = tab_origin {
+                let _ = write!(out, " + {origin}");
+            }
+        }
+    }
+    out.push('\n');
     let _ = writeln!(
         out,
         "  let tab_segment_width_{index} = measure(tab_segment_{index}).width"
@@ -4312,29 +4999,95 @@ fn write_tab_segment_bindings(
         );
     }
 
+    let default_tab = format_f64(default_tab_width_pt);
+    if let Some(wrap) = wrap {
+        // A right stop on the margin ends its text exactly at the line's end,
+        // which measurement rounding must not push past it.
+        let end = format_f64(wrap.end_pt + 0.01);
+        let continuation = format_f64(wrap.continuation_origin_pt);
+        if wrap.can_break {
+            let _ = writeln!(
+                out,
+                "  let tab_pen_remainder_{index} = calc.rem-euclid({pen_var}.abs.pt(), {default_tab})"
+            );
+            let lead = if wrap.has_lead {
+                format!("measure(tab_lead_{index}).width")
+            } else {
+                "0pt".to_string()
+            };
+            let _ = writeln!(
+                out,
+                "  let tab_break_{index} = {pen_var} <= {end}pt and ({})",
+                build_tab_break_expr(
+                    &pen_var,
+                    &format!("tab_pen_remainder_{index}"),
+                    &lead,
+                    &format!("{end}pt"),
+                    tab_stops,
+                    default_tab_width_pt,
+                )
+            );
+        } else {
+            let _ = writeln!(out, "  let tab_break_{index} = false");
+        }
+        let _ = writeln!(
+            out,
+            "  let tab_prefix_width_{index} = if tab_break_{index} {{ {continuation}pt }} else {{ {pen_var} }}"
+        );
+    }
+
     let _ = writeln!(
         out,
-        "  let tab_default_remainder_{index} = calc.rem-euclid(tab_prefix_width_{index}.abs.pt(), {})",
-        format_f64(default_tab_width_pt)
+        "  let tab_default_remainder_{index} = calc.rem-euclid(tab_prefix_width_{index}.abs.pt(), {default_tab})"
     );
     let _ = writeln!(
         out,
         "  let tab_advance_{index} = {}",
-        build_tab_advance_expr(index, segment, tab_stops, default_tab_width_pt)
+        build_tab_advance_expr(
+            &format!("tab_prefix_width_{index}"),
+            &format!("tab_default_remainder_{index}"),
+            index,
+            segment,
+            tab_stops,
+            default_tab_width_pt,
+        )
     );
     let _ = writeln!(
         out,
         "  let tab_fill_{index} = {}",
-        build_tab_fill_expr(index, tab_stops)
+        build_tab_fill_expr(index, tab_stops, leaders)
     );
-    let _ = writeln!(
-        out,
-        "  let tab_prefix_{index} = [#tab_prefix_{}#tab_fill_{index}#tab_segment_{index}]",
-        index - 1
-    );
+    let tail = format!("#tab_fill_{index}#tab_segment_{index}");
+    match wrap {
+        Some(wrap) => {
+            let continuation = format_f64(wrap.continuation_origin_pt);
+            let _ = writeln!(
+                out,
+                "  let tab_line_{index} = if tab_break_{index} {{ [{tail}] }} else {{ [#tab_line_{previous}{tail}] }}"
+            );
+            let _ = writeln!(
+                out,
+                "  let tab_line_origin_{index} = if tab_break_{index} {{ {continuation}pt }} else {{ tab_line_origin_{previous} }}"
+            );
+            let _ = writeln!(
+                out,
+                "  let tab_line_struts_{index} = if tab_break_{index} {{ tab_strut_{index} }} else {{ [#tab_line_struts_{previous}#tab_strut_{index}] }}"
+            );
+            let _ = writeln!(
+                out,
+                "  let tab_prefix_{index} = if tab_break_{index} {{ [#tab_prefix_{previous}#tab_line_struts_{previous}#linebreak(){tail}] }} else {{ [#tab_prefix_{previous}{tail}] }}"
+            );
+        }
+        None => {
+            let _ = writeln!(
+                out,
+                "  let tab_prefix_{index} = [#tab_prefix_{previous}{tail}]"
+            );
+        }
+    }
 }
 
-fn paragraph_contains_tabs(runs: &[Run]) -> bool {
+pub(super) fn paragraph_contains_tabs(runs: &[Run]) -> bool {
     runs.iter().any(|run| run.text.contains('\t'))
 }
 
@@ -5227,17 +5980,20 @@ fn is_grouped_integer(text: &str, separator: char) -> bool {
         && parts[1..].iter().all(|part| part.len() == 3)
 }
 
+/// The advance of tab `index` from the pen held in `prefix_width_var`, whose
+/// remainder on the default grid `remainder_var` holds.
 fn build_tab_advance_expr(
+    prefix_width_var: &str,
+    remainder_var: &str,
     index: usize,
     segment: &[Run],
     tab_stops: Option<&[TabStop]>,
     default_tab_width_pt: f64,
 ) -> String {
-    let prefix_width_var = format!("tab_prefix_width_{index}");
     let segment_width_var = format!("tab_segment_width_{index}");
     let decimal_width_var =
         extract_decimal_anchor_runs(segment).map(|_| format!("tab_decimal_width_{index}"));
-    let default_expr = build_default_tab_advance_expr(index, default_tab_width_pt);
+    let default_expr = build_default_tab_advance_expr(remainder_var, default_tab_width_pt);
 
     let Some(tab_stops) = tab_stops else {
         return default_expr;
@@ -5274,7 +6030,51 @@ fn build_tab_advance_expr(
     expr
 }
 
-fn build_tab_fill_expr(index: usize, tab_stops: Option<&[TabStop]>) -> String {
+/// Whether a tab at the pen in `prefix_width_var` lands where the segment's
+/// first word, `lead_width` wide, passes `end`: true for a left stop or a
+/// default stop past the explicit ones (issue #2226). An aligned stop (centre,
+/// right, decimal) never breaks here and keeps its field on the line:
+/// docxide-pdf lets such a field reach into the right indent, and Word's rule
+/// for one past the margin is not settled by the cases this was fitted on.
+fn build_tab_break_expr(
+    prefix_width_var: &str,
+    remainder_var: &str,
+    lead_width: &str,
+    end: &str,
+    tab_stops: Option<&[TabStop]>,
+    default_tab_width_pt: f64,
+) -> String {
+    let default_break = format!(
+        "{prefix_width_var} + ({}) + {lead_width} > {end}",
+        build_default_tab_advance_expr(remainder_var, default_tab_width_pt)
+    );
+    let mut expr = String::new();
+    for stop in tab_stops.unwrap_or_default() {
+        let position = format_f64(stop.position);
+        let branch = match stop.alignment {
+            TabAlignment::Left => format!("{position}pt + {lead_width} > {end}"),
+            TabAlignment::Center | TabAlignment::Right | TabAlignment::Decimal => {
+                "false".to_string()
+            }
+        };
+        let _ = write!(
+            expr,
+            "if {prefix_width_var} < {position}pt {{ {branch} }} else "
+        );
+    }
+    if expr.is_empty() {
+        // No explicit stops: the bare default branch.
+        return default_break;
+    }
+    let _ = write!(expr, "{{ {default_break} }}");
+    expr
+}
+
+fn build_tab_fill_expr(
+    index: usize,
+    tab_stops: Option<&[TabStop]>,
+    leaders: &[(TabLeader, String)],
+) -> String {
     let Some(tab_stops) = tab_stops else {
         return format!("h(tab_advance_{index})");
     };
@@ -5286,7 +6086,7 @@ fn build_tab_fill_expr(index: usize, tab_stops: Option<&[TabStop]>) -> String {
     let prefix_width_var = format!("tab_prefix_width_{index}");
     let mut expr = String::new();
     for (stop_index, stop) in tab_stops.iter().enumerate() {
-        let branch = tab_fill_content_expr(index, stop.leader);
+        let branch = tab_fill_content_expr(index, stop.leader, leaders);
 
         if stop_index == 0 {
             let _ = write!(
@@ -5307,20 +6107,29 @@ fn build_tab_fill_expr(index: usize, tab_stops: Option<&[TabStop]>) -> String {
     expr
 }
 
-fn tab_fill_content_expr(index: usize, leader: TabLeader) -> String {
-    let leader_markup = match leader {
-        TabLeader::None => return format!("h(tab_advance_{index})"),
-        TabLeader::Dot => ".",
-        TabLeader::Hyphen => "-",
-        TabLeader::Underscore => "\\_",
+/// The fill a tab to a stop with `leader` draws: `leaders`' markup for that
+/// leader repeated across the advance, or the bare mark when `leaders` has
+/// none for it.
+fn tab_fill_content_expr(
+    index: usize,
+    leader: TabLeader,
+    leaders: &[(TabLeader, String)],
+) -> String {
+    let Some(text) = tab_leader_text(leader) else {
+        return format!("h(tab_advance_{index})");
     };
+    let leader_markup: String = leaders
+        .iter()
+        .find(|(drawn, _)| *drawn == leader)
+        .map(|(_, markup)| markup.clone())
+        .unwrap_or_else(|| escape_typst(text));
 
     format!("box(width: tab_advance_{index}, repeat[{leader_markup}])")
 }
 
-fn build_default_tab_advance_expr(index: usize, default_tab_width_pt: f64) -> String {
+fn build_default_tab_advance_expr(remainder_var: &str, default_tab_width_pt: f64) -> String {
     format!(
-        "if tab_default_remainder_{index} == 0 {{ {}pt }} else {{ ({} - tab_default_remainder_{index}) * 1pt }}",
+        "if {remainder_var} == 0 {{ {}pt }} else {{ ({} - {remainder_var}) * 1pt }}",
         format_f64(default_tab_width_pt),
         format_f64(default_tab_width_pt)
     )
@@ -5374,7 +6183,8 @@ fn generate_run_at_with_metrics(
     generate_run_seated_with_metrics(out, run, opens_line, None, run_line_metrics);
 }
 
-/// Write an inline DrawingML text box as one item on its paragraph's line.
+/// Write an inline DrawingML text box, diagram or picture as one item on its
+/// paragraph's line.
 ///
 /// A Typst `box` takes part in the line that holds it, so the line grows to the
 /// box's height and the text after it keeps the same baseline — which is how
@@ -5387,10 +6197,16 @@ fn generate_run_at_with_metrics(
 /// below the line instead of standing on it: measured at 85.92pt for that same
 /// anchor baseline. With the content placed, the box's own bottom edge is its
 /// baseline. The anchored text box path uses the same `#place(top + left)`.
+///
+/// On an exact line the box may reach only `exact_line_ascent_pt` above the
+/// baseline. A taller box keeps its bottom on the baseline inside a clipping
+/// box of that height, so the line keeps its stated height and only the part
+/// inside the line is painted, as in Word (issue #2228).
 fn write_inline_text_box(
     out: &mut String,
     inline_box: &InlineTextBox,
     inline_drawing_spacing_pt: f64,
+    exact_line_ascent_pt: Option<f64>,
     ctx: &mut super::GenCtx,
 ) -> Result<(), ConvertError> {
     let padding: &Insets = &inline_box.padding;
@@ -5403,12 +6219,23 @@ fn write_inline_text_box(
     } else {
         0.0
     };
+    let box_height_pt: f64 = inline_box.height + drawing_spacing_pt;
+    let clip_height_pt: Option<f64> =
+        exact_line_ascent_pt.filter(|ascent_pt| box_height_pt > *ascent_pt);
+    if let Some(clip_height_pt) = clip_height_pt {
+        let _ = write!(
+            out,
+            "#box(width: {}pt, height: {}pt, clip: true)[#place(bottom + left)[",
+            format_f64(inline_box.width),
+            format_f64(clip_height_pt),
+        );
+    }
     let inner_width: f64 = (inline_box.width - padding.left - padding.right).max(0.0);
     let _ = write!(
         out,
         "#box(width: {}pt, height: {}pt, inset: {}",
         format_f64(inline_box.width),
-        format_f64(inline_box.height + drawing_spacing_pt),
+        format_f64(box_height_pt),
         super::format_insets(padding),
     );
     if drawing_spacing_pt > 0.0 {
@@ -5440,6 +6267,9 @@ fn write_inline_text_box(
     ctx.breaks_hangul_at_eojeol = previous_breaks_hangul_at_eojeol;
     result?;
     out.push_str("]]]");
+    if clip_height_pt.is_some() {
+        out.push_str("]]");
+    }
     Ok(())
 }
 
@@ -5556,6 +6386,9 @@ fn generate_run_seated_with_metrics(
     if run.text.contains(PPTX_SOFT_LINE_BREAK_CHAR)
         || run.text.contains(HANGUL_KINSOKU_BREAK_CHAR)
         || run.text.contains(EAST_ASIAN_AUTO_SPACE_CHAR)
+        || run
+            .text
+            .contains([PAGE_NUMBER_FIELD_CHAR, TOTAL_PAGES_FIELD_CHAR])
     {
         write_run_with_break_markers(out, run, opens_line, seat_bottom_pt);
     } else {
@@ -5567,14 +6400,19 @@ fn generate_run_seated_with_metrics(
     }
 }
 
-/// Expands the PPTX in-text markers: a soft line break becomes
-/// `#linebreak()`, and a kinsoku break marker (issue #438) becomes an
+/// Expands the in-text markers. A PPTX soft line break becomes
+/// `#linebreak()`, and a PPTX kinsoku break marker (issue #438) becomes an
 /// empty `#box[]`. An inline frame is a Contingent Break in UAX #14
 /// (U+FFFC), so the line may end between a Hangul syllable and its
 /// trailing punctuation — which LB13 otherwise forbids. LB13 still glues
 /// the mark to the frame, so the two move to the next line together, and
 /// the zero-size frame neither disturbs line metrics nor leaves a
 /// zero-width space in the PDF text layer.
+///
+/// A DOCX East Asian auto space becomes [`east_asian_auto_space`]. A DOCX
+/// page field marker, [`PAGE_NUMBER_FIELD_CHAR`] or
+/// [`TOTAL_PAGES_FIELD_CHAR`], becomes the page counter, set in the run's
+/// own text properties as a header paragraph's field is (issue #2338).
 fn write_run_with_break_markers(
     out: &mut String,
     run: &Run,
@@ -5585,12 +6423,17 @@ fn write_run_with_break_markers(
 
     for (offset, ch) in run.text.char_indices() {
         let auto_space: String;
+        let page_field: String;
         let replacement: &str = match ch {
             PPTX_SOFT_LINE_BREAK_CHAR => "#linebreak()",
             HANGUL_KINSOKU_BREAK_CHAR => "#box[]",
             EAST_ASIAN_AUTO_SPACE_CHAR => {
                 auto_space = east_asian_auto_space(run);
                 &auto_space
+            }
+            PAGE_NUMBER_FIELD_CHAR | TOTAL_PAGES_FIELD_CHAR => {
+                page_field = page_field_markup(run, ch);
+                &page_field
             }
             _ => continue,
         };
@@ -5618,6 +6461,29 @@ fn write_run_with_break_markers(
             seat_bottom_pt,
         );
     }
+}
+
+/// The page counter a page field marker in `run` stands for, in the numeral
+/// format of the section whose story is being written. The page's own restart
+/// wins over the counter, which the page background reads before the body
+/// restarts it (see [`PAGE_RESTART_LABEL`]).
+fn page_field_markup(run: &Run, marker: char) -> String {
+    let field: String = if marker == TOTAL_PAGES_FIELD_CHAR {
+        "#context counter(page).final().first()".to_string()
+    } else {
+        let pattern: &str = PAGE_NUMBER_FORMAT
+            .with(std::cell::Cell::get)
+            .typst_pattern();
+        format!(
+            "#context {{ let restarts = query(<{PAGE_RESTART_LABEL}>).filter(restart => \
+             restart.location().page() == here().page()); if restarts.len() == 0 \
+             {{ counter(page).display(\"{pattern}\") }} else \
+             {{ numbering(\"{pattern}\", restarts.last().value) }} }}"
+        )
+    };
+    let mut markup: String = String::new();
+    super::write_hf_field(&mut markup, &run.style, &field);
+    markup
 }
 
 fn write_run_segment(
@@ -6062,7 +6928,10 @@ fn collect_formatting_wrappers(run: &Run) -> Vec<String> {
 /// when text properties are present, or the escaped text directly (with a
 /// `#[...]` safety wrapper when needed to prevent Typst syntax ambiguity).
 fn write_run_content(out: &mut String, source: &str, escaped: &str, style: &TextStyle) {
-    if has_text_properties(style) || needs_kerning_wrapper(style, escaped, source) {
+    if has_text_properties(style)
+        || needs_kerning_wrapper(style, escaped, source)
+        || needs_ligature_wrapper(style, escaped)
+    {
         out.push_str("#text(");
         write_text_params_for_run(out, style, escaped, source);
         out.push_str(")[");
@@ -6256,7 +7125,8 @@ fn write_text_params_inner(out: &mut String, style: &TextStyle, kerning_text: Ke
     if let Some(ref color) = style.color {
         write_param(out, &mut first, &format_run_fill(color, style.color_alpha));
     }
-    if let Some(spacing) = effective_letter_spacing(style, kerning_text) {
+    let tracking: Option<f64> = effective_letter_spacing(style, kerning_text);
+    if let Some(spacing) = tracking {
         write_param(
             out,
             &mut first,
@@ -6279,6 +7149,11 @@ fn write_text_params_inner(out: &mut String, style: &TextStyle, kerning_text: Ke
             write_param(out, &mut first, "ligatures: false");
         }
     }
+    if !tracking.is_some_and(|spacing| spacing != 0.0)
+        && let Some(ligatures) = style.ligatures
+    {
+        write_ligature_params(out, &mut first, ligatures);
+    }
     if let Some(BaselineShiftEm(shift_em)) = style.baseline_shift {
         // Typst's text baseline parameter is positive downward, opposite to
         // DrawingML. Resolve against the effective run size when available.
@@ -6290,6 +7165,37 @@ fn write_text_params_inner(out: &mut String, style: &TextStyle, kerning_text: Ke
     }
     if let Some(param) = kerning_param(style, kerning_text) {
         write_param(out, &mut first, &param);
+    }
+}
+
+/// The ligature classes a run states, as Typst parameters (issue #2205).
+///
+/// `ligatures:` is always written, because a stated answer must hold whatever
+/// an enclosing `#set text` says — a Word text box inside a slide-like fixed
+/// group sits under the PowerPoint rule. Typst switches `liga` and `clig`
+/// together, so the standard class decides it: Word offers contextual
+/// ligatures only together with standard ones, and a lone `clig` request is
+/// dropped rather than letting it fuse every `fi` the way the standard class
+/// would. Historical and discretionary ligatures are off unless requested.
+///
+/// A document that shapes right-to-left keeps the standard class on. Word
+/// joins the lam-alef of Arabic text in a document that states no ligatures,
+/// and a face that encodes it under `liga` loses it with the feature off: the
+/// Word export of docxide's scraped Arabic article draws 42, and the DejaVu
+/// Sans that sets its Arabic here kept 10 of them with the feature off. The
+/// exemption is the kerning rule's (see [`with_rtl_shaping_exemption`]), so
+/// it covers every run of the document for the same bidi reason.
+fn write_ligature_params(out: &mut String, first: &mut bool, ligatures: crate::ir::Ligatures) {
+    write_param(
+        out,
+        first,
+        &format!("ligatures: {}", standard_ligatures_apply(ligatures)),
+    );
+    if ligatures.historical {
+        write_param(out, first, "historical-ligatures: true");
+    }
+    if ligatures.discretional {
+        write_param(out, first, "discretionary-ligatures: true");
     }
 }
 
@@ -6372,6 +7278,11 @@ thread_local! {
     /// Whether run emission is currently inside a fixed PowerPoint page and
     /// should use the 1/8pt nominal-advance grid (issue #661).
     static POWERPOINT_ADVANCE_GRID: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    /// The numeral format of the section whose header and footer stories run
+    /// emission is writing, for the page field markers in their tables. See
+    /// [`with_page_number_format`].
+    static PAGE_NUMBER_FORMAT: std::cell::Cell<PageNumberFormat> =
+        const { std::cell::Cell::new(PageNumberFormat::Decimal) };
     /// The printed-to-declared scale while run emission is inside a
     /// spreadsheet coordinate system. `None` off a sheet; `Some(1.0)` on an
     /// unscaled sheet or inside a drawing that is scaled as a whole.
@@ -6735,6 +7646,24 @@ pub(super) fn with_drawingml_highlight<T>(operation: impl FnOnce() -> T) -> T {
     })
 }
 
+/// Run `operation` with page field markers counting in `format`, restoring
+/// the enclosing format even when generation panics. The markers sit in runs,
+/// whose emission has no [`super::GenCtx`] to read the section's format from.
+pub(super) fn with_page_number_format<T>(
+    format: PageNumberFormat,
+    operation: impl FnOnce() -> T,
+) -> T {
+    PAGE_NUMBER_FORMAT.with(|current| {
+        let previous = current.replace(format);
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(operation));
+        current.set(previous);
+        match result {
+            Ok(value) => value,
+            Err(panic) => std::panic::resume_unwind(panic),
+        }
+    })
+}
+
 /// Run `operation` with PowerPoint advance snapping in the requested state,
 /// restoring the enclosing state even when generation panics.
 pub(super) fn with_powerpoint_advance_grid<T>(active: bool, operation: impl FnOnce() -> T) -> T {
@@ -6831,6 +7760,23 @@ fn needs_kerning_wrapper(style: &TextStyle, escaped: &str, shaped: &str) -> bool
     !escaped.is_empty()
         && kerning_param(style, KerningText::Known { escaped, shaped })
             .is_some_and(|param| param.ends_with("false"))
+}
+
+/// Whether a run needs a `#text(...)` of its own purely to state ligatures.
+///
+/// The same reasoning as [`needs_kerning_wrapper`]: bare text takes the
+/// engine's default of standard ligatures on and the other classes off, which
+/// is wrong for a Word run that states anything else (issue #2205).
+fn needs_ligature_wrapper(style: &TextStyle, escaped: &str) -> bool {
+    !escaped.is_empty()
+        && style.ligatures.is_some_and(|ligatures| {
+            !standard_ligatures_apply(ligatures) || ligatures.historical || ligatures.discretional
+        })
+}
+
+/// Whether a run's text is shaped with the standard ligature class.
+fn standard_ligatures_apply(ligatures: crate::ir::Ligatures) -> bool {
+    ligatures.standard || rtl_shaping_exemption_is_active()
 }
 
 pub(super) fn write_param(out: &mut String, first: &mut bool, param: &str) {

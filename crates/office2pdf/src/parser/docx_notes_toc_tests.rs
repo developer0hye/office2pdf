@@ -115,11 +115,11 @@ fn test_endnote_parsed_as_footnote() {
 fn build_docx_with_endnote(text: &str, endnote_id: usize, endnote_text: &str) -> Vec<u8> {
     use std::io::Write;
     use zip::ZipWriter;
-    use zip::write::FileOptions;
+    use zip::write::SimpleFileOptions;
 
     let buf = Vec::new();
     let mut zip = ZipWriter::new(Cursor::new(buf));
-    let opts = FileOptions::default();
+    let opts = SimpleFileOptions::default();
 
     zip.start_file("[Content_Types].xml", opts).unwrap();
     zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

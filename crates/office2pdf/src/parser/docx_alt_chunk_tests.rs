@@ -11,11 +11,11 @@ fn package(chunk: &[u8], content_type: &str, target: &str, mode: &str) -> Vec<u8
         ("word/document.xml", r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:rel="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body><w:p><w:r><w:t>Before</w:t></w:r></w:p><d:altChunk xmlns:d="http://schemas.openxmlformats.org/wordprocessingml/2006/main" rel:id="import"/><w:p><w:r><w:t>After</w:t></w:r></w:p><w:sectPr/></w:body></w:document>"#.into()),
     ];
     for (name, data) in entries {
-        zip.start_file(name, zip::write::FileOptions::default())
+        zip.start_file(name, zip::write::SimpleFileOptions::default())
             .unwrap();
         zip.write_all(data.as_bytes()).unwrap();
     }
-    zip.start_file("word/import.html", zip::write::FileOptions::default())
+    zip.start_file("word/import.html", zip::write::SimpleFileOptions::default())
         .unwrap();
     zip.write_all(chunk).unwrap();
     zip.finish().unwrap().into_inner()
@@ -263,7 +263,10 @@ fn alt_chunk_strict_word_and_relationship_namespaces_import_text() {
                 "http://purl.oclc.org/ooxml/officeDocument/relationships",
             );
         writer
-            .start_file(entry.name(), zip::write::FileOptions::default())
+            .start_file(
+                entry.name().expect("entry name should decode").into_owned(),
+                zip::write::SimpleFileOptions::default(),
+            )
             .unwrap();
         writer.write_all(xml.as_bytes()).unwrap();
     }

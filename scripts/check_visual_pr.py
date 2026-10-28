@@ -185,6 +185,37 @@ def is_visual_asset(path: str) -> bool:
     return PurePosixPath(path).suffix.lower() not in BOOKKEEPING_SUFFIXES
 
 
+def validate_final_performance_pass(body: str) -> list[str]:
+    # Commented template instructions are not completion evidence.
+    section = extract_section(
+        re.sub(r"<!--.*?-->", "", body, flags=re.S), "## Final performance pass"
+    )
+    values = {
+        name: value.strip().strip("`")
+        for name, value in re.findall(r"(?m)^- ([^:\n]+):[ \t]*(.*)$", section)
+    }
+    placeholders = {"", "pending", "in progress", "none", "n/a", "not applicable", "todo", "reason"}
+    status = values.get("Status", "")
+    if status.startswith("Not applicable:"):
+        reason = status.partition(":")[2].strip()
+        if reason.casefold() not in placeholders:
+            return []
+        return [
+            "Final performance pass > Not applicable requires an explanation; "
+            "review must verify no conversion runtime impact."
+        ]
+    if status != "Complete":
+        return [
+            "Final performance pass > Status must be Complete, or Not applicable: "
+            "explanation (review must verify no conversion runtime impact); Pending is not completion."
+        ]
+    return [
+        f"Final performance pass > {name} requires evidence or a link to the recorded results."
+        for name in ("Measurements", "Outcome and revalidation")
+        if values.get(name, "").casefold() in placeholders
+    ]
+
+
 def validate_pr_body(body: str, changed_paths: list[str]) -> list[str]:
     errors: list[str] = []
     impact = extract_section(body, "## Visual impact")
@@ -204,9 +235,10 @@ def validate_pr_body(body: str, changed_paths: list[str]) -> list[str]:
             errors.append("assets/bugfixes changes require 'Rendered PDF change or visual evidence added'.")
         return errors
 
+    errors.extend(validate_final_performance_pass(body))
     audit = extract_section(body, "## Visual audit")
     if not audit:
-        return ["Rendered changes require a ## Visual audit section."]
+        return errors + ["Rendered changes require a ## Visual audit section."]
 
     issue_value = field(audit, "Issue")
     issue_match = re.fullmatch(r"#(\d+)", issue_value or "")

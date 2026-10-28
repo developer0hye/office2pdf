@@ -1,0 +1,311 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 619.0848,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 90.24,
+        "x": 72.0,
+        "y": 95.04
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Table cell text 'Public floating topic' and 'Second topic line' drawn 5.47pt right of Word: the table's left edge sits at the margin instead of one cell margin left of it."
+      },
+      "id": "p1-901f504025ec",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 285.9264,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 48.0,
+        "x": 72.48,
+        "y": 115.2
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Table cell text 'Public floating topic' and 'Second topic line' drawn 5.47pt right of Word: the table's left edge sits at the margin instead of one cell margin left of it."
+      },
+      "id": "p1-4a00325b2908",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 193.3056,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 31.2,
+        "x": 120.96,
+        "y": 115.2
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Table cell text 'Public floating topic' and 'Second topic line' drawn 5.47pt right of Word: the table's left edge sits at the margin instead of one cell margin left of it."
+      },
+      "id": "p1-485c3b23d973",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 159.6672,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 23.04,
+        "x": 162.72,
+        "y": 96.96
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Table cell text 'Public floating topic' and 'Second topic line' drawn 5.47pt right of Word: the table's left edge sits at the margin instead of one cell margin left of it."
+      },
+      "id": "p1-559f1edf3a23",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 138.7008,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 21.6,
+        "x": 152.64,
+        "y": 115.2
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "Table cell text 'Public floating topic' and 'Second topic line' drawn 5.47pt right of Word: the table's left edge sits at the margin instead of one cell margin left of it."
+      },
+      "id": "p1-c881c3ab72ef",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 123.0336,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 22.08,
+        "x": 318.24,
+        "y": 156.48
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "'Public greeting' sits on Word's line below the table, centred on the column (x 255.08 vs 255.10, y +0.06pt); the inspected crop shows only Liberation Serif versus Times New Roman outline differences of the same regular 14pt text."
+      },
+      "id": "p1-7adf32c90464",
+      "region": "top"
+    },
+    {
+      "area_pt2": 73.0368,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 12.0,
+        "x": 306.24,
+        "y": 158.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "'Public greeting' sits on Word's line below the table, centred on the column (x 255.08 vs 255.10, y +0.06pt); the inspected crop shows only Liberation Serif versus Times New Roman outline differences of the same regular 14pt text."
+      },
+      "id": "p1-775bc9065634",
+      "region": "top"
+    },
+    {
+      "area_pt2": 57.1392,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 10.08,
+        "x": 294.72,
+        "y": 158.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "'Public greeting' sits on Word's line below the table, centred on the column (x 255.08 vs 255.10, y +0.06pt); the inspected crop shows only Liberation Serif versus Times New Roman outline differences of the same regular 14pt text."
+      },
+      "id": "p1-5f562620f8c6",
+      "region": "top"
+    },
+    {
+      "area_pt2": 40.0896,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 11.52,
+        "x": 167.52,
+        "y": 198.24
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "'Public body paragraph' sits on Word's line at the margin (x 72.00 vs 72.03, y +0.06pt); the inspected crop shows only Liberation Serif versus Times New Roman outline differences of the same regular 14pt text."
+      },
+      "id": "p1-e6893088b76a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 8.16,
+        "x": 183.36,
+        "y": 198.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "'Public body paragraph' sits on Word's line at the margin (x 72.00 vs 72.03, y +0.06pt); the inspected crop shows only Liberation Serif versus Times New Roman outline differences of the same regular 14pt text."
+      },
+      "id": "p1-584e288bf612",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 9.6,
+        "x": 156.0,
+        "y": 198.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "'Public body paragraph' sits on Word's line at the margin (x 72.00 vs 72.03, y +0.06pt); the inspected crop shows only Liberation Serif versus Times New Roman outline differences of the same regular 14pt text."
+      },
+      "id": "p1-75ee872cb4af",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.8784,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 5.76,
+        "x": 270.72,
+        "y": 155.04
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "'Public greeting' sits on Word's line below the table, centred on the column (x 255.08 vs 255.10, y +0.06pt); the inspected crop shows only Liberation Serif versus Times New Roman outline differences of the same regular 14pt text."
+      },
+      "id": "p1-7397408a3f48",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 191.52,
+        "y": 195.36
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "'Public body paragraph' sits on Word's line at the margin (x 72.00 vs 72.03, y +0.06pt); the inspected crop shows only Liberation Serif versus Times New Roman outline differences of the same regular 14pt text."
+      },
+      "id": "p1-b860613eef3f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 110.88,
+        "y": 195.36
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "'Public body paragraph' sits on Word's line at the margin (x 72.00 vs 72.03, y +0.06pt); the inspected crop shows only Liberation Serif versus Times New Roman outline differences of the same regular 14pt text."
+      },
+      "id": "p1-c64d9b5332ae",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 9.12,
+        "x": 121.44,
+        "y": 196.8
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "'Public body paragraph' sits on Word's line at the margin (x 72.00 vs 72.03, y +0.06pt); the inspected crop shows only Liberation Serif versus Times New Roman outline differences of the same regular 14pt text."
+      },
+      "id": "p1-589a0e5d1abf",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 285.12,
+        "y": 158.4
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "'Public greeting' sits on Word's line below the table, centred on the column (x 255.08 vs 255.10, y +0.06pt); the inspected crop shows only Liberation Serif versus Times New Roman outline differences of the same regular 14pt text."
+      },
+      "id": "p1-471cad4a23c8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 7.2,
+        "x": 262.56,
+        "y": 158.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "'Public greeting' sits on Word's line below the table, centred on the column (x 255.08 vs 255.10, y +0.06pt); the inspected crop shows only Liberation Serif versus Times New Roman outline differences of the same regular 14pt text."
+      },
+      "id": "p1-f03c8f43601d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 4.32,
+        "x": 178.56,
+        "y": 198.72
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "'Public body paragraph' sits on Word's line at the margin (x 72.00 vs 72.03, y +0.06pt); the inspected crop shows only Liberation Serif versus Times New Roman outline differences of the same regular 14pt text."
+      },
+      "id": "p1-fc1eba281d34",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 18,
+    "duplicate": 0,
+    "total": 18,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

@@ -5,6 +5,7 @@ transcript-directory naming scheme makes the viewer watch nothing, and a
 malformed transcript line must never take the viewer down mid-run.
 """
 
+import io
 import json
 import os
 import sys
@@ -39,6 +40,16 @@ class TranscriptDirTest(unittest.TestCase):
 
 
 class NewestTranscriptTest(unittest.TestCase):
+    def test_finds_live_codex_events_in_the_durable_run_layout(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory) / "runs/issue-2101/attempt-codex"
+            run.mkdir(parents=True)
+            events = run / "events.jsonl"
+            events.write_text('{"type":"thread.started","thread_id":"codex-session"}\n')
+            copied = run / "transcript.jsonl"
+            copied.write_text(events.read_text())
+            self.assertEqual(newest_transcript(directory), str(events))
+
     def test_picks_the_most_recently_written_session(self):
         with tempfile.TemporaryDirectory() as directory:
             older = os.path.join(directory, "older.jsonl")
@@ -60,6 +71,14 @@ class NewestTranscriptTest(unittest.TestCase):
     def test_an_empty_directory_yields_no_transcript(self):
         with tempfile.TemporaryDirectory() as directory:
             self.assertIsNone(newest_transcript(directory))
+
+    def test_excludes_codex_thread_id_even_when_not_in_event_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory) / 'runs/reflect-attempt'
+            run.mkdir(parents=True)
+            events = run / 'events.jsonl'
+            events.write_text('{"type":"thread.started","thread_id":"excluded-session"}\n')
+            self.assertIsNone(newest_transcript(directory, exclude=('excluded-session',)))
 
 
 class FormatEventsTest(unittest.TestCase):
@@ -90,6 +109,30 @@ class FormatEventsTest(unittest.TestCase):
             {"type": "tool_use", "name": "Bash", "input": {"command": "cargo test"}},
         )
         self.assertEqual(len(format_events(line)), 2)
+
+    def test_codex_command_start_and_completion_are_visible(self):
+        for event in ('item.started', 'item.completed'):
+            line = json.dumps({'type': event, 'item': {'type': 'command_execution',
+                'command': 'cargo test --locked', 'exit_code': 0}})
+            self.assertIn('cargo test --locked', format_events(line)[0])
+
+    def test_codex_final_message_is_visible(self):
+        line = json.dumps({'type': 'item.completed', 'item': {'type': 'agent_message', 'text': 'Fixed #2101'}})
+        self.assertEqual(format_events(line), ['[SAY]  Fixed #2101'])
+
+    def test_codex_failure_is_visible(self):
+        line = json.dumps({'type': 'turn.failed', 'error': {'message': 'Quota exhausted'}})
+        self.assertEqual(format_events(line), ['[ERROR] Quota exhausted'])
+
+    def test_torn_line_is_retried_when_completed(self):
+        from issue_loop_watch import read_complete_lines
+        stream = io.StringIO('first\n{"type":')
+        self.assertEqual(read_complete_lines(stream), ['first\n'])
+        position = stream.tell()
+        stream.seek(0, 2)
+        stream.write('"turn.completed"}\n')
+        stream.seek(position)
+        self.assertEqual(read_complete_lines(stream), ['{"type":"turn.completed"}\n'])
 
     def test_non_assistant_records_are_ignored(self):
         self.assertEqual(format_events(json.dumps({"type": "user"})), [])

@@ -11,10 +11,11 @@ const MAX_TABLE_DEPTH: usize = 64;
 use crate::ir::{
     Alignment, Block, BorderLineStyle, BorderSide, Caption, CellBorder, CellVerticalAlign, Color,
     ColumnLayout, Document, DocumentLanguage, FloatingImage, FloatingImageVerticalAnchor,
-    FloatingTable, FloatingTextBox, ImageData, ImageFormat, ImageParagraphSpacing, InlineTextBox,
-    Insets, LineCap, LineJoin, LineSpacing, Page, PageNumbering, PairKerning, Paragraph,
-    ParagraphStyle, Run, StyleSheet, TabAlignment, TabLeader, TabStop, Table, TableCell,
-    TableOfContents, TableRow, TextDirection, TextStyle, VerticalTextAlign, WordCompatibilityMode,
+    FloatingTable, FloatingTextBox, HorizontalRule, ImageData, ImageFormat, ImageParagraphIndent,
+    ImageParagraphSpacing, InlineTextBox, Insets, Ligatures, LineCap, LineJoin, LineSpacing, Page,
+    PageNumbering, PairKerning, Paragraph, ParagraphStyle, Run, StyleSheet, TabAlignment,
+    TabLeader, TabStop, Table, TableCell, TableOfContents, TableRow, TextDirection, TextFrame,
+    TextStyle, VerticalTextAlign, WordCompatibilityMode,
 };
 use crate::parser::Parser;
 
@@ -22,19 +23,20 @@ use crate::parser::Parser;
 use self::contexts::scan_table_headers;
 use self::contexts::{
     BidiContext, ChartContext, ContextualSpacingContext, DocxConversionContext,
-    DrawingShapeContext, DrawingTextBoxContext, DrawingTextBoxInfo, FieldContext, MathContext,
-    NoteContent, NoteContext, ParagraphContextualSpacing, ParagraphMarkContext,
-    ParagraphShadingContext, PictureCropContext, SmallCapsContext, TableHeaderContext,
-    TableStyleContext, VmlTextBoxContext, VmlTextBoxInfo, WordWrapContext, WpgDrawingInfo,
-    WrapContext, build_chart_context_from_xml, build_math_context_from_xml,
-    build_note_context_from_xml, build_wrap_context_from_xml,
+    DrawingShapeContext, DrawingTextBoxContext, DrawingTextBoxInfo, FieldContent, FieldContext,
+    MathContext, NoteContent, NoteContext, PageFieldScan, ParagraphContextualSpacing,
+    ParagraphMarkContext, ParagraphRunScan, ParagraphShadingContext, PictureCropContext, RunScan,
+    RunScanContext, SmallCapsContext, TableHeaderContext, TableStyleContext, VmlTextBoxContext,
+    VmlTextBoxInfo, WordWrapContext, WpgDrawingInfo, WrapContext, build_chart_context_from_xml,
+    build_math_context_from_xml, build_note_context_from_xml, build_wrap_context_from_xml,
     extract_column_layout_from_section_property, is_note_reference_run, read_zip_text,
     scan_column_layouts, scan_line_numbering, scan_page_borders, scan_page_numbering,
     scan_section_alignment, scan_style_paragraph_shading, scan_style_word_wrap, seq_identifier,
     toc_caption_identifier, toc_heading_depth,
 };
 use self::lists::{
-    NumberingMap, TaggedElement, build_numbering_map, extract_num_info, group_into_lists,
+    NumberingMap, StyleSuppliedIndents, TaggedElement, build_numbering_map, extract_num_info,
+    group_into_lists,
 };
 use self::media::{
     DrawingTextBoxPlacement, extract_drawing_image, extract_drawing_text_box_blocks,
@@ -43,22 +45,27 @@ use self::media::{
 #[cfg(test)]
 use self::sections::extract_page_size;
 use self::sections::{
-    HeaderFooterAssets, HeaderFooterStyleContext, SectionHeaderFooterInputs, SectionOverrides,
-    build_flow_page_from_section, build_header_footer_assets,
+    HeaderFooterAssets, HeaderFooterStyleContext, LinkedFirstStories, SectionHeaderFooterInputs,
+    SectionOverrides, body_text_frame, build_flow_page_from_section, build_header_footer_assets,
+    fixed_text_frame, top_margin_frame_box,
 };
+#[cfg(test)]
+use self::styles::parse_ligatures_value;
 use self::styles::{
-    DOC_DEFAULT_STYLE_ID, PairKerningRules, ResolvedStyle, StyleMap, TabStopOverride,
-    apply_tab_stop_overrides, build_style_map, get_paragraph_style_id, merge_paragraph_style,
-    merge_text_style, resolve_doc_default_text_style,
+    DOC_DEFAULT_STYLE_ID, LigatureRules, PairKerningRules, ResolvedStyle, StyleMap,
+    TabStopOverride, apply_tab_stop_overrides, build_style_map, effective_frame_property,
+    get_paragraph_style_id, merge_paragraph_style, merge_text_style, paragraph_style_frames,
+    resolve_doc_default_text_style,
 };
 use self::tables::{convert_table, convert_table_in_text_box};
 use self::text::{
     ThemeFonts, WORD_UNSTATED_FONT_SIZE_PT, extract_doc_default_paragraph_style,
-    extract_doc_default_text_style_with_theme, extract_paragraph_style, extract_run_style,
-    extract_run_style_id, extract_run_text, extract_tab_stop_overrides,
-    insert_east_asian_auto_space, is_column_break, is_page_break, pair_kerning_from_half_points,
-    parse_hex_color, parse_theme_fonts, resolve_hyperlink_url, resolve_latin_theme_font_family,
-    resolve_theme_font_family, word_built_in_doc_defaults,
+    extract_doc_default_text_style_with_theme, extract_indent, extract_paragraph_style,
+    extract_run_style, extract_run_style_id, extract_run_text, extract_run_text_marking_clears,
+    extract_run_text_reading_fields, extract_tab_stop_overrides, insert_east_asian_auto_space,
+    is_column_break, is_page_break, pair_kerning_from_half_points, parse_hex_color,
+    parse_theme_fonts, resolve_hyperlink_url, resolve_latin_theme_font_family,
+    resolve_theme_font_family, take_clearing_break_markers, word_built_in_doc_defaults,
 };
 #[cfg(test)]
 use self::text::{extract_pair_kerning, extract_tab_stops, resolve_highlight_color};
@@ -261,6 +268,9 @@ struct ZipPreParseAssets {
     /// `w:kern` (issue #628).
     pair_kerning: PairKerningRules,
     /// Read from the raw `word/styles.xml` because docx-rs has no field for
+    /// `w14:ligatures` (issue #2205).
+    ligatures: LigatureRules,
+    /// Read from the raw `word/styles.xml` because docx-rs has no field for
     /// `w:lang`.
     default_language: Option<DocumentLanguage>,
     /// Whether the package has a `word/styles.xml`; one without it takes
@@ -350,6 +360,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 vml_text_boxes,
                 bidi,
                 small_caps,
+                run_scan: RunScanContext::from_xml(doc_xml.as_deref()),
                 paragraph_shading: ParagraphShadingContext::from_xml(doc_xml.as_deref()),
                 word_wraps: WordWrapContext::from_xml(doc_xml.as_deref()),
                 contextual_spacing: ContextualSpacingContext::from_xml(
@@ -383,6 +394,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 style_paragraph_backgrounds,
                 style_word_wraps,
                 pair_kerning: PairKerningRules::from_styles_xml(styles_xml.as_deref()),
+                ligatures: LigatureRules::from_styles_xml(styles_xml.as_deref()),
                 default_language,
                 styles_part_is_present: styles_xml.is_some(),
             }
@@ -402,6 +414,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
                 vml_text_boxes: VmlTextBoxContext::from_xml(None),
                 bidi: BidiContext::from_xml(None),
                 small_caps: SmallCapsContext::from_xml(None),
+                run_scan: RunScanContext::from_xml(None),
                 paragraph_shading: ParagraphShadingContext::from_xml(None),
                 word_wraps: WordWrapContext::from_xml(None),
                 contextual_spacing: ContextualSpacingContext::from_xml(None, None),
@@ -423,6 +436,7 @@ fn build_zip_preparse_assets(data: &[u8]) -> ZipPreParseAssets {
             style_paragraph_backgrounds: HashMap::new(),
             style_word_wraps: HashMap::new(),
             pair_kerning: PairKerningRules::default(),
+            ligatures: LigatureRules::default(),
             default_language: None,
             // docx-rs rejects a package that is not a ZIP, so nothing reads it.
             styles_part_is_present: true,
@@ -457,6 +471,7 @@ impl Parser for DocxParser {
             style_paragraph_backgrounds,
             style_word_wraps,
             pair_kerning,
+            ligatures,
             default_language,
             styles_part_is_present,
         } = build_zip_preparse_assets(data);
@@ -513,6 +528,7 @@ impl Parser for DocxParser {
             &style_paragraph_backgrounds,
             &style_word_wraps,
             &pair_kerning,
+            &ligatures,
         );
         let numberings = build_numbering_map(&docx.numberings, &style_map, &theme_fonts);
 
@@ -534,7 +550,32 @@ impl Parser for DocxParser {
             .unwrap_or_default();
         let mut elements: Vec<TaggedElement> = Vec::new();
         let mut pages: Vec<Page> = Vec::new();
+        // Each section's `first` stories as the next section links to them,
+        // kept apart from `pages` because a section without `w:titlePg` passes
+        // them on without showing them (issue #2224).
+        let mut linked_first_stories = LinkedFirstStories::default();
         let mut section_layout_index: usize = 0;
+        // The body index at which the frame of the last top-margin frame box
+        // opened starts, so the frame's later lines join that box.
+        let mut open_frame_box: Option<usize> = None;
+        // The last run of children sharing a frame at a fixed place on its
+        // page, so its later children join that frame.
+        let mut open_fixed_frame: Option<FixedFrameGroup> = None;
+        // The body index the current section's first child sits at.
+        let mut section_start: usize = 0;
+        // The `w:after` of an empty section mark that took no line before a
+        // continuous section, until that section's first block takes it.
+        let mut section_mark_after: Option<f64> = None;
+        let style_frames: HashMap<String, docx_rs::FrameProperty> =
+            paragraph_style_frames(&docx.styles);
+        let body_frames: Vec<Option<docx_rs::FrameProperty>> = docx
+            .document
+            .children
+            .iter()
+            .map(|child| {
+                leading_frame_property(child, &style_frames, default_paragraph_style_id.as_deref())
+            })
+            .collect();
         for (idx, child) in docx.document.children.iter().enumerate() {
             // A removed paragraph mark merges into the next paragraph; zero-width
             // bookmark/comment markers leave it pending. Tables, TOCs, and
@@ -548,22 +589,8 @@ impl Parser for DocxParser {
             {
                 elements.push(TaggedElement::Plain(vec![block]));
             }
+            let mut dropped_mark_after: Option<f64> = None;
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match child {
-                docx_rs::DocumentChild::Paragraph(para)
-                    if is_empty_section_break_paragraph(para) =>
-                {
-                    // Paragraph cursors scan raw XML, so even this marker must
-                    // advance them before its layout-only block is discarded.
-                    let _ = convert_paragraph_element(
-                        para,
-                        &images,
-                        &hyperlinks,
-                        &style_map,
-                        &ctx,
-                        &docx.styles,
-                    );
-                    vec![]
-                }
                 docx_rs::DocumentChild::Paragraph(para) => {
                     let mut tagged: Vec<TaggedElement> = convert_paragraph_element(
                         para,
@@ -573,6 +600,52 @@ impl Parser for DocxParser {
                         &ctx,
                         &docx.styles,
                     );
+                    if let Some(frame) = body_frames[idx].as_ref().and_then(fixed_text_frame) {
+                        tagged = join_fixed_text_frame(
+                            &mut elements,
+                            &mut open_fixed_frame,
+                            frame,
+                            tagged,
+                            &docx.document.children,
+                            &body_frames,
+                            idx,
+                        );
+                    } else if is_empty_lifted_frame(
+                        &tagged,
+                        &docx.document.children,
+                        &body_frames,
+                        idx,
+                    ) {
+                        tracing::debug!(
+                            format = "DOCX",
+                            body_index = idx,
+                            "Empty framed paragraph leaves no body line"
+                        );
+                        let lines: Vec<TaggedElement> = std::mem::take(&mut tagged);
+                        if word_compatibility_mode == WordCompatibilityMode::Word2013OrLater {
+                            tagged = keep_line_in_top_margin_frame_box(
+                                &mut elements,
+                                &mut open_frame_box,
+                                para,
+                                lines,
+                                &body_frames,
+                                idx,
+                            );
+                        }
+                    } else if let Some(frame) = lifted_text_frame(&tagged, &body_frames, idx) {
+                        tracing::debug!(
+                            format = "DOCX",
+                            body_index = idx,
+                            x_pt = frame.x,
+                            y_pt = frame.y,
+                            width_pt = frame.width,
+                            height_pt = frame.height,
+                            "Framed paragraph lifted out of the body flow"
+                        );
+                        tagged = vec![TaggedElement::Plain(vec![Block::TextFrame(Box::new(
+                            frame,
+                        ))])];
+                    }
                     // Inject math equations for this body child
                     let eqs = math.take(idx);
                     for eq in eqs {
@@ -583,16 +656,58 @@ impl Parser for DocxParser {
                     for ch in chs {
                         tagged.push(TaggedElement::Plain(vec![Block::Chart(Box::new(ch))]));
                     }
+                    if para.property.section_property.is_some()
+                        && body_frames[idx].is_none()
+                        && is_blank_paragraph_output(&tagged)
+                        && !empty_section_mark_keeps_line(
+                            &docx.document.children,
+                            section_start,
+                            idx,
+                            elements.last(),
+                            word_compatibility_mode,
+                            &docx.document.section_property,
+                        )
+                    {
+                        tracing::debug!(
+                            format = "DOCX",
+                            body_index = idx,
+                            "Empty section mark takes no line"
+                        );
+                        // After a page or column break the next section opens
+                        // at a page or column top, which has no gap to share.
+                        if next_section_starts_continuously(
+                            &docx.document.children,
+                            idx,
+                            &docx.document.section_property,
+                        ) && !ends_with_layout_break(elements.last())
+                        {
+                            dropped_mark_after = blank_paragraph_space_after(&tagged);
+                        }
+                        tagged.clear();
+                    }
                     tagged
                 }
                 docx_rs::DocumentChild::Table(table) => {
-                    vec![TaggedElement::Plain(vec![convert_body_table_block(
-                        table,
-                        &images,
-                        &hyperlinks,
-                        &style_map,
-                        &ctx,
-                    )])]
+                    let tagged: Vec<TaggedElement> =
+                        vec![TaggedElement::Plain(vec![convert_body_table_block(
+                            table,
+                            &images,
+                            &hyperlinks,
+                            &style_map,
+                            &ctx,
+                        )])];
+                    match body_frames[idx].as_ref().and_then(fixed_text_frame) {
+                        Some(frame) => join_fixed_text_frame(
+                            &mut elements,
+                            &mut open_fixed_frame,
+                            frame,
+                            tagged,
+                            &docx.document.children,
+                            &body_frames,
+                            idx,
+                        ),
+                        None => tagged,
+                    }
                 }
                 docx_rs::DocumentChild::StructuredDataTag(sdt) => {
                     convert_sdt_children(sdt, &images, &hyperlinks, &style_map, &ctx, &docx.styles)
@@ -605,7 +720,14 @@ impl Parser for DocxParser {
             }));
 
             match result {
-                Ok(elems) => elements.extend(elems),
+                Ok(mut elems) => {
+                    if is_body_block(child)
+                        && let Some(mark_after) = section_mark_after.take()
+                    {
+                        pass_on_section_mark_after(&mut elems, mark_after);
+                    }
+                    elements.extend(elems);
+                }
                 Err(panic_info) => {
                     let detail = if let Some(s) = panic_info.downcast_ref::<String>() {
                         s.clone()
@@ -621,6 +743,9 @@ impl Parser for DocxParser {
                         ),
                     });
                 }
+            }
+            if dropped_mark_after.is_some() {
+                section_mark_after = dropped_mark_after;
             }
 
             if let docx_rs::DocumentChild::Paragraph(para) = child
@@ -639,7 +764,7 @@ impl Parser for DocxParser {
                     Page::Flow(flow_page) | Page::FlowContinuous(flow_page) => Some(flow_page),
                     _ => None,
                 });
-                let flow_page: crate::ir::FlowPage = build_flow_page_from_section(
+                let (flow_page, section_first_stories) = build_flow_page_from_section(
                     section_prop,
                     std::mem::take(&mut elements),
                     &numberings,
@@ -647,6 +772,7 @@ impl Parser for DocxParser {
                         assets: &header_footer_assets,
                         inherited_header: previous_flow_page.and_then(|page| page.header.as_ref()),
                         inherited_footer: previous_flow_page.and_then(|page| page.footer.as_ref()),
+                        inherited_first: &linked_first_stories,
                     },
                     SectionOverrides {
                         column_layout,
@@ -661,6 +787,8 @@ impl Parser for DocxParser {
                     header_footer_styles,
                     &mut warnings,
                 );
+                linked_first_stories = section_first_stories;
+                section_start = idx + 1;
                 pages.push(
                     if section_prop.section_type == Some(docx_rs::SectionType::Continuous) {
                         Page::FlowContinuous(flow_page)
@@ -685,7 +813,7 @@ impl Parser for DocxParser {
             Page::Flow(flow_page) | Page::FlowContinuous(flow_page) => Some(flow_page),
             _ => None,
         });
-        let final_flow_page: crate::ir::FlowPage = build_flow_page_from_section(
+        let (final_flow_page, _) = build_flow_page_from_section(
             &docx.document.section_property,
             elements,
             &numberings,
@@ -693,6 +821,7 @@ impl Parser for DocxParser {
                 assets: &header_footer_assets,
                 inherited_header: previous_flow_page.and_then(|page| page.header.as_ref()),
                 inherited_footer: previous_flow_page.and_then(|page| page.footer.as_ref()),
+                inherited_first: &linked_first_stories,
             },
             SectionOverrides {
                 column_layout: final_column_layout,
@@ -755,6 +884,7 @@ impl Parser for DocxParser {
                         &docx.styles,
                         &theme_fonts,
                         &pair_kerning,
+                        &ligatures,
                     )),
                     word_compatibility_mode: Some(word_compatibility_mode),
                     default_language,
@@ -932,6 +1062,25 @@ fn convert_sdt_children(
     result
 }
 
+/// Which indents a paragraph with a direct `w:numPr` takes from its style
+/// chain because its own `w:ind` does not state them. None when the numbering
+/// comes from the style.
+fn style_supplied_indents(para: &docx_rs::Paragraph, style_map: &StyleMap) -> StyleSuppliedIndents {
+    if !para.has_numbering {
+        return StyleSuppliedIndents::default();
+    }
+    let (left, _, first_line) = extract_indent(&para.property.indent);
+    let style: Option<&ParagraphStyle> = get_paragraph_style_id(&para.property)
+        .and_then(|id| style_map.get(id))
+        .or_else(|| style_map.get(DOC_DEFAULT_STYLE_ID))
+        .map(|resolved| &resolved.paragraph);
+    StyleSuppliedIndents {
+        left: left.is_none() && style.is_some_and(|style| style.indent_left.is_some()),
+        first_line: first_line.is_none()
+            && style.is_some_and(|style| style.indent_first_line.is_some()),
+    }
+}
+
 fn convert_body_table_block(
     source_table: &docx_rs::Table,
     images: &ImageMap,
@@ -939,11 +1088,45 @@ fn convert_body_table_block(
     style_map: &StyleMap,
     ctx: &DocxConversionContext,
 ) -> Block {
+    // Read before the conversion consumes the table's scan entry.
+    let vertical_from_text_twips: (Option<f64>, Option<f64>) =
+        ctx.table_headers.next_vertical_from_text_twips();
     let table: Table = convert_table(source_table, images, hyperlinks, style_map, ctx, 0);
-    match sections::floating_table_frame(source_table, &table) {
+    match sections::floating_table_frame(source_table, &table, vertical_from_text_twips) {
         Some(frame) => Block::FloatingTable(Box::new(FloatingTable { table, frame })),
         None => Block::Table(table),
     }
+}
+
+/// The formatting a numbered paragraph's list label takes before its level's
+/// own `w:rPr`: the paragraph mark's run properties, resolved through the
+/// cascade a run takes, so `w:pPr/w:rPr` outranks the `w:pStyle` and both
+/// outrank `w:rPrDefault`. Word formats the label this way whatever the
+/// item's runs state (issue #2337).
+///
+/// The mark's underline, vertical position and small capitals stay off the
+/// label, as LibreOffice's `IsIgnoredCharFormatForNumbering` and
+/// `checkApplyParagraphMarkFormatToNumbering` record for Word.
+fn numbering_label_style(
+    para: &docx_rs::Paragraph,
+    style_map: &StyleMap,
+    theme_fonts: &ThemeFonts,
+) -> TextStyle {
+    let resolved_style: Option<&ResolvedStyle> = get_paragraph_style_id(&para.property)
+        .and_then(|id| style_map.get(id))
+        .or_else(|| style_map.get(DOC_DEFAULT_STYLE_ID));
+    let mut style: TextStyle = resolve_run_style(
+        &para.property.run_property,
+        false,
+        resolved_style,
+        style_map,
+        theme_fonts,
+    );
+    style.underline = None;
+    style.vertical_align = None;
+    style.baseline_shift = None;
+    style.small_caps = None;
+    style
 }
 
 /// Convert one docx-rs paragraph into its ordered plain blocks and list paragraph.
@@ -956,7 +1139,10 @@ fn convert_paragraph_element(
     ctx: &DocxConversionContext,
     styles: &docx_rs::Styles,
 ) -> Vec<TaggedElement> {
-    let num_info = extract_num_info(para, styles);
+    let num_info = extract_num_info(para, styles).map(|mut info| {
+        info.style_supplied_indents = style_supplied_indents(para, style_map);
+        info
+    });
 
     // Build the paragraph IR
     let mut blocks = Vec::new();
@@ -1009,6 +1195,11 @@ fn convert_paragraph_element(
             &mut paragraph.style,
             ctx.paragraph_property_defaults_are_declared,
         );
+        paragraph.style.numbering_label_style = Some(Box::new(numbering_label_style(
+            para,
+            style_map,
+            &ctx.theme_fonts,
+        )));
         tagged.push(TaggedElement::ListParagraph {
             info: info.clone(),
             paragraph: Box::new(paragraph),
@@ -1085,6 +1276,15 @@ fn resolve_run_style(
     merge_text_style(&explicit_style, resolved_style)
 }
 
+/// Lay a run's own `w14:ligatures` over its resolved style. A run's direct
+/// formatting outranks every style it inherits from, so this needs no merge
+/// (issue #2205).
+fn apply_direct_ligatures(style: &mut TextStyle, direct_ligatures: Option<Ligatures>) {
+    if direct_ligatures.is_some() {
+        style.ligatures = direct_ligatures;
+    }
+}
+
 /// Intermediate results from scanning a run segment for media and text boxes.
 struct RunChildrenMedia {
     text_box_blocks: Vec<Block>,
@@ -1092,6 +1292,10 @@ struct RunChildrenMedia {
     /// paragraph's own line, so they ride the run rather than becoming flow
     /// blocks beneath it (issue #1690).
     inline_text_boxes: Vec<InlineTextBox>,
+    /// The `wp:inline` pictures this run holds when they share their
+    /// paragraph with text, each boxed at its extent: like the text boxes,
+    /// they ride the line (issue #2227).
+    inline_pictures: Vec<InlineTextBox>,
 }
 
 /// The ordered pieces of a run around structural layout breaks.
@@ -1099,6 +1303,91 @@ enum RunLayoutPart {
     Content(Box<docx_rs::Run>),
     PageBreak,
     ColumnBreak,
+}
+
+/// Give each `wp:inline` picture of a content part a part of its own, so a
+/// picture riding its paragraph's line keeps its place among the run's text
+/// (issue #2227). Other parts pass through unchanged.
+fn split_content_at_inline_pictures(part: RunLayoutPart) -> Vec<RunLayoutPart> {
+    let RunLayoutPart::Content(run) = part else {
+        return vec![part];
+    };
+    let is_inline_picture = |child: &docx_rs::RunChild| {
+        matches!(
+            child,
+            docx_rs::RunChild::Drawing(drawing)
+                if matches!(
+                    &drawing.data,
+                    Some(docx_rs::DrawingData::Pic(pic))
+                        if pic.position_type == docx_rs::DrawingPositionType::Inline
+                )
+        )
+    };
+    if run.children.len() < 2 || !run.children.iter().any(is_inline_picture) {
+        return vec![RunLayoutPart::Content(run)];
+    }
+
+    let mut parts: Vec<RunLayoutPart> = Vec::new();
+    let mut pending: Vec<docx_rs::RunChild> = Vec::new();
+    let flush = |children: Vec<docx_rs::RunChild>, parts: &mut Vec<RunLayoutPart>| {
+        if !children.is_empty() {
+            let mut content_run: docx_rs::Run = (*run).clone();
+            content_run.children = children;
+            parts.push(RunLayoutPart::Content(Box::new(content_run)));
+        }
+    };
+    for child in &run.children {
+        if is_inline_picture(child) {
+            flush(std::mem::take(&mut pending), &mut parts);
+            flush(vec![child.clone()], &mut parts);
+        } else {
+            pending.push(child.clone());
+        }
+    }
+    flush(pending, &mut parts);
+    parts
+}
+
+/// For each stretch of the paragraph between page and column breaks, whether
+/// it holds text an inline picture would share a line with: any character,
+/// including a space, or a tab or line break.
+fn line_text_by_layout_fragment(para: &docx_rs::Paragraph) -> Vec<bool> {
+    let mut fragments: Vec<bool> = vec![false];
+    let mark_text = |run: &docx_rs::Run, fragments: &mut Vec<bool>, splits: bool| {
+        for child in &run.children {
+            let is_line_text: bool = match child {
+                docx_rs::RunChild::Text(text) => !text.text.is_empty(),
+                docx_rs::RunChild::Tab(_) => true,
+                docx_rs::RunChild::Break(br) if is_page_break(br) || is_column_break(br) => {
+                    if splits {
+                        fragments.push(false);
+                    }
+                    false
+                }
+                docx_rs::RunChild::Break(_) => true,
+                _ => false,
+            };
+            if is_line_text {
+                *fragments.last_mut().expect("one fragment at least") = true;
+            }
+        }
+    };
+    for item in flatten_tracked_changes(&para.children) {
+        match item {
+            // Only a paragraph's own runs split at layout breaks; a
+            // hyperlink's runs stay in the fragment they start in.
+            ParagraphItem::Run(run) => mark_text(run, &mut fragments, true),
+            ParagraphItem::Hyperlink(hyperlink) => {
+                for child in &hyperlink.children {
+                    if let docx_rs::ParagraphChild::Run(run) = child {
+                        mark_text(run, &mut fragments, false);
+                    }
+                }
+            }
+            ParagraphItem::PageNum | ParagraphItem::NumPages => {}
+        }
+    }
+    fragments
 }
 
 /// Split only at page and column breaks so all content on either side keeps the
@@ -1149,8 +1438,9 @@ fn paragraph_has_visible_background(
 }
 
 /// Scan a run segment's children for drawings and VML shapes.
-/// Extracted images are pushed to `inline_images`; text boxes are returned in
-/// `RunChildrenMedia`.
+/// Extracted images are pushed to `inline_images`, except that a sized
+/// `wp:inline` picture is returned in `RunChildrenMedia` when
+/// `pictures_ride_runs`; text boxes are returned there too.
 fn extract_run_children_media(
     run: &docx_rs::Run,
     images: &ImageMap,
@@ -1158,16 +1448,25 @@ fn extract_run_children_media(
     style_map: &StyleMap,
     ctx: &DocxConversionContext,
     inline_images: &mut Vec<Block>,
+    pictures_ride_runs: bool,
 ) -> RunChildrenMedia {
     let mut text_box_blocks: Vec<Block> = Vec::new();
     let mut inline_text_boxes: Vec<InlineTextBox> = Vec::new();
+    let mut inline_pictures: Vec<InlineTextBox> = Vec::new();
 
     for run_child in &run.children {
         if let docx_rs::RunChild::Drawing(drawing) = run_child {
             let wpg_drawing: Option<WpgDrawingInfo> = ctx.drawing_shapes.consume_wpg_drawing();
             let canvas_image_offset: Option<(f64, f64)> =
                 ctx.drawing_shapes.consume_canvas_image_offset();
-            let crop = ctx.picture_crops.next_drawing(false);
+            let metadata = ctx.picture_crops.next_drawing(false);
+            let crop = metadata.crop;
+            let emitted: [usize; 4] = [
+                text_box_blocks.len(),
+                inline_text_boxes.len(),
+                inline_pictures.len(),
+                inline_images.len(),
+            ];
             if let Some(mut group) = ctx.smartart.consume_next() {
                 if let Some(anchor) = group.anchor.as_mut() {
                     anchor.wrap_mode = ctx.wraps.consume_next();
@@ -1196,10 +1495,23 @@ fn extract_run_children_media(
                     ctx,
                 ));
             } else {
-                if let Some(img_block) =
-                    extract_drawing_image(drawing, images, &ctx.wraps, canvas_image_offset, crop)
+                match extract_drawing_image(drawing, images, &ctx.wraps, canvas_image_offset, crop)
                 {
-                    inline_images.push(img_block);
+                    Some(Block::Image(image)) if pictures_ride_runs => {
+                        match (image.width, image.height) {
+                            (Some(width), Some(height)) => inline_pictures.push(InlineTextBox {
+                                content: vec![Block::Image(image)],
+                                width,
+                                height,
+                                padding: Insets::default(),
+                                stroke: None,
+                                fill: None,
+                            }),
+                            _ => inline_images.push(Block::Image(image)),
+                        }
+                    }
+                    Some(img_block) => inline_images.push(img_block),
+                    None => {}
                 }
                 match extract_drawing_text_box_blocks(drawing, images, hyperlinks, style_map, ctx) {
                     DrawingTextBoxPlacement::Absent => {}
@@ -1216,6 +1528,15 @@ fn extract_run_children_media(
                     // docx-rs leaves geometry-only `wps:wsp` drawings unclassified.
                     text_box_blocks.push(Block::FloatingShape(shape));
                 }
+            }
+            if metadata.hidden {
+                // Converted anyway, so every side-channel cursor steps past
+                // the drawing and its nested ones; then nothing of it stays,
+                // not even the wrap it would reserve (issue #2299).
+                text_box_blocks.truncate(emitted[0]);
+                inline_text_boxes.truncate(emitted[1]);
+                inline_pictures.truncate(emitted[2]);
+                inline_images.truncate(emitted[3]);
             }
         }
         if let docx_rs::RunChild::Shape(shape) = run_child {
@@ -1235,6 +1556,7 @@ fn extract_run_children_media(
     RunChildrenMedia {
         text_box_blocks,
         inline_text_boxes,
+        inline_pictures,
     }
 }
 
@@ -1497,14 +1819,19 @@ fn process_hyperlink_runs(
     resolved_style: Option<&ResolvedStyle>,
     style_map: &StyleMap,
     ctx: &DocxConversionContext,
+    run_scan: &ParagraphRunScan<'_>,
     runs: &mut Vec<Run>,
 ) {
     let href: Option<String> = resolve_hyperlink_url(hyperlink, hyperlinks);
     for hchild in &hyperlink.children {
         if let docx_rs::ParagraphChild::Run(run) = hchild {
             let hl_small_caps: bool = ctx.small_caps.next_is_small_caps();
-            let text: String = extract_run_text(run);
-            if let Some(ir_run) = build_text_run(
+            let scanned: RunScan<'_> = run_scan.next_run(run);
+            let text: String = extract_run_text_marking_clears(
+                run,
+                &mut scanned.line_break_clears.iter().copied(),
+            );
+            if let Some(mut ir_run) = build_text_run(
                 text,
                 &run.run_property,
                 hl_small_caps,
@@ -1513,6 +1840,7 @@ fn process_hyperlink_runs(
                 &ctx.theme_fonts,
                 href.clone(),
             ) {
+                apply_direct_ligatures(&mut ir_run.style, scanned.ligatures);
                 runs.push(ir_run);
             }
         }
@@ -1556,7 +1884,9 @@ struct ParagraphFlow<'a> {
 
 /// Convert a docx-rs Paragraph to IR blocks, handling page breaks and inline images.
 /// If the paragraph has `page_break_before`, a `Block::PageBreak` is emitted first.
-/// Consecutive inline images within a paragraph are kept in one wrapping flow container.
+/// Consecutive inline images with no text beside them are kept in one wrapping flow
+/// container; an inline picture that shares its line with text rides the paragraph's
+/// runs as `Run::inline_box` instead (issue #2227).
 /// Style formatting from the document's style definitions is merged with explicit formatting.
 fn convert_paragraph_blocks(
     para: &docx_rs::Paragraph,
@@ -1591,6 +1921,7 @@ fn convert_paragraph_blocks(
     // document, so this paragraph has no break of its own: it merges into the
     // paragraph after it (issue #1710).
     let mark_is_removed: bool = ctx.paragraph_marks.next_mark_is_removed(style_id);
+    let run_scan: ParagraphRunScan<'_> = ctx.run_scan.next_paragraph(style_id);
 
     // Emit page break before the paragraph if requested
     if para.property.page_break_before == Some(true) {
@@ -1625,6 +1956,15 @@ fn convert_paragraph_blocks(
     // predecessor's mark was removed opens with that paragraph's surviving
     // runs, because the two are one paragraph in the final view (issue #1710).
     let mut runs: Vec<Run> = ctx.paragraph_marks.take_merged_runs();
+    // Word sets an inline picture on its paragraph's line like a glyph. When
+    // the picture shares a stretch of the paragraph with text, it joins the
+    // runs so it stays in order with that text on a shared line (issue
+    // #2227). Pictures with no text beside them keep the picture-block path,
+    // which carries the paragraph's alignment, spacing and indents (issues
+    // #499, #2201).
+    let mut line_text_fragments: Vec<bool> = line_text_by_layout_fragment(para);
+    line_text_fragments[0] |= !runs.is_empty();
+    let mut layout_fragment: usize = 0;
     let mut inline_images: Vec<Block> = Vec::new();
     let mut emitted_paragraph: bool = false;
     let mut emitted_media_blocks: bool = false;
@@ -1635,12 +1975,23 @@ fn convert_paragraph_blocks(
     // Set by the run carrying a `SEQ` field, so the finished paragraph can be
     // wrapped as the caption a `TOC \a` list collects (issue #576).
     let mut caption_identifier: Option<String> = None;
+    // Word's horizontal lines, which docx-rs drops from the runs (issue #2251).
+    let mut horizontal_rules: Vec<HorizontalRule> = Vec::new();
+    // A header or footer table's `PAGE` field spans runs (issue #2338).
+    let mut page_fields: PageFieldScan = ctx.fields.page_field_scan();
 
     for child in flatten_tracked_changes(&para.children) {
         match child {
             ParagraphItem::Run(run) => {
                 // Advance smallCaps cursor for every <w:r> in body
                 let is_small_caps: bool = ctx.small_caps.next_is_small_caps();
+                // Taken once per docx-rs run, before the run is split, so a
+                // note reference still keeps the paragraph's runs in step.
+                let scanned: RunScan<'_> = run_scan.next_run(run);
+                horizontal_rules.extend_from_slice(scanned.horizontal_rules);
+                // The run's line breaks in order; its split parts keep that
+                // order.
+                let mut line_break_clears = scanned.line_break_clears.iter().copied();
 
                 // Check for footnote/endnote reference runs
                 if is_note_reference_run(run, &ctx.notes) {
@@ -1656,7 +2007,10 @@ fn convert_paragraph_blocks(
                     continue;
                 }
 
-                for part in split_run_at_layout_breaks(run) {
+                for part in split_run_at_layout_breaks(run)
+                    .into_iter()
+                    .flat_map(split_content_at_inline_pictures)
+                {
                     match part {
                         break_part @ (RunLayoutPart::PageBreak | RunLayoutPart::ColumnBreak) => {
                             // Flush queued inline media even when no text run
@@ -1664,12 +2018,9 @@ fn convert_paragraph_blocks(
                             push_inline_images(
                                 out,
                                 &mut inline_images,
-                                paragraph_alignment(para),
-                                paragraph_image_spacing(
-                                    para,
-                                    resolved_style,
-                                    flow.contextual_spacing,
-                                ),
+                                para,
+                                resolved_style,
+                                flow.contextual_spacing,
                             );
                             if !runs.is_empty() {
                                 clear_paragraph_fragment_borders(
@@ -1731,6 +2082,7 @@ fn convert_paragraph_blocks(
                                 RunLayoutPart::Content(_) => unreachable!(),
                             });
                             emitted_layout_break = true;
+                            layout_fragment += 1;
                         }
                         RunLayoutPart::Content(run_segment) => {
                             let media = extract_run_children_media(
@@ -1740,6 +2092,10 @@ fn convert_paragraph_blocks(
                                 style_map,
                                 ctx,
                                 &mut inline_images,
+                                line_text_fragments
+                                    .get(layout_fragment)
+                                    .copied()
+                                    .unwrap_or(false),
                             );
 
                             // A picture is the paragraph's content, so its paragraph mark
@@ -1766,12 +2122,9 @@ fn convert_paragraph_blocks(
                                     push_inline_images(
                                         out,
                                         &mut inline_images,
-                                        paragraph_alignment(para),
-                                        paragraph_image_spacing(
-                                            para,
-                                            resolved_style,
-                                            flow.contextual_spacing,
-                                        ),
+                                        para,
+                                        resolved_style,
+                                        flow.contextual_spacing,
                                     );
                                     push_paragraph_from_runs(
                                         out,
@@ -1788,21 +2141,25 @@ fn convert_paragraph_blocks(
                                     push_inline_images(
                                         out,
                                         &mut inline_images,
-                                        paragraph_alignment(para),
-                                        paragraph_image_spacing(
-                                            para,
-                                            resolved_style,
-                                            flow.contextual_spacing,
-                                        ),
+                                        para,
+                                        resolved_style,
+                                        flow.contextual_spacing,
                                     );
                                 }
                                 out.extend(media.text_box_blocks);
                             }
 
+                            // Extracted even when a field replaces it, so the
+                            // later parts' breaks keep their clears.
+                            let run_text: String = extract_run_text_reading_fields(
+                                &run_segment,
+                                &mut line_break_clears,
+                                &mut page_fields,
+                            );
                             let text: String =
                                 seq_field_text(&run_segment, &ctx.fields, &mut caption_identifier)
-                                    .unwrap_or_else(|| extract_run_text(&run_segment));
-                            if let Some(ir_run) = build_text_run(
+                                    .unwrap_or(run_text);
+                            if let Some(mut ir_run) = build_text_run(
                                 text,
                                 &run_segment.run_property,
                                 is_small_caps,
@@ -1811,6 +2168,7 @@ fn convert_paragraph_blocks(
                                 &ctx.theme_fonts,
                                 None,
                             ) {
+                                apply_direct_ligatures(&mut ir_run.style, scanned.ligatures);
                                 runs.push(ir_run);
                             }
 
@@ -1843,6 +2201,21 @@ fn convert_paragraph_blocks(
                                     inline_box: Some(Box::new(inline_box)),
                                 });
                             }
+
+                            // A picture on the line is a box of its extent whose
+                            // bottom edge sits on the baseline. Its own run adds
+                            // no text metrics: in Word's `leading-picture-*`
+                            // cases, a line holding the picture and only a
+                            // trailing space has no descent below it.
+                            for picture in media.inline_pictures {
+                                runs.push(Run {
+                                    text: String::new(),
+                                    style: TextStyle::default(),
+                                    href: None,
+                                    footnote: None,
+                                    inline_box: Some(Box::new(picture)),
+                                });
+                            }
                         }
                     }
                 }
@@ -1854,6 +2227,7 @@ fn convert_paragraph_blocks(
                     resolved_style,
                     style_map,
                     ctx,
+                    &run_scan,
                     &mut runs,
                 );
             }
@@ -1866,8 +2240,9 @@ fn convert_paragraph_blocks(
     push_inline_images(
         out,
         &mut inline_images,
-        paragraph_alignment(para),
-        paragraph_image_spacing(para, resolved_style, flow.contextual_spacing),
+        para,
+        resolved_style,
+        flow.contextual_spacing,
     );
 
     if emitted_layout_break
@@ -1915,7 +2290,7 @@ fn convert_paragraph_blocks(
         // Keep paragraph marks for floating drawing anchors. The drawing itself
         // is positioned by offsets, but the source paragraph still contributes
         // to flow spacing between the drawing cluster and following content.
-        let block: Block = build_paragraph_block(
+        let mut block: Block = build_paragraph_block(
             para,
             resolved_style,
             style_map,
@@ -1923,6 +2298,7 @@ fn convert_paragraph_blocks(
             &mut runs,
             caption_identifier.as_deref(),
         );
+        attach_horizontal_rule(&mut block, &horizontal_rules);
         match block {
             // The following paragraph's mark is the one that survives, so it
             // supplies the merged paragraph's style, its numbering and its
@@ -1935,6 +2311,40 @@ fn convert_paragraph_blocks(
     }
 
     normalize_split_paragraph_styles(out, paragraph_block_start);
+}
+
+/// Give a paragraph whose only content is a horizontal rule that rule, which
+/// is drawn on the paragraph's line (issue #2251).
+///
+/// TODO(rule beside text): Word gives a rule a line of its own inside a
+/// paragraph that also holds text or another rule. That line is not laid out,
+/// so such a paragraph draws no rule rather than one over its text.
+///
+/// Header and footer stories convert through their own path, which gives
+/// their rules to their paragraphs itself (`attach_story_horizontal_rule`).
+///
+/// TODO(#2251 text box rules): a VML text box's paragraphs are rebuilt from
+/// the raw XML, so they never reach this and their rules are not drawn yet.
+fn attach_horizontal_rule(block: &mut Block, horizontal_rules: &[HorizontalRule]) {
+    let [rule] = horizontal_rules else {
+        if !horizontal_rules.is_empty() {
+            tracing::debug!(
+                rules = horizontal_rules.len(),
+                "paragraph holds several horizontal rules; drawing none"
+            );
+        }
+        return;
+    };
+    let paragraph: &mut Paragraph = match block {
+        Block::Paragraph(paragraph) => paragraph,
+        Block::Caption(caption) => &mut caption.paragraph,
+        _ => return,
+    };
+    if paragraph.runs.is_empty() {
+        paragraph.style.horizontal_rule = Some(Box::new(*rule));
+    } else {
+        tracing::debug!("horizontal rule shares its paragraph with text; drawing none");
+    }
 }
 
 fn clear_paragraph_fragment_borders(blocks: &mut [Block], fragment_indices: &[usize]) {
@@ -2034,37 +2444,530 @@ fn withheld_paragraph_block(ctx: &DocxConversionContext) -> Option<Block> {
         .map(Block::Paragraph)
 }
 
-/// A bare paragraph mark carrying only section properties marks the boundary;
-/// Word does not lay it out as an extra blank body line.
-fn is_empty_section_break_paragraph(para: &docx_rs::Paragraph) -> bool {
-    if !para.children.is_empty() || para.property.section_property.is_none() {
-        return false;
+/// Whether an empty paragraph carrying a `w:sectPr` (a section mark), at body
+/// index `index` of a section whose first child is at `section_start`, is
+/// laid out as a line. Word decides by the mark's place in its section, not
+/// by its `w:pPr`, following docxide-pdf's Word-probed rule (issue #2232):
+///
+/// - The first block of its section keeps its line, as Word's export of
+///   docxide-pdf's `page-header-ordinary-marker` shows for a bare mark.
+/// - After other blocks it takes no height: `paragraph-offset-frame-no-frame`
+///   drops a 14pt mark with 4pt after, and `section-mark-after-table-float-*`
+///   a 1.5-line one after a floating table.
+/// - In compatibility mode 15, a mark right after an inline table keeps its
+///   line when the next section starts continuously
+///   (`section-mark-after-table-inline-compat15`); mode 14 drops it.
+///
+/// `last_output` is the converted output of the body child before the mark.
+///
+/// A mark that takes no line before a continuous section still has a say in
+/// the gap: see [`pass_on_section_mark_after`].
+fn empty_section_mark_keeps_line(
+    body: &[docx_rs::DocumentChild],
+    section_start: usize,
+    index: usize,
+    last_output: Option<&TaggedElement>,
+    compatibility_mode: WordCompatibilityMode,
+    final_section: &docx_rs::SectionProperty,
+) -> bool {
+    let Some(previous) = body[section_start..index]
+        .iter()
+        .rev()
+        .find(|child| is_body_block(child))
+    else {
+        return true;
+    };
+    compatibility_mode == WordCompatibilityMode::Word2013OrLater
+        && matches!(previous, docx_rs::DocumentChild::Table(_))
+        && matches!(
+            last_output,
+            Some(TaggedElement::Plain(blocks)) if matches!(blocks.last(), Some(Block::Table(_)))
+        )
+        && next_section_starts_continuously(body, index, final_section)
+}
+
+/// A body child Word lays out as a block of its section; bookmark and
+/// comment markers take no place.
+fn is_body_block(child: &docx_rs::DocumentChild) -> bool {
+    matches!(
+        child,
+        docx_rs::DocumentChild::Paragraph(_)
+            | docx_rs::DocumentChild::Table(_)
+            | docx_rs::DocumentChild::StructuredDataTag(_)
+            | docx_rs::DocumentChild::TableOfContents(_)
+    )
+}
+
+/// Whether the section after the one the mark at body index `index` closes
+/// starts on the same page. That is the next section's own `w:type`, on the
+/// next section mark or else on the body's closing `w:sectPr`.
+fn next_section_starts_continuously(
+    body: &[docx_rs::DocumentChild],
+    index: usize,
+    final_section: &docx_rs::SectionProperty,
+) -> bool {
+    let next_section: &docx_rs::SectionProperty = body[index + 1..]
+        .iter()
+        .find_map(|child| match child {
+            docx_rs::DocumentChild::Paragraph(paragraph) => {
+                paragraph.property.section_property.as_ref()
+            }
+            _ => None,
+        })
+        .unwrap_or(final_section);
+    next_section.section_type == Some(docx_rs::SectionType::Continuous)
+}
+
+/// The `w:after` of a converted blank paragraph, as
+/// [`is_blank_paragraph_output`] accepts it; an unstated one is zero.
+fn blank_paragraph_space_after(converted: &[TaggedElement]) -> Option<f64> {
+    match converted {
+        [TaggedElement::Plain(blocks)] => match blocks.as_slice() {
+            [Block::Paragraph(paragraph)] => Some(paragraph.style.space_after.unwrap_or(0.0)),
+            _ => None,
+        },
+        _ => None,
     }
-    let mut properties: docx_rs::ParagraphProperty = para.property.clone();
-    properties.section_property = None;
-    properties == docx_rs::ParagraphProperty::default()
+}
+
+/// Whether the converted output ends at a page or column break, so a section
+/// mark after it opens the next section at the top of a page or column.
+fn ends_with_layout_break(output: Option<&TaggedElement>) -> bool {
+    matches!(
+        output,
+        Some(TaggedElement::Plain(blocks))
+            if matches!(blocks.last(), Some(Block::PageBreak | Block::ColumnBreak))
+    )
+}
+
+/// Hand the `w:after` of an empty section mark that took no line to the first
+/// paragraph of `converted`, the first block of the continuous section after
+/// it. Word lays that paragraph out after the previous paragraph's whole
+/// `w:after`, plus only the part of its own `w:before` beyond the mark's
+/// `w:after`: `after + max(0, before − mark after)`, not the larger of the two
+/// (docxide-pdf's `section_break_spacing`, from Word probes; Word's export of
+/// docxide-pdf's `scraped/covid_insomnia_mental_health` starts its numbered
+/// heading 12 + 10pt below the paragraph before its 0pt mark).
+fn pass_on_section_mark_after(converted: &mut [TaggedElement], mark_after: f64) {
+    let style: Option<&mut ParagraphStyle> = match converted.first_mut() {
+        Some(TaggedElement::Plain(blocks)) => blocks.iter_mut().find_map(|block| match block {
+            Block::Paragraph(paragraph) => Some(&mut paragraph.style),
+            Block::Caption(caption) => Some(&mut caption.paragraph.style),
+            _ => None,
+        }),
+        Some(TaggedElement::ListParagraph { paragraph, .. }) => Some(&mut paragraph.style),
+        None => None,
+    };
+    if let Some(style) = style {
+        style.section_mark_after = Some(mark_after);
+    }
+}
+
+/// Whether a body paragraph converted to one paragraph that paints nothing:
+/// no text, link, note or inline box, and no border or shading.
+fn is_blank_paragraph_output(converted: &[TaggedElement]) -> bool {
+    matches!(
+        converted,
+        [TaggedElement::Plain(blocks)] if matches!(
+            blocks.as_slice(),
+            [Block::Paragraph(paragraph)] if paragraph.runs.iter().all(|run| {
+                run.text.is_empty() && run_shows_only_spaces(run)
+            }) && paragraph.style.background.is_none()
+                && paragraph.style.border.is_none()
+        )
+    )
+}
+
+/// A body paragraph in a `w:framePr` frame that Word lifts out of the flow,
+/// whose converted paragraph is undecorated and has no text but spaces, in a
+/// frame that shows nothing. Adjacent paragraphs with an identical
+/// `w:framePr` share one frame, as does a table whose cell paragraphs carry
+/// it, so the frame shows nothing when none of them does. Such a paragraph
+/// leaves no line in the flow: Word's exports of docxide-pdf's
+/// `empty-frame-control` and `cont-first-first-fits` advance the next text as
+/// if it were absent (issue #2161), and those of `empty-margin-frame-14-*` do
+/// the same for groups of two and three (issue #2231). An empty paragraph in a
+/// frame with text or a table is a line of the frame's own content, so it
+/// keeps it.
+///
+/// The other paragraphs of the frame are judged on their source runs, which
+/// cannot tell a paragraph style's border or shading.
+///
+/// `frames` holds each body child's [`leading_frame_property`].
+fn is_empty_lifted_frame(
+    converted: &[TaggedElement],
+    body: &[docx_rs::DocumentChild],
+    frames: &[Option<docx_rs::FrameProperty>],
+    index: usize,
+) -> bool {
+    let Some(frame) = frames[index].as_ref() else {
+        return false;
+    };
+    let shares_frame = |mate: &usize| frames[*mate].as_ref() == Some(frame);
+    let mut frame_mates = (0..index)
+        .rev()
+        .take_while(shares_frame)
+        .chain((index + 1..body.len()).take_while(shares_frame))
+        .map(|mate| &body[mate]);
+    frame_lifts_out_of_flow(frame)
+        && matches!(
+            converted,
+            [TaggedElement::Plain(blocks)] if matches!(
+                blocks.as_slice(),
+                [Block::Paragraph(paragraph)] if paragraph
+                    .runs
+                    .iter()
+                    .all(run_shows_only_spaces)
+                    && paragraph.style.background.is_none()
+                    && paragraph.style.border.is_none()
+            )
+        )
+        && frame_mates.all(|child| {
+            matches!(child, docx_rs::DocumentChild::Paragraph(mate) if shows_only_spaces(mate))
+        })
+}
+
+/// Keep an empty framed paragraph's line in the box Word 2013 and later keep
+/// for its frame at the top margin ([`top_margin_frame_box`]), returning the
+/// box when this paragraph opens it. The frame's first paragraph with a line
+/// opens the box, and its later lines join it. A paragraph whose mark is
+/// hidden or that ends its section adds no line: Word's export of
+/// docxide-pdf's `empty-margin-frame-hidden-marks` keeps no box, and that of
+/// `empty-margin-frame-15-one-empty` keeps one line for an empty paragraph
+/// and the section mark after it (issue #2231).
+///
+/// `open_box` is the body index the frame of the box opened last starts at.
+///
+/// FIXME(docx-rs reads no `w:val` on `w:vanish`): a paragraph mark stating
+/// `w:vanish w:val="0"` counts as hidden.
+fn keep_line_in_top_margin_frame_box(
+    elements: &mut [TaggedElement],
+    open_box: &mut Option<usize>,
+    para: &docx_rs::Paragraph,
+    converted: Vec<TaggedElement>,
+    frames: &[Option<docx_rs::FrameProperty>],
+    index: usize,
+) -> Vec<TaggedElement> {
+    let Some(frame_property) = frames[index].as_ref() else {
+        return Vec::new();
+    };
+    if para.property.section_property.is_some() || para.property.run_property.vanish.is_some() {
+        return Vec::new();
+    }
+    let Some(mut frame) = top_margin_frame_box(frame_property) else {
+        return Vec::new();
+    };
+    let lines: Vec<Block> = converted
+        .into_iter()
+        .flat_map(|element| match element {
+            TaggedElement::Plain(blocks) => blocks,
+            TaggedElement::ListParagraph { .. } => Vec::new(),
+        })
+        .collect();
+    let frame_start: usize = frame_start(frames, index);
+    if *open_box == Some(frame_start)
+        && let Some(TaggedElement::Plain(blocks)) = elements.last_mut()
+        && let [Block::TextFrame(open)] = blocks.as_mut_slice()
+    {
+        open.content.extend(lines);
+        return Vec::new();
+    }
+    tracing::debug!(
+        format = "DOCX",
+        body_index = index,
+        x_pt = frame.x,
+        width_pt = frame.width,
+        "Empty frame keeps its box at the top margin"
+    );
+    frame.content = lines;
+    *open_box = Some(frame_start);
+    vec![TaggedElement::Plain(vec![Block::TextFrame(Box::new(
+        frame,
+    ))])]
+}
+
+fn run_shows_only_spaces(run: &Run) -> bool {
+    run.text.bytes().all(|byte| byte == b' ')
+        && run.href.is_none()
+        && run.footnote.is_none()
+        && run.inline_box.is_none()
+}
+
+/// Whether a source paragraph holds nothing but spaces: runs of space-only
+/// text and zero-width bookmark and comment markers. A tab, a break, a
+/// picture, a field or a link is content.
+fn shows_only_spaces(para: &docx_rs::Paragraph) -> bool {
+    para.children.iter().all(|child| match child {
+        docx_rs::ParagraphChild::Run(run) => run.children.iter().all(|run_child| {
+            matches!(run_child, docx_rs::RunChild::Text(text) if text.text.bytes().all(|byte| byte == b' '))
+        }),
+        docx_rs::ParagraphChild::BookmarkStart(_)
+        | docx_rs::ParagraphChild::BookmarkEnd(_)
+        | docx_rs::ParagraphChild::CommentStart(_)
+        | docx_rs::ParagraphChild::CommentEnd(_) => true,
+        _ => false,
+    })
+}
+
+/// A body paragraph alone in a `w:framePr` frame hung below its own place in
+/// the flow, as [`body_text_frame`] describes, carrying the paragraph's
+/// converted blocks. Adjacent paragraphs, or a table, that share an identical
+/// frame stay in the flow, as does a list paragraph or one holding a page or
+/// column break, which a placed frame cannot hold.
+///
+/// TODO(frames shared by several paragraphs): Word draws a group of
+/// paragraphs with an identical `w:framePr` in one frame.
+fn lifted_text_frame(
+    converted: &[TaggedElement],
+    frames: &[Option<docx_rs::FrameProperty>],
+    index: usize,
+) -> Option<TextFrame> {
+    let frame_property: &docx_rs::FrameProperty = frames[index].as_ref()?;
+    let mut frame: TextFrame = body_text_frame(frame_property)?;
+    let shares_frame = |neighbour: Option<&Option<docx_rs::FrameProperty>>| {
+        neighbour.and_then(Option::as_ref) == Some(frame_property)
+    };
+    if shares_frame(
+        index
+            .checked_sub(1)
+            .and_then(|previous| frames.get(previous)),
+    ) || shares_frame(frames.get(index + 1))
+    {
+        return None;
+    }
+    for element in converted {
+        let TaggedElement::Plain(blocks) = element else {
+            return None;
+        };
+        if blocks
+            .iter()
+            .any(|block| matches!(block, Block::PageBreak | Block::ColumnBreak))
+        {
+            return None;
+        }
+        frame.content.extend(blocks.iter().cloned());
+    }
+    (!frame.content.is_empty()).then_some(frame)
+}
+
+/// The run of adjacent body children that share a frame Word keeps at a
+/// fixed place on its page, as [`join_fixed_text_frame`] last saw it.
+struct FixedFrameGroup {
+    /// The body index the run starts at.
+    start: usize,
+    /// Whether the run is drawn in its frame, or stays in the flow because one
+    /// of its children holds what a placed frame cannot.
+    lifted: bool,
+}
+
+/// Draw a body child in the `w:framePr` frame Word keeps at a fixed place on
+/// its page ([`fixed_text_frame`]), together with the adjacent children that
+/// share the frame: the first opens it, and the others join it while it is
+/// still the last element. Returns what the flow keeps: the frame when this
+/// child opens it, nothing when it joins one, and the child's own blocks when
+/// its frame stays in the flow.
+///
+/// A frame whose children show nothing but spaces stays in the flow, each
+/// empty paragraph keeping its line: no Word reference shows such a frame
+/// that keeps text off its sides leaving no line, as [`frame_lifts_out_of_flow`]
+/// notes.
+///
+/// A frame holds paragraphs, tables and inline pictures. A child holding
+/// anything else — a list paragraph, a page or column break, a floating or
+/// grouped drawing — keeps the whole frame in the flow, its earlier children
+/// included, as before frames were lifted: a drawing group's zero-size
+/// anchor boxes spread across a placed block's line instead of stacking at
+/// their anchor.
+///
+/// TODO(lists and drawings in a fixed frame): Word draws them in the frame
+/// too.
+///
+/// `frames` holds each body child's [`leading_frame_property`].
+fn join_fixed_text_frame(
+    elements: &mut Vec<TaggedElement>,
+    group: &mut Option<FixedFrameGroup>,
+    mut frame: TextFrame,
+    converted: Vec<TaggedElement>,
+    body: &[docx_rs::DocumentChild],
+    frames: &[Option<docx_rs::FrameProperty>],
+    index: usize,
+) -> Vec<TaggedElement> {
+    let start: usize = frame_start(frames, index);
+    let fits_in_frame: bool = converted.iter().all(|element| {
+        matches!(element, TaggedElement::Plain(blocks) if blocks.iter().all(|block| matches!(
+            block,
+            Block::Paragraph(_)
+                | Block::Caption(_)
+                | Block::Table(_)
+                | Block::Image(_)
+                | Block::InlineImages(_)
+        )))
+    });
+    if let Some(open) = group.as_mut()
+        && open.start == start
+    {
+        if !open.lifted {
+            return converted;
+        }
+        let open_frame: Option<&mut TextFrame> = match elements.last_mut() {
+            Some(TaggedElement::Plain(blocks)) => match blocks.as_mut_slice() {
+                [Block::TextFrame(open_frame)] => Some(open_frame),
+                _ => None,
+            },
+            _ => None,
+        };
+        if let Some(open_frame) = open_frame {
+            if fits_in_frame {
+                open_frame
+                    .content
+                    .extend(converted.into_iter().flat_map(plain_blocks));
+                return Vec::new();
+            }
+            let earlier: Vec<Block> = std::mem::take(&mut open_frame.content);
+            elements.pop();
+            elements.push(TaggedElement::Plain(earlier));
+            open.lifted = false;
+            return converted;
+        }
+    }
+    let frame_shows_something: bool = (start..body.len())
+        .take_while(|&mate| frames[mate] == frames[start])
+        .any(|mate| match &body[mate] {
+            docx_rs::DocumentChild::Paragraph(paragraph) => !shows_only_spaces(paragraph),
+            _ => true,
+        });
+    if !fits_in_frame || !frame_shows_something {
+        *group = Some(FixedFrameGroup {
+            start,
+            lifted: false,
+        });
+        return converted;
+    }
+    tracing::debug!(
+        format = "DOCX",
+        body_index = index,
+        x_pt = frame.x,
+        y_pt = frame.y,
+        width_pt = frame.width,
+        "Framed body content drawn at its place on the page"
+    );
+    frame.content = converted.into_iter().flat_map(plain_blocks).collect();
+    *group = Some(FixedFrameGroup {
+        start,
+        lifted: true,
+    });
+    vec![TaggedElement::Plain(vec![Block::TextFrame(Box::new(
+        frame,
+    ))])]
+}
+
+/// A plain element's blocks. A list paragraph has none here:
+/// [`join_fixed_text_frame`] keeps those in the flow.
+fn plain_blocks(element: TaggedElement) -> Vec<Block> {
+    match element {
+        TaggedElement::Plain(blocks) => blocks,
+        TaggedElement::ListParagraph { .. } => Vec::new(),
+    }
+}
+
+/// The body index at which the run of children sharing the frame of the
+/// child at `index` starts.
+fn frame_start(frames: &[Option<docx_rs::FrameProperty>], index: usize) -> usize {
+    index
+        - frames[..index]
+            .iter()
+            .rev()
+            .take_while(|frame| *frame == &frames[index])
+            .count()
+}
+
+/// The `w:framePr` a body child would sit in: a paragraph's, or a table's
+/// first cell paragraph's, which is how Word frames a table, merged over its
+/// paragraph style's ([`effective_frame_property`]). A paragraph that names
+/// no style takes the default paragraph style's, `default_style_id`.
+///
+/// TODO(frames in block-level content controls): a framed paragraph inside a
+/// body `w:sdt` is not a body child here, so it stays in the flow; bulk
+/// `tdf148671` keeps three of its six page frames there.
+fn leading_frame_property(
+    child: &docx_rs::DocumentChild,
+    style_frames: &HashMap<String, docx_rs::FrameProperty>,
+    default_style_id: Option<&str>,
+) -> Option<docx_rs::FrameProperty> {
+    let paragraph: &docx_rs::Paragraph = match child {
+        docx_rs::DocumentChild::Paragraph(paragraph) => paragraph,
+        docx_rs::DocumentChild::Table(table) => {
+            let docx_rs::TableChild::TableRow(row) = table.rows.first()?;
+            let docx_rs::TableRowChild::TableCell(cell) = row.cells.first()?;
+            match cell.children.first()? {
+                docx_rs::TableCellContent::Paragraph(paragraph) => paragraph,
+                _ => return None,
+            }
+        }
+        _ => return None,
+    };
+    let style_id: Option<&str> = get_paragraph_style_id(&paragraph.property).or(default_style_id);
+    effective_frame_property(
+        &paragraph.property,
+        style_id.and_then(|style_id| style_frames.get(style_id)),
+    )
+}
+
+/// Whether Word lays an empty paragraph's `w:framePr` frame outside the body
+/// flow, following docxide-pdf's Word-probed `is_empty_wrapping_frame`. A
+/// frame stating only its `w:wrap` flows as a plain paragraph, and an inline
+/// one sits in the flow. One that keeps text off its sides (`none`,
+/// `notBeside`) or states its own height is not judged here: no reference
+/// shows those leaving no line, and [`fixed_text_frame`] draws those it
+/// places.
+fn frame_lifts_out_of_flow(frame: &docx_rs::FrameProperty) -> bool {
+    let placement = docx_rs::FrameProperty {
+        wrap: None,
+        ..frame.clone()
+    };
+    placement != docx_rs::FrameProperty::default()
+        && frame.y_align.as_deref() != Some("inline")
+        && !matches!(frame.wrap.as_deref(), Some("none" | "notBeside"))
+        && frame.h.is_none_or(|height| height == 0)
 }
 
 fn push_inline_images(
     out: &mut Vec<Block>,
     inline_images: &mut Vec<Block>,
-    alignment: Option<Alignment>,
-    spacing: Option<ImageParagraphSpacing>,
+    para: &docx_rs::Paragraph,
+    resolved_style: Option<&ResolvedStyle>,
+    contextual_spacing: ParagraphContextualSpacing<'_>,
 ) {
+    if inline_images.is_empty() {
+        return;
+    }
+    let alignment: Option<Alignment> = paragraph_alignment(para);
+    let style: ParagraphStyle = merge_paragraph_style(
+        &extract_paragraph_style(&para.property),
+        None,
+        resolved_style,
+    );
+    let spacing: Option<ImageParagraphSpacing> =
+        paragraph_image_spacing(&style, contextual_spacing);
+    let indent: Option<ImageParagraphIndent> = paragraph_image_indent(&style);
     let mut grouped: Vec<ImageData> = Vec::new();
 
     for block in inline_images.drain(..) {
         match block {
             Block::Image(mut image) => {
-                // Inline images inherit the containing paragraph's alignment
-                // and its `w:spacing`: the picture consumes the paragraph, so
-                // the gaps Word draws around it have to travel with the
-                // picture instead (issue #499).
+                // Inline images inherit the containing paragraph's alignment,
+                // `w:spacing` and `w:ind`: the picture consumes the paragraph,
+                // so the gaps Word draws around it (issue #499) and the indents
+                // it starts from (issue #2201) have to travel with the picture
+                // instead.
                 if image.alignment.is_none() {
                     image.alignment = alignment;
                 }
                 if image.paragraph_spacing.is_none() {
                     image.paragraph_spacing = spacing;
+                }
+                if image.paragraph_indent.is_none() {
+                    image.paragraph_indent = indent;
                 }
                 grouped.push(image)
             }
@@ -2092,24 +2995,30 @@ fn paragraph_alignment(para: &docx_rs::Paragraph) -> Option<Alignment> {
 
 /// The `w:spacing` a picture paragraph contributes to the flow.
 ///
-/// Resolved through the same style merge a text paragraph uses, so spacing
+/// Read from the same style merge a text paragraph uses, so spacing
 /// inherited from `styles.xml` counts as well as direct formatting.
 fn paragraph_image_spacing(
-    para: &docx_rs::Paragraph,
-    resolved_style: Option<&ResolvedStyle>,
+    style: &ParagraphStyle,
     contextual_spacing: ParagraphContextualSpacing<'_>,
 ) -> Option<ImageParagraphSpacing> {
-    let style: ParagraphStyle = merge_paragraph_style(
-        &extract_paragraph_style(&para.property),
-        None,
-        resolved_style,
-    );
     let mut spacing = ImageParagraphSpacing {
         before: style.space_before,
         after: style.space_after,
     };
     contextual_spacing.apply(&mut spacing.before, &mut spacing.after);
     (spacing != ImageParagraphSpacing::default()).then_some(spacing)
+}
+
+/// The `w:ind` a picture paragraph places its pictures by, from the same
+/// style merge as [`paragraph_image_spacing`]: a text paragraph's indents,
+/// because Word lays an inline picture out like a glyph (issue #2201).
+fn paragraph_image_indent(style: &ParagraphStyle) -> Option<ImageParagraphIndent> {
+    let indent = ImageParagraphIndent {
+        left: style.indent_left.unwrap_or(0.0),
+        right: style.indent_right.unwrap_or(0.0),
+        first_line: style.indent_first_line.unwrap_or(0.0),
+    };
+    (indent != ImageParagraphIndent::default()).then_some(indent)
 }
 
 fn push_paragraph_from_runs(
@@ -2152,6 +3061,8 @@ fn build_paragraph_block(
         explicit_tab_overrides.as_deref(),
         resolved_style,
     );
+    // Before anything reads the runs' text, which must see only `'\n'`.
+    style.clearing_breaks = take_clearing_break_markers(runs);
     if explicit_para_style.space_after.is_none()
         && !resolved_style.is_some_and(|resolved| resolved.paragraph_space_after_is_explicit)
         && let Some(table_space_after) = flow.table_style_space_after

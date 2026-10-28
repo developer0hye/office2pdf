@@ -1,8 +1,8 @@
 use std::collections::{BTreeMap, HashMap};
 
 use crate::ir::{
-    Block, List, ListItem, ListKind, ListLevelStyle, ListMarkerSuffix, Paragraph, ParagraphStyle,
-    Run, TabAlignment, TabLeader, TabStop, TextStyle,
+    Block, List, ListItem, ListKind, ListLevelStyle, ListMarkerSuffix, NumberingPattern, Paragraph,
+    ParagraphStyle, Run, TabAlignment, TabLeader, TabStop, TextStyle,
 };
 
 /// Numbering info extracted from a paragraph's numPr.
@@ -10,6 +10,17 @@ use crate::ir::{
 pub(super) struct NumInfo {
     pub(super) num_id: usize,
     pub(super) level: u32,
+    /// Under a direct `w:numPr`, which indents the paragraph's style chain
+    /// supplies where its own `w:ind` is silent.
+    pub(super) style_supplied_indents: StyleSuppliedIndents,
+}
+
+/// Indents a numbered paragraph takes from its style chain rather than from
+/// its own `w:ind`.
+#[derive(Debug, Clone, Copy, Default)]
+pub(super) struct StyleSuppliedIndents {
+    pub(super) left: bool,
+    pub(super) first_line: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -79,23 +90,26 @@ fn level_kind(number_format: &str) -> ListKind {
     }
 }
 
-fn typst_counter_symbol(number_format: &str) -> Option<&'static str> {
+fn counter_symbol(number_format: &str) -> Option<char> {
     match number_format {
-        "decimal" | "decimalZero" => Some("1"),
-        "lowerLetter" => Some("a"),
-        "upperLetter" => Some("A"),
-        "lowerRoman" => Some("i"),
-        "upperRoman" => Some("I"),
+        "decimal" | "decimalZero" => Some('1'),
+        "lowerLetter" => Some('a'),
+        "upperLetter" => Some('A'),
+        "lowerRoman" => Some('i'),
+        "upperRoman" => Some('I'),
         _ => None,
     }
 }
 
-fn build_typst_numbering_pattern(
+/// Keeps lvlText's literal text apart from its counters; the renderer
+/// decides whether Typst can read them back from one pattern string.
+fn build_numbering_pattern(
     level_text: &str,
     current_level: u32,
     levels: &BTreeMap<u32, RawListLevel>,
-) -> Option<(String, bool)> {
-    let mut pattern: String = String::new();
+) -> Option<(NumberingPattern, bool)> {
+    let mut pieces: Vec<(String, char)> = Vec::new();
+    let mut literal: String = String::new();
     let mut chars = level_text.chars().peekable();
     let mut saw_current_level: bool = false;
     let mut saw_parent_level: bool = false;
@@ -113,18 +127,18 @@ fn build_typst_numbering_pattern(
             }
 
             if digits.is_empty() {
-                pattern.push(ch);
+                literal.push(ch);
                 continue;
             }
 
             let referenced_level: u32 = digits.parse::<u32>().ok()?.checked_sub(1)?;
             let referenced = levels.get(&referenced_level)?;
             let symbol = if levels.get(&current_level)?.uses_legal_numbering {
-                "1"
+                '1'
             } else {
-                typst_counter_symbol(&referenced.number_format)?
+                counter_symbol(&referenced.number_format)?
             };
-            pattern.push_str(symbol);
+            pieces.push((std::mem::take(&mut literal), symbol));
             if referenced_level == current_level {
                 saw_current_level = true;
             } else if referenced_level < current_level {
@@ -133,20 +147,29 @@ fn build_typst_numbering_pattern(
             continue;
         }
 
-        pattern.push(ch);
+        literal.push(ch);
     }
 
-    if !saw_current_level {
+    // A lvlText without placeholders is static text on every item, as
+    // `format_inline_number` prints it; only a label of other levels gains
+    // the current counter.
+    if !saw_current_level && !pieces.is_empty() {
         let current = levels.get(&current_level)?;
         let symbol = if current.uses_legal_numbering {
-            "1"
+            '1'
         } else {
-            typst_counter_symbol(&current.number_format)?
+            counter_symbol(&current.number_format)?
         };
-        pattern.insert_str(0, symbol);
+        pieces.insert(0, (String::new(), symbol));
     }
 
-    Some((pattern, saw_parent_level))
+    Some((
+        NumberingPattern {
+            pieces,
+            suffix: literal,
+        },
+        saw_parent_level,
+    ))
 }
 
 fn extract_raw_level(
@@ -261,7 +284,7 @@ fn resolve_numbering(
         .map(|(level_index, level)| {
             let kind = level_kind(&level.number_format);
             let (numbering_pattern, full_numbering) = if kind == ListKind::Ordered {
-                build_typst_numbering_pattern(&level.level_text, *level_index, &raw_levels)
+                build_numbering_pattern(&level.level_text, *level_index, &raw_levels)
                     .map(|(pattern, full)| (Some(pattern), full))
                     .unwrap_or((None, false))
             } else {
@@ -337,7 +360,11 @@ pub(super) fn extract_num_info(
         if num_id == 0 {
             return None;
         }
-        return Some(NumInfo { num_id, level });
+        return Some(NumInfo {
+            num_id,
+            level,
+            style_supplied_indents: StyleSuppliedIndents::default(),
+        });
     }
 
     let style_id = para
@@ -358,7 +385,11 @@ pub(super) fn extract_num_info(
     if num_id == 0 {
         return None;
     }
-    Some(NumInfo { num_id, level })
+    Some(NumInfo {
+        num_id,
+        level,
+        style_supplied_indents: StyleSuppliedIndents::default(),
+    })
 }
 
 /// An intermediate element that carries optional numbering info alongside blocks.
@@ -517,6 +548,35 @@ fn apply_numbering_level_indentation(
     style.indent_first_line = style.indent_first_line.or(level_style.indent_first_line);
     if style.tab_stops.is_none() {
         style.tab_stops = level_style.tab_stops.clone();
+    }
+}
+
+/// Whether a style-chain indent stands in for one the paragraph's direct
+/// numbering level declares. Word uses the level's there; the parser keeps
+/// the style's (#2383).
+fn style_indent_masks_level(
+    supplied: StyleSuppliedIndents,
+    level_style: Option<&ParagraphStyle>,
+) -> bool {
+    level_style.is_some_and(|level| {
+        (supplied.left && level.indent_left.is_some())
+            || (supplied.first_line && level.indent_first_line.is_some())
+    })
+}
+
+/// Clamps a list paragraph's left indent and marker origin at the margin, the
+/// geometry the renderer drew for every list before list indents kept their
+/// sign (issue #2233).
+fn clamp_list_indent_at_margin(style: &mut ParagraphStyle) {
+    let Some(left) = style.indent_left.map(|left| left.max(0.0)) else {
+        return;
+    };
+    style.indent_left = Some(left);
+    if let Some(first_line) = style
+        .indent_first_line
+        .filter(|first_line| *first_line < 0.0)
+    {
+        style.indent_first_line = Some((left + first_line).max(0.0) - left);
     }
 }
 
@@ -743,10 +803,14 @@ pub(super) fn group_into_lists(
                         resolved_numbering.expect("ordered numbering must be resolved"),
                         series_counters,
                     );
+                    // The paragraph mark formats the number, not the first
+                    // run (issue #2337).
                     let mut prefix_style = paragraph
-                        .runs
-                        .first()
-                        .map(|run| run.style.clone())
+                        .style
+                        .numbering_label_style
+                        .as_deref()
+                        .or_else(|| paragraph.runs.first().map(|run| &run.style))
+                        .cloned()
                         .unwrap_or_default();
                     if let Some(marker_style) = &level.style.marker_style {
                         prefix_style.merge_from(marker_style);
@@ -801,6 +865,16 @@ pub(super) fn group_into_lists(
                     &mut paragraph,
                     resolved_level.map(|level| &level.paragraph_style),
                 );
+                // TODO(#2383): Word lays such a paragraph out at its level's
+                // indent. Until the parser does, keep it at the margin as
+                // before: hanging the style-chain indent into the margin would
+                // move it further from Word (issue #2233).
+                if style_indent_masks_level(
+                    info.style_supplied_indents,
+                    resolved_level.map(|level| &level.paragraph_style),
+                ) {
+                    clamp_list_indent_at_margin(&mut paragraph.style);
+                }
                 let mut item = ListItem {
                     content: vec![*paragraph],
                     level: info.level,

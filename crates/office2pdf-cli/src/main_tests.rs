@@ -315,6 +315,7 @@ fn fixed_raster_image_does_not_round_below_the_exact_bottom_edge() {
             fill_rect: None,
             shadow: None,
             paragraph_spacing: None,
+            paragraph_indent: None,
         }),
     };
     let document = OfficeDocument {

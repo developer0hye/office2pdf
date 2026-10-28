@@ -397,10 +397,11 @@ pub(super) fn expand(data: &[u8]) -> Result<(Cow<'_, [u8]>, Vec<ConvertWarning>)
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
     for index in 0..archive.len() {
         let entry = archive.by_index(index).map_err(crate::parser::parse_err)?;
-        if entry.name() == "word/document.xml" {
+        let entry_name = entry.name().map_err(crate::parser::parse_err)?.into_owned();
+        if entry_name == "word/document.xml" {
             zip.start_file(
-                entry.name(),
-                zip::write::FileOptions::default().compression_method(entry.compression()),
+                entry_name,
+                zip::write::SimpleFileOptions::default().compression_method(entry.compression()),
             )
             .map_err(crate::parser::parse_err)?;
             zip.write_all(&document).map_err(crate::parser::parse_err)?;

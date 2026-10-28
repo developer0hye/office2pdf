@@ -1,8 +1,9 @@
 use super::contexts::DocxConversionContext;
 use super::{
     Block, DrawingTextBoxInfo, FloatingImage, FloatingImageVerticalAnchor, FloatingTextBox,
-    HyperlinkMap, ImageData, ImageMap, InlineTextBox, StyleMap, VmlTextBoxInfo, WrapContext,
-    convert_paragraph_blocks, convert_table, convert_table_in_text_box, withheld_paragraph_block,
+    HyperlinkMap, ImageData, ImageMap, ImageParagraphIndent, InlineTextBox, StyleMap,
+    VmlTextBoxInfo, WrapContext, convert_paragraph_blocks, convert_table,
+    convert_table_in_text_box, withheld_paragraph_block,
 };
 use crate::parser::units::emu_to_pt;
 
@@ -47,6 +48,7 @@ pub(super) fn extract_drawing_image(
         fill_rect: None,
         shadow: None,
         paragraph_spacing: None,
+        paragraph_indent: None,
     };
 
     if pic.position_type == docx_rs::DrawingPositionType::Anchor {
@@ -118,6 +120,14 @@ pub(super) fn extract_shape_image(shape: &docx_rs::Shape, images: &ImageMap) -> 
         fill_rect: None,
         shadow: None,
         paragraph_spacing: None,
+        // A positioned shape takes its place from its own style, so it keeps
+        // a zero indent instead of inheriting its paragraph's `w:ind`
+        // (issue #2201).
+        paragraph_indent: shape
+            .style
+            .as_deref()
+            .is_some_and(is_positioned_vml_shape)
+            .then(ImageParagraphIndent::default),
     }))
 }
 
@@ -130,7 +140,7 @@ pub(super) fn extract_vml_shape_text_box(
     }
 
     let style = shape.style.as_deref()?;
-    if !is_positioned_vml_text_box(style) {
+    if !is_positioned_vml_shape(style) {
         return None;
     }
 
@@ -166,7 +176,9 @@ pub(super) fn extract_vml_shape_text_box(
     })
 }
 
-fn is_positioned_vml_text_box(style: &str) -> bool {
+/// Whether a VML shape's style places it by its own offsets rather than in
+/// the line, as a text box or a picture.
+fn is_positioned_vml_shape(style: &str) -> bool {
     has_vml_style_value(style, "position", "absolute")
         || extract_vml_style_length(Some(style), "margin-left").is_some()
         || extract_vml_style_length(Some(style), "margin-top").is_some()
@@ -189,7 +201,7 @@ fn extract_vml_style_wrap_mode(style: Option<&str>) -> Option<crate::ir::WrapMod
     }
 }
 
-fn extract_vml_style_value(style: &str, key: &str) -> Option<String> {
+pub(super) fn extract_vml_style_value(style: &str, key: &str) -> Option<String> {
     for part in style.split(';') {
         let Some((name, value)) = part.split_once(':') else {
             continue;
@@ -219,7 +231,7 @@ fn extract_vml_style_length(style: Option<&str>, key: &str) -> Option<f64> {
     None
 }
 
-fn extract_vml_style_dimension(style: Option<&str>, key: &str) -> Option<f64> {
+pub(super) fn extract_vml_style_dimension(style: Option<&str>, key: &str) -> Option<f64> {
     let style = style?;
     for part in style.split(';') {
         let Some((name, value)) = part.split_once(':') else {

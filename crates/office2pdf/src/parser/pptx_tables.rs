@@ -79,9 +79,12 @@ struct PptxTableParser<'a> {
     is_in_text: bool,
     is_in_run_properties: bool,
     is_in_end_paragraph_run_properties: bool,
-    /// Which typeface slots the open `<a:rPr>`/`<a:endParaRPr>` already
-    /// filled, so its own `<a:latin>`/`<a:ea>` replaces the face the cell's
-    /// list style seeded into the run (issue #1838).
+    /// Inside the open paragraph's `<a:pPr>/<a:defRPr>` (issue #2157).
+    is_in_paragraph_default_run_properties: bool,
+    /// Which typeface slots the open `<a:rPr>`/`<a:endParaRPr>` or paragraph
+    /// `<a:pPr>/<a:defRPr>` already filled, so its own `<a:latin>`/`<a:ea>`
+    /// replaces the face the cell's list style seeded into the run (issues
+    /// #1838, #2157).
     run_property_typefaces: PptxRunPropertyTypefaces,
 
     // ── Fill context ────────────────────────────────────────────────
@@ -160,6 +163,7 @@ impl<'a> PptxTableParser<'a> {
             is_in_text: false,
             is_in_run_properties: false,
             is_in_end_paragraph_run_properties: false,
+            is_in_paragraph_default_run_properties: false,
             run_property_typefaces: PptxRunPropertyTypefaces::default(),
 
             solid_fill_context: SolidFillCtx::None,
@@ -436,6 +440,10 @@ impl<'a> PptxTableParser<'a> {
             b"endParaRPr" if self.is_in_end_paragraph_run_properties => {
                 self.is_in_end_paragraph_run_properties = false;
             }
+            b"defRPr" if self.is_in_paragraph_default_run_properties => {
+                self.is_in_paragraph_default_run_properties = false;
+                self.paragraph_end_run_style = self.paragraph_default_run_style.clone();
+            }
             b"lnSpc" if self.is_in_line_spacing => {
                 self.is_in_line_spacing = false;
             }
@@ -575,6 +583,7 @@ impl<'a> PptxTableParser<'a> {
             None
         };
         self.rows.push(TableRow {
+            cant_split: false,
             // DrawingML `a:tr/@h` seeds the row's height, but PowerPoint lets
             // taller cell content grow past it. Keep it as the same floor the
             // renderer already uses for Word's at-least rows instead of a
@@ -780,11 +789,21 @@ impl<'a> PptxTableParser<'a> {
                 self.paragraph_declares_end_para_rpr = true;
                 extract_rpr_attributes(e, &mut self.paragraph_end_run_style);
             }
+            // A cell paragraph's own default run properties outrank its list
+            // style exactly as a text box's do (issue #2157).
+            b"defRPr" if !self.is_in_run => {
+                self.is_in_paragraph_default_run_properties = true;
+                self.run_property_typefaces.enter_run_properties();
+                extract_rpr_attributes(e, &mut self.paragraph_default_run_style);
+            }
             b"solidFill" if self.is_in_run_properties => {
                 self.solid_fill_context = SolidFillCtx::RunFill;
             }
             b"solidFill" if self.is_in_end_paragraph_run_properties => {
                 self.solid_fill_context = SolidFillCtx::EndParaFill;
+            }
+            b"solidFill" if self.is_in_paragraph_default_run_properties => {
+                self.solid_fill_context = SolidFillCtx::ParagraphDefaultFill;
             }
             b"srgbClr" | b"schemeClr" | b"sysClr"
                 if self.solid_fill_context != SolidFillCtx::None =>
@@ -814,6 +833,10 @@ impl<'a> PptxTableParser<'a> {
 
     fn handle_empty_non_bullet(&mut self, local_name: &[u8], e: &BytesStart) {
         match local_name {
+            b"defRPr" => {
+                extract_rpr_attributes(e, &mut self.paragraph_default_run_style);
+                self.paragraph_end_run_style = self.paragraph_default_run_style.clone();
+            }
             b"latin" | b"ea" | b"cs" if self.is_in_run_properties => {
                 self.run_property_typefaces
                     .apply_typeface(e, &mut self.run_style, self.theme);
@@ -822,6 +845,13 @@ impl<'a> PptxTableParser<'a> {
                 self.run_property_typefaces.apply_typeface(
                     e,
                     &mut self.paragraph_end_run_style,
+                    self.theme,
+                );
+            }
+            b"latin" | b"ea" | b"cs" if self.is_in_paragraph_default_run_properties => {
+                self.run_property_typefaces.apply_typeface(
+                    e,
+                    &mut self.paragraph_default_run_style,
                     self.theme,
                 );
             }
@@ -901,12 +931,17 @@ impl<'a> PptxTableParser<'a> {
                 self.paragraph_end_run_style.color = color;
                 self.paragraph_end_run_style.color_alpha = parsed.alpha;
             }
+            SolidFillCtx::ParagraphDefaultFill => {
+                self.paragraph_default_run_style.color = color;
+                self.paragraph_default_run_style.color_alpha = parsed.alpha;
+            }
             SolidFillCtx::BulletFill => {
                 self.paragraph_bullet_definition.color = color.map(PptxBulletColorSource::Explicit);
             }
             SolidFillCtx::PicLineFill
             | SolidFillCtx::RunHighlight
             | SolidFillCtx::EndParaHighlight
+            | SolidFillCtx::ParagraphDefaultHighlight
             | SolidFillCtx::None => {}
         }
     }

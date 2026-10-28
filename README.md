@@ -28,7 +28,7 @@ DOCX packages with conflicting ASCII ZIP part names are rejected.
 
 ```toml
 [dependencies]
-office2pdf = "0.9.1"
+office2pdf = "0.10.0"
 ```
 
 ### Native builds without Typst's bundled fonts
@@ -39,7 +39,7 @@ default features (available since 0.8.0):
 
 ```toml
 [dependencies]
-office2pdf = { version = "0.9.1", default-features = false }
+office2pdf = { version = "0.10.0", default-features = false }
 ```
 
 For the CLI:
@@ -81,7 +81,7 @@ Every [GitHub release](https://github.com/developer0hye/office2pdf/releases) shi
 On Linux and macOS, download, extract, and place the binary on your `PATH`:
 
 ```sh
-VERSION=v0.9.1
+VERSION=v0.10.0
 TARGET=x86_64-unknown-linux-gnu  # pick your platform's target from the table above
 curl -L "https://github.com/developer0hye/office2pdf/releases/download/${VERSION}/office2pdf-${VERSION}-${TARGET}.tar.gz" | tar xz
 sudo install "office2pdf-${VERSION}-${TARGET}/office2pdf" /usr/local/bin/
@@ -259,6 +259,10 @@ Native Rust callers can use the same per-conversion path through
 | PPTX | Supported | Slides, text boxes, shapes, tables, images, masters, gradients, effects |
 | XLSX | Supported | Sheets, formatting, merged cells, column/row sizing, conditional formatting |
 
+An inline DOCX picture that shares its paragraph with text stays on that text's
+line, in run order, with its bottom edge on the baseline; in the IR it rides
+`Run::inline_box`. Pictures with no text beside them remain `Image` or
+`InlineImages` blocks.
 DOCX picture crops apply per picture, including body, header and footer images.
 Crops extending beyond the original image are not yet rendered.
 Published library builds can omit DOCX picture rotation.
@@ -289,7 +293,22 @@ suppress markers and numbering indents when they name the same/later level;
 root flags are ignored. Wide numbered markers with tab suffixes advance the
 first body line to default or custom left tab stops. Space/nothing suffixes
 place list text after the marker, including inline numbers; continuations keep
-their indent.
+their indent. Tabs in a list item's first paragraph, when it has a hanging
+indent, advance from where its text starts to the paragraph's next stop,
+counted from the margin.
+
+DOCX body paragraph tabs also count stops and the default grid from the margin,
+past the paragraph's left and first-line indents. When a tab's left or default
+stop leaves no room for the next word before the line's end, the tab and that
+word start the next line. A line left holding only tabs keeps their runs'
+height. Centred, right and decimal stops keep their field on the line.
+A negative left or right indent widens a body paragraph's lines into the
+margin, as Word does; table cells still clamp it to zero until they clip their
+content at the cell edge (#2261). A body list item's marker likewise starts at
+its signed left indent minus its hanging span, and its lines at the signed left
+indent, even left of the margin. While a paragraph style's `w:ind` still
+stands in for a direct `w:numPr` level's (#2383), such an item keeps its marker
+at the margin.
 
 DOCX section body text supports top, centered and bottom page alignment,
 including paragraph after-spacing and page breaks. Continuous sections use their
@@ -334,6 +353,14 @@ XML they do not model — and saving rewrites only edited entries. The
 `office2pdf` rendering pipeline stays a derived projection for PDF
 preview/export; it is not the editable source of truth.
 
+`ooxml-package` is unpublished. Its public `PackageError::Container` variant
+exposes `zip::ZipError` from ZIP 9, so maintainers must choose the crate's
+semver/API compatibility strategy before publication. ZIP 9 cannot preserve an
+invalid DOS timestamp while raw-copying an entry; `ooxml-package` rejects
+entries when ZIP 9 reports an invalid DOS timestamp during load, before a
+rewrite can normalize it. Round-trip tests cover valid, matching timestamps
+in the local and central ZIP headers of untouched entries.
+
 DOCX internal HTML/MHTML `altChunk` imports retain text, inline formatting,
 headings, basic tables, and simple lists. Tag/class/id and inline CSS support
 font, color, alignment, spacing, indentation, and cell widths. Images and row
@@ -363,6 +390,39 @@ crops and signed stretch rectangles before shape clipping. Unavailable linked ca
 and unsupported per-path painting produce warnings.
 Header/footer and hyperlinked diagrams are not yet imported.
 
+## Unattended issue runner
+
+With Git, Python 3, authenticated `gh` with repository write access, and the selected
+agent CLI logged in, run a single attempt from a trusted repository:
+
+```sh
+scripts/issue_loop.sh --agent codex --expect-user developer0hye --max-issues 1
+scripts/issue_loop_watch.py --agent codex --dump 20
+```
+
+Claude remains the default. Both agents start fresh per issue and use the same
+queue, prior-attempt history, main-check preflight, and optional `--reflect-every N`
+prompt-improvement proposer; reflection opens a PR for review and must not merge it.
+The Codex adapter uses CLI authentication, structured reports and JSONL events,
+with `--max-runtime 7200` seconds by default instead of Claude's `--max-turns`.
+`--model NAME` selects either CLI's model. The default Codex sandbox is
+`danger-full-access` with approvals disabled; `--codex-sandbox` can restrict it.
+
+Each attempt keeps its prompt, report and outcome, plus the transcript and exact
+session ID when emitted by the CLI,
+under `target/issue-loop-logs/runs/issue-N/`; Codex also writes live `events.jsonl`
+and `events.stderr.log`. Inspect past runs with `scripts/issue_loop_history.py list`.
+API failures abort rather than indicate an empty queue; Codex setup failures stop
+without blocking an issue, and timeouts stop its process group. A final report is
+not completion proof: the runner checks GitHub issue/PR state for progress, while
+the agent must complete and verify CI, merge and cleanup under `AGENTS.md`.
+Progress counts use every page of the repository's merged and open PR listings,
+matching issue references in PR bodies without relying on the search index.
+Inspect an issue's merged count and newest open citing PR with
+`scripts/issue_loop.sh --print-progress N`; an API failure returns an error
+without reporting a partial count.
+See `scripts/issue_loop.sh --help` for limits, paths and stop behavior.
+
 ## Contributing files
 
 Before attaching files to help improve office2pdf, complete a security review
@@ -371,6 +431,12 @@ applicable. Submitters are responsible for authorized, lawful disclosure;
 office2pdf and its maintainers disclaim related liability to the extent
 permitted by applicable law. Read the [submission policy](CONTRIBUTING.md)
 before submitting documents, screenshots, logs, or test fixtures.
+
+Visual PRs follow the [evidence contract](assets/bugfixes/README.md) and finish
+the [memory and speed pass](AGENTS.md#final-memory-and-speed-pass) after visual
+acceptance. CI requires its completion record or a non-placeholder exemption
+explanation; review verifies no runtime impact for exemptions, measurements,
+and any revalidation.
 
 ## License
 

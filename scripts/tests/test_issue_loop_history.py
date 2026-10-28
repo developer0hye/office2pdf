@@ -104,6 +104,31 @@ class StoreTest(unittest.TestCase):
                  (self.logs / "runs" / "index.jsonl").read_text().splitlines()]
         self.assertEqual([(row["issue"], row["outcome"]) for row in index], [(1720, "pr-open")])
 
+    def test_codex_record_preserves_exact_session_and_full_events_for_retry(self):
+        run_dir = self.logs / "runs/issue-2101/attempt-codex"
+        run_dir.mkdir(parents=True)
+        report = {"issue": 2101, "status": "incomplete", "pr_number": None,
+                  "summary": "The integration needs a history repair.", "remaining": ["Save events."]}
+        (run_dir / "result.json").write_text(json.dumps(report))
+        events = "\n".join(json.dumps(x) for x in [
+            {"type": "thread.started", "thread_id": "exact-codex-session"},
+            {"type": "item.completed", "item": {"type": "command_execution", "command": "cargo test --locked"}},
+            {"type": "turn.failed", "error": {"message": "Interrupted after testing."}},
+        ]) + "\n"
+        (run_dir / "events.jsonl").write_text(events)
+        done = self.run_tool("record", "--log-dir", str(self.logs), "--repo-root", FAKE_REPO,
+                             "--run-dir", str(run_dir), "--issue", "2101", "--agent", "codex",
+                             "--outcome", "no-progress", "--rc", "1")
+        self.assertEqual(done.returncode, 0, done.stderr)
+        outcome = json.loads((run_dir / "outcome.json").read_text())
+        self.assertEqual(outcome["agent"], "codex")
+        self.assertEqual(outcome["session_id"], "exact-codex-session")
+        self.assertEqual(outcome["final_message"], report["summary"])
+        self.assertEqual((run_dir / "transcript.jsonl").read_text(), events)
+        context = self.context(2101)
+        self.assertIn(report["summary"], context)
+        self.assertIn(str(run_dir / "transcript.jsonl"), context)
+
     def test_a_crashed_run_without_json_is_still_recorded(self):
         # A run killed before it printed its report leaves plain text; the attempt
         # still counts, and the next agent should see that it died.

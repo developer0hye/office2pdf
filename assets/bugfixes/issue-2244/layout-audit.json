@@ -1,0 +1,1006 @@
+{
+ "pages": [
+  {
+   "lines": {
+    "gt": 18,
+    "out": 18,
+    "matched": 13,
+    "missing": 5,
+    "extra": 5,
+    "deviant": 13,
+    "missing_text": [
+     "Introduction................................................",
+     "Background..................................................",
+     "Methods.....................................................",
+     "Results.....................................................",
+     "Conclusion.................................................."
+    ],
+    "extra_text": [
+     "Introduction................................................",
+     "Background..................................................",
+     "Methods.....................................................",
+     "Results.....................................................",
+     "Conclusion.................................................."
+    ]
+   },
+   "baseline": {
+    "mean_abs_dy": 11.465795517241384,
+    "worst_dy": 24.973580000000027,
+    "worst_dy_signed": 24.973580000000027,
+    "worst_line": "TabLeaders"
+   },
+   "dx0": {
+    "mean_abs": 0.6726206896551621,
+    "worst": -3.387999999999977
+   },
+   "width": {
+    "mean_abs_pct": 6.155399223191896,
+    "worst_pct": 11.665559805252913
+   },
+   "instances": {
+    "compared": 29,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 22,
+    "large_shifts": [
+     {
+      "label": "Bob",
+      "gt_x": 90.05,
+      "gt_y": 176.54999999999995,
+      "out_x": 90.0,
+      "out_y": 182.07251,
+      "dx": -0.04999999999999716,
+      "dy": 5.5225100000000396,
+      "width_pct": 8.27799684331612
+     },
+     {
+      "label": "NewYork",
+      "gt_x": 234.1,
+      "gt_y": 176.54999999999995,
+      "out_x": 234.0,
+      "out_y": 182.07251,
+      "dx": -0.09999999999999432,
+      "dy": 5.5225100000000396,
+      "width_pct": 9.789680948814992
+     },
+     {
+      "label": "UnitedStates",
+      "gt_x": 378.15,
+      "gt_y": 176.54999999999995,
+      "out_x": 378.0,
+      "out_y": 182.07251,
+      "dx": -0.14999999999997726,
+      "dy": 5.5225100000000396,
+      "width_pct": 7.277462925912573
+     },
+     {
+      "label": "Left",
+      "gt_x": 90.05,
+      "gt_y": 226.33000000000004,
+      "out_x": 90.0,
+      "out_y": 235.6637,
+      "dx": -0.04999999999999716,
+      "dy": 9.333699999999965,
+      "width_pct": 8.25707464395033
+     },
+     {
+      "label": "Center",
+      "gt_x": 288.38,
+      "gt_y": 226.33000000000004,
+      "out_x": 287.088,
+      "out_y": 235.6637,
+      "dx": -1.2919999999999732,
+      "dy": 9.333699999999965,
+      "width_pct": 6.541324833154475
+     },
+     {
+      "label": "Right",
+      "gt_x": 495.7,
+      "gt_y": 226.33000000000004,
+      "out_x": 492.312,
+      "out_y": 235.6637,
+      "dx": -3.387999999999977,
+      "dy": 9.333699999999965,
+      "width_pct": 11.579643924165753
+     },
+     {
+      "label": "ItemA",
+      "gt_x": 90.05,
+      "gt_y": 251.33000000000004,
+      "out_x": 90.0,
+      "out_y": 262.45936,
+      "dx": -0.04999999999999716,
+      "dy": 11.129359999999963,
+      "width_pct": 11.665559805252913
+     },
+     {
+      "label": "$100.00",
+      "gt_x": 285.13,
+      "gt_y": 251.33000000000004,
+      "out_x": 283.8,
+      "out_y": 262.45936,
+      "dx": -1.329999999999984,
+      "dy": 11.129359999999963,
+      "width_pct": 5.40772076901545
+     },
+     {
+      "label": "2025-01-15",
+      "gt_x": 462.7,
+      "gt_y": 251.33000000000004,
+      "out_x": 459.36,
+      "out_y": 262.45936,
+      "dx": -3.339999999999975,
+      "dy": 11.129359999999963,
+      "width_pct": 4.941803336835754
+     },
+     {
+      "label": "ItemB",
+      "gt_x": 90.05,
+      "gt_y": 276.1,
+      "out_x": 90.0,
+      "out_y": 289.2549,
+      "dx": -0.04999999999999716,
+      "dy": 13.154899999999998,
+      "width_pct": 11.473475894989846
+     },
+     {
+      "label": "$2,450.99",
+      "gt_x": 280.38,
+      "gt_y": 276.1,
+      "out_x": 278.76,
+      "out_y": 289.2549,
+      "dx": -1.6200000000000045,
+      "dy": 13.154899999999998,
+      "width_pct": 5.039524355790063
+     },
+     {
+      "label": "2025-02-28",
+      "gt_x": 462.7,
+      "gt_y": 276.1,
+      "out_x": 459.36,
+      "out_y": 289.2549,
+      "dx": -3.339999999999975,
+      "dy": 13.154899999999998,
+      "width_pct": 4.941803336835754
+     },
+     {
+      "label": "DecimalTabAlignment",
+      "gt_x": 90.05,
+      "gt_y": 329.1,
+      "out_x": 90.0,
+      "out_y": 344.39607,
+      "dx": -0.04999999999999716,
+      "dy": 15.296069999999986,
+      "width_pct": -0.062239307038751725
+     },
+     {
+      "label": "Apples",
+      "gt_x": 90.05,
+      "gt_y": 346.1,
+      "out_x": 90.0,
+      "out_y": 363.09565,
+      "dx": -0.04999999999999716,
+      "dy": 16.995649999999955,
+      "width_pct": 6.238900389319714
+     },
+     {
+      "label": "3.50",
+      "gt_x": 299.63,
+      "gt_y": 346.1,
+      "out_x": 299.136,
+      "out_y": 363.09565,
+      "dx": -0.49399999999997135,
+      "dy": 16.995649999999955,
+      "width_pct": 4.027816534781032
+     },
+     {
+      "label": "Bananas",
+      "gt_x": 90.05,
+      "gt_y": 370.87,
+      "out_x": 90.0,
+      "out_y": 389.89125,
+      "dx": -0.04999999999999716,
+      "dy": 19.02125000000001,
+      "width_pct": 6.614987549009488
+     },
+     {
+      "label": "12.00",
+      "gt_x": 293.13,
+      "gt_y": 370.87,
+      "out_x": 292.272,
+      "out_y": 389.89125,
+      "dx": -0.8580000000000041,
+      "dy": 19.02125000000001,
+      "width_pct": 5.2640379128445955
+     },
+     {
+      "label": "Cherries",
+      "gt_x": 90.05,
+      "gt_y": 395.62,
+      "out_x": 90.0,
+      "out_y": 416.68684,
+      "dx": -0.04999999999999716,
+      "dy": 21.066840000000013,
+      "width_pct": 6.691114085019956
+     },
+     {
+      "label": "145.75",
+      "gt_x": 286.63,
+      "gt_y": 395.62,
+      "out_x": 285.408,
+      "out_y": 416.68684,
+      "dx": -1.22199999999998,
+      "dy": 21.066840000000013,
+      "width_pct": 5.348814370045244
+     },
+     {
+      "label": "Total",
+      "gt_x": 90.05,
+      "gt_y": 420.62,
+      "out_x": 90.0,
+      "out_y": 443.48243,
+      "dx": -0.04999999999999716,
+      "dy": 22.862430000000018,
+      "width_pct": 8.668683130973626
+     },
+     {
+      "label": "161.25",
+      "gt_x": 286.63,
+      "gt_y": 420.62,
+      "out_x": 285.408,
+      "out_y": 443.48243,
+      "dx": -1.22199999999998,
+      "dy": 22.862430000000018,
+      "width_pct": 5.348814370045244
+     },
+     {
+      "label": "TabLeaders",
+      "gt_x": 90.05,
+      "gt_y": 473.65,
+      "out_x": 90.0,
+      "out_y": 498.62358,
+      "dx": -0.04999999999999716,
+      "dy": 24.973580000000027,
+      "width_pct": -0.08053512572740568
+     }
+    ],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 28,
+    "fine_shifts": [
+     {
+      "label": "Name",
+      "gt_x": 90.05,
+      "gt_y": 127.04999999999995,
+      "out_x": 90.0,
+      "out_y": 128.48133,
+      "dx": -0.04999999999999716,
+      "dy": 1.4313300000000595,
+      "width_pct": 7.271025764904218
+     },
+     {
+      "label": "City",
+      "gt_x": 234.1,
+      "gt_y": 127.04999999999995,
+      "out_x": 234.0,
+      "out_y": 128.48133,
+      "dx": -0.09999999999999432,
+      "dy": 1.4313300000000595,
+      "width_pct": 2.315409419410182
+     },
+     {
+      "label": "Country",
+      "gt_x": 378.15,
+      "gt_y": 127.04999999999995,
+      "out_x": 378.0,
+      "out_y": 128.48133,
+      "dx": -0.14999999999997726,
+      "dy": 1.4313300000000595,
+      "width_pct": 8.26640604093604
+     },
+     {
+      "label": "Alice",
+      "gt_x": 90.05,
+      "gt_y": 151.79999999999995,
+      "out_x": 90.0,
+      "out_y": 155.27692,
+      "dx": -0.04999999999999716,
+      "dy": 3.4769200000000353,
+      "width_pct": 2.285865513480372
+     },
+     {
+      "label": "Oslo",
+      "gt_x": 234.1,
+      "gt_y": 151.79999999999995,
+      "out_x": 234.0,
+      "out_y": 155.27692,
+      "dx": -0.09999999999999432,
+      "dy": 3.4769200000000353,
+      "width_pct": 4.593759905738447
+     },
+     {
+      "label": "Norway",
+      "gt_x": 378.15,
+      "gt_y": 151.79999999999995,
+      "out_x": 378.0,
+      "out_y": 155.27692,
+      "dx": -0.14999999999997726,
+      "dy": 3.4769200000000353,
+      "width_pct": 10.013133631197976
+     },
+     {
+      "label": "Bob",
+      "gt_x": 90.05,
+      "gt_y": 176.54999999999995,
+      "out_x": 90.0,
+      "out_y": 182.07251,
+      "dx": -0.04999999999999716,
+      "dy": 5.5225100000000396,
+      "width_pct": 8.27799684331612
+     },
+     {
+      "label": "NewYork",
+      "gt_x": 234.1,
+      "gt_y": 176.54999999999995,
+      "out_x": 234.0,
+      "out_y": 182.07251,
+      "dx": -0.09999999999999432,
+      "dy": 5.5225100000000396,
+      "width_pct": 9.789680948814992
+     },
+     {
+      "label": "UnitedStates",
+      "gt_x": 378.15,
+      "gt_y": 176.54999999999995,
+      "out_x": 378.0,
+      "out_y": 182.07251,
+      "dx": -0.14999999999997726,
+      "dy": 5.5225100000000396,
+      "width_pct": 7.277462925912573
+     },
+     {
+      "label": "Left",
+      "gt_x": 90.05,
+      "gt_y": 226.33000000000004,
+      "out_x": 90.0,
+      "out_y": 235.6637,
+      "dx": -0.04999999999999716,
+      "dy": 9.333699999999965,
+      "width_pct": 8.25707464395033
+     },
+     {
+      "label": "Center",
+      "gt_x": 288.38,
+      "gt_y": 226.33000000000004,
+      "out_x": 287.088,
+      "out_y": 235.6637,
+      "dx": -1.2919999999999732,
+      "dy": 9.333699999999965,
+      "width_pct": 6.541324833154475
+     },
+     {
+      "label": "Right",
+      "gt_x": 495.7,
+      "gt_y": 226.33000000000004,
+      "out_x": 492.312,
+      "out_y": 235.6637,
+      "dx": -3.387999999999977,
+      "dy": 9.333699999999965,
+      "width_pct": 11.579643924165753
+     },
+     {
+      "label": "ItemA",
+      "gt_x": 90.05,
+      "gt_y": 251.33000000000004,
+      "out_x": 90.0,
+      "out_y": 262.45936,
+      "dx": -0.04999999999999716,
+      "dy": 11.129359999999963,
+      "width_pct": 11.665559805252913
+     },
+     {
+      "label": "$100.00",
+      "gt_x": 285.13,
+      "gt_y": 251.33000000000004,
+      "out_x": 283.8,
+      "out_y": 262.45936,
+      "dx": -1.329999999999984,
+      "dy": 11.129359999999963,
+      "width_pct": 5.40772076901545
+     },
+     {
+      "label": "2025-01-15",
+      "gt_x": 462.7,
+      "gt_y": 251.33000000000004,
+      "out_x": 459.36,
+      "out_y": 262.45936,
+      "dx": -3.339999999999975,
+      "dy": 11.129359999999963,
+      "width_pct": 4.941803336835754
+     },
+     {
+      "label": "ItemB",
+      "gt_x": 90.05,
+      "gt_y": 276.1,
+      "out_x": 90.0,
+      "out_y": 289.2549,
+      "dx": -0.04999999999999716,
+      "dy": 13.154899999999998,
+      "width_pct": 11.473475894989846
+     },
+     {
+      "label": "$2,450.99",
+      "gt_x": 280.38,
+      "gt_y": 276.1,
+      "out_x": 278.76,
+      "out_y": 289.2549,
+      "dx": -1.6200000000000045,
+      "dy": 13.154899999999998,
+      "width_pct": 5.039524355790063
+     },
+     {
+      "label": "2025-02-28",
+      "gt_x": 462.7,
+      "gt_y": 276.1,
+      "out_x": 459.36,
+      "out_y": 289.2549,
+      "dx": -3.339999999999975,
+      "dy": 13.154899999999998,
+      "width_pct": 4.941803336835754
+     },
+     {
+      "label": "DecimalTabAlignment",
+      "gt_x": 90.05,
+      "gt_y": 329.1,
+      "out_x": 90.0,
+      "out_y": 344.39607,
+      "dx": -0.04999999999999716,
+      "dy": 15.296069999999986,
+      "width_pct": -0.062239307038751725
+     },
+     {
+      "label": "Apples",
+      "gt_x": 90.05,
+      "gt_y": 346.1,
+      "out_x": 90.0,
+      "out_y": 363.09565,
+      "dx": -0.04999999999999716,
+      "dy": 16.995649999999955,
+      "width_pct": 6.238900389319714
+     },
+     {
+      "label": "3.50",
+      "gt_x": 299.63,
+      "gt_y": 346.1,
+      "out_x": 299.136,
+      "out_y": 363.09565,
+      "dx": -0.49399999999997135,
+      "dy": 16.995649999999955,
+      "width_pct": 4.027816534781032
+     },
+     {
+      "label": "Bananas",
+      "gt_x": 90.05,
+      "gt_y": 370.87,
+      "out_x": 90.0,
+      "out_y": 389.89125,
+      "dx": -0.04999999999999716,
+      "dy": 19.02125000000001,
+      "width_pct": 6.614987549009488
+     },
+     {
+      "label": "12.00",
+      "gt_x": 293.13,
+      "gt_y": 370.87,
+      "out_x": 292.272,
+      "out_y": 389.89125,
+      "dx": -0.8580000000000041,
+      "dy": 19.02125000000001,
+      "width_pct": 5.2640379128445955
+     },
+     {
+      "label": "Cherries",
+      "gt_x": 90.05,
+      "gt_y": 395.62,
+      "out_x": 90.0,
+      "out_y": 416.68684,
+      "dx": -0.04999999999999716,
+      "dy": 21.066840000000013,
+      "width_pct": 6.691114085019956
+     },
+     {
+      "label": "145.75",
+      "gt_x": 286.63,
+      "gt_y": 395.62,
+      "out_x": 285.408,
+      "out_y": 416.68684,
+      "dx": -1.22199999999998,
+      "dy": 21.066840000000013,
+      "width_pct": 5.348814370045244
+     },
+     {
+      "label": "Total",
+      "gt_x": 90.05,
+      "gt_y": 420.62,
+      "out_x": 90.0,
+      "out_y": 443.48243,
+      "dx": -0.04999999999999716,
+      "dy": 22.862430000000018,
+      "width_pct": 8.668683130973626
+     },
+     {
+      "label": "161.25",
+      "gt_x": 286.63,
+      "gt_y": 420.62,
+      "out_x": 285.408,
+      "out_y": 443.48243,
+      "dx": -1.22199999999998,
+      "dy": 22.862430000000018,
+      "width_pct": 5.348814370045244
+     },
+     {
+      "label": "TabLeaders",
+      "gt_x": 90.05,
+      "gt_y": 473.65,
+      "out_x": 90.0,
+      "out_y": 498.62358,
+      "dx": -0.04999999999999716,
+      "dy": 24.973580000000027,
+      "width_pct": -0.08053512572740568
+     }
+    ]
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 12,
+    "worst_delta": 3.8111899999999252
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 0,
+    "out_count": 0,
+    "canonical_gt_count": 0,
+    "canonical_out_count": 0,
+    "matched": 0,
+    "unmatched_gt": 0,
+    "unmatched_out": 0,
+    "mean_center_delta": 0.0,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 0,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [],
+    "x": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "y": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "width": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "height": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "top": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "right": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "bottom": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     }
+    }
+   },
+   "noise_floor": 0.12
+  },
+  {
+   "lines": {
+    "gt": 16,
+    "out": 10,
+    "matched": 3,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 3,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 12.697079999999989,
+    "worst_dy": 16.99613999999997,
+    "worst_dy_signed": 16.99613999999997,
+    "worst_line": "Thisclaimneedsacitationandsodoesthisone."
+   },
+   "dx0": {
+    "mean_abs": 8.209500000000006,
+    "worst": 22.186000000000035
+   },
+   "width": {
+    "mean_abs_pct": 9.92160767818292,
+    "worst_pct": 17.313009747259326
+   },
+   "instances": {
+    "compared": 4,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 3,
+    "large_shifts": [
+     {
+      "label": "[1]",
+      "gt_x": 227.6,
+      "gt_y": 297.85,
+      "out_x": 238.152,
+      "out_y": 314.64613,
+      "dx": 10.551999999999992,
+      "dy": 16.796130000000005,
+      "width_pct": 13.523254550556818
+     },
+     {
+      "label": "[2]",
+      "gt_x": 344.15,
+      "gt_y": 297.85,
+      "out_x": 366.336,
+      "out_y": 314.64613,
+      "dx": 22.186000000000035,
+      "dy": 16.796130000000005,
+      "width_pct": 17.313009747259326
+     },
+     {
+      "label": "Thisclaimneedsacitationandsodoesthisone.",
+      "gt_x": 90.05,
+      "gt_y": 301.85,
+      "out_x": 90.0,
+      "out_y": 318.84614,
+      "dx": -0.04999999999999716,
+      "dy": 16.99613999999997,
+      "width_pct": 8.821818428125448
+     }
+    ],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 3,
+    "fine_shifts": [
+     {
+      "label": "[1]",
+      "gt_x": 227.6,
+      "gt_y": 297.85,
+      "out_x": 238.152,
+      "out_y": 314.64613,
+      "dx": 10.551999999999992,
+      "dy": 16.796130000000005,
+      "width_pct": 13.523254550556818
+     },
+     {
+      "label": "[2]",
+      "gt_x": 344.15,
+      "gt_y": 297.85,
+      "out_x": 366.336,
+      "out_y": 314.64613,
+      "dx": 22.186000000000035,
+      "dy": 16.796130000000005,
+      "width_pct": 17.313009747259326
+     },
+     {
+      "label": "Thisclaimneedsacitationandsodoesthisone.",
+      "gt_x": 90.05,
+      "gt_y": 301.85,
+      "out_x": 90.0,
+      "out_y": 318.84614,
+      "dx": -0.04999999999999716,
+      "dy": 16.99613999999997,
+      "width_pct": 8.821818428125448
+     }
+    ]
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 2,
+    "worst_delta": 16.99604999999997
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 13,
+    "out_lines": 7,
+    "samples": [
+     "2",
+     "Einstein'sfamousequation:E=mc",
+     "2"
+    ]
+   },
+   "rects": {
+    "gt_count": 0,
+    "out_count": 0,
+    "canonical_gt_count": 0,
+    "canonical_out_count": 0,
+    "matched": 0,
+    "unmatched_gt": 0,
+    "unmatched_out": 0,
+    "mean_center_delta": 0.0,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 0,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [],
+    "x": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "y": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "width": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "height": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "top": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "right": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "bottom": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     }
+    }
+   },
+   "noise_floor": 0.12
+  },
+  {
+   "lines": {
+    "gt": 6,
+    "out": 6,
+    "matched": 3,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 3,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 2.140662857142879,
+    "worst_dy": 3.4769200000000353,
+    "worst_dy_signed": 3.4769200000000353,
+    "worst_line": "Temperature"
+   },
+   "dx0": {
+    "mean_abs": 0.7405714285714262,
+    "worst": -2.915999999999997
+   },
+   "width": {
+    "mean_abs_pct": 6.0815530835854394,
+    "worst_pct": 11.636934919854317
+   },
+   "instances": {
+    "compared": 7,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 0,
+    "large_shifts": [],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 6,
+    "fine_shifts": [
+     {
+      "label": "Boldkey",
+      "gt_x": 90.05,
+      "gt_y": 103.02999999999997,
+      "out_x": 90.0,
+      "out_y": 104.48132,
+      "dx": -0.04999999999999716,
+      "dy": 1.451320000000024,
+      "width_pct": 10.434141859652726
+     },
+     {
+      "label": "Normalvalue",
+      "gt_x": 270.13,
+      "gt_y": 103.02999999999997,
+      "out_x": 270.0,
+      "out_y": 104.48132,
+      "dx": -0.12999999999999545,
+      "dy": 1.451320000000024,
+      "width_pct": 8.790697745809933
+     },
+     {
+      "label": "Rightitalic",
+      "gt_x": 396.42,
+      "gt_y": 103.02999999999997,
+      "out_x": 393.504,
+      "out_y": 104.48132,
+      "dx": -2.915999999999997,
+      "dy": 1.451320000000024,
+      "width_pct": 4.930259594473179
+     },
+     {
+      "label": "Temperature",
+      "gt_x": 90.05,
+      "gt_y": 127.79999999999995,
+      "out_x": 90.0,
+      "out_y": 131.27692,
+      "dx": -0.04999999999999716,
+      "dy": 3.4769200000000353,
+      "width_pct": 11.636934919854317
+     },
+     {
+      "label": "22\u00b0C",
+      "gt_x": 270.13,
+      "gt_y": 127.79999999999995,
+      "out_x": 270.0,
+      "out_y": 131.27692,
+      "dx": -0.12999999999999545,
+      "dy": 3.4769200000000353,
+      "width_pct": 2.588686023871104
+     },
+     {
+      "label": "Normal",
+      "gt_x": 411.43,
+      "gt_y": 127.79999999999995,
+      "out_x": 409.572,
+      "out_y": 131.27692,
+      "dx": -1.858000000000004,
+      "dy": 3.4769200000000353,
+      "width_pct": 4.037549371900729
+     }
+    ]
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 2,
+    "worst_delta": 2.0256000000000114
+   },
+   "wraps": {
+    "count": 1,
+    "samples": [
+     "Thisdocumentteststabstops(left,center,right,decimal),dotlead"
+    ]
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 0,
+    "out_count": 0,
+    "canonical_gt_count": 0,
+    "canonical_out_count": 0,
+    "matched": 0,
+    "unmatched_gt": 0,
+    "unmatched_out": 0,
+    "mean_center_delta": 0.0,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 0,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [],
+    "x": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "y": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "width": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "height": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "top": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "right": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "bottom": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     }
+    }
+   },
+   "noise_floor": 0.12
+  }
+ ],
+ "gt_pages": 3,
+ "out_pages": 3
+}

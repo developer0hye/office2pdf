@@ -1,0 +1,615 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 183.168,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 32.64,
+        "x": 44.64,
+        "y": 124.8
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the first-page header word `Header` is painted in the Noto Sans stand-in for unembedded Aptos, wider and taller than Word's Aptos glyphs at the same seat (#2237). Unchanged by this fix."
+      },
+      "id": "p1-146d20084e76",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 38.2464,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 44.64,
+        "y": 202.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-d4f3c9d1c228",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-87692581416a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 313.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-da4d967ff186",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 361.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-5747e53b8ffc",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-c196beea64a5",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 71.04,
+        "y": 199.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-08000db4f070",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 36.96,
+        "y": 125.28
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the first-page header word `Header` is painted in the Noto Sans stand-in for unembedded Aptos, wider and taller than Word's Aptos glyphs at the same seat (#2237). Unchanged by this fix."
+      },
+      "id": "p1-797dab6715d2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 4.8,
+        "x": 85.44,
+        "y": 247.68
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-80b08d8bec22",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 4.8,
+        "x": 85.44,
+        "y": 311.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-b9fcbb852f35",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 4.8,
+        "x": 85.44,
+        "y": 359.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-b9fe18934b9d",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 4.8,
+        "x": 85.44,
+        "y": 407.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-80d6d60e096a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.72,
+        "x": 36.48,
+        "y": 168.48
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-e389e5f5739a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-636b64f517d3",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 313.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-64f2ee504af5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 361.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-b03788e3c06c",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-63a10bc19240",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-98b3cfe3fa25",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 313.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-3f80b969b062",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 361.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-e9d8ff8031b1",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-f12abfaaf198",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 57.6,
+        "y": 202.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-50bddd107e31",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-0f8f881c39e1",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 313.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-e7bbbbf48f7e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 361.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-147e7d34aaa8",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-8811ef196730",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 36.96,
+        "y": 200.16
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-cd80fdb36a45",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 64.32,
+        "y": 202.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-de7bf7610e0d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-ffc00ed73762",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 313.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-140750142fdb",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 361.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-d3e146846cba",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-1d5ab27cad17",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 250.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-6ec81f5ea4e9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 313.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-2693f51c48fc",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 361.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-63955aae0501",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-f089a439951e",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 51.36,
+        "y": 202.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Inspected at 300 DPI: the same words and lines as Word in the same order, starting the table row on page 1 below `Before` as Word does. ArialMT against metric-compatible Liberation Sans outlines; matched baselines sit within 0.26pt (layout audit MAD 0.15pt, below the 0.5pt fine threshold), so the remaining ink offset is sub-material and recorded in #1874."
+      },
+      "id": "p1-2ff7eb4a2079",
+      "region": "left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 37,
+    "duplicate": 0,
+    "total": 37,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

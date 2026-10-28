@@ -28,6 +28,8 @@ mod paragraph_mark;
 mod paragraph_shading;
 #[path = "docx_context_picture.rs"]
 mod picture;
+#[path = "docx_context_run_scan.rs"]
+mod run_scan;
 #[path = "docx_context_small_caps.rs"]
 mod small_caps;
 #[path = "docx_context_table_header.rs"]
@@ -47,7 +49,10 @@ pub(super) use columns::{extract_column_layout_from_section_property, scan_colum
 pub(super) use contextual_spacing::{ContextualSpacingContext, ParagraphContextualSpacing};
 pub(super) use docx_context_shape::{DrawingShapeContext, WpgDrawingInfo};
 pub(super) use drawing::{DrawingTextBoxContext, DrawingTextBoxInfo};
-pub(super) use fields::{FieldContext, seq_identifier, toc_caption_identifier, toc_heading_depth};
+pub(super) use fields::{
+    FieldContent, FieldContext, PageFieldScan, seq_identifier, toc_caption_identifier,
+    toc_heading_depth,
+};
 pub(super) use math::{MathContext, build_math_context_from_xml};
 pub(super) use notes::{
     NoteContent, NoteContext, build_note_context_from_xml, is_note_reference_run, read_zip_text,
@@ -57,13 +62,16 @@ pub(super) use page_numbers::scan_page_numbering;
 pub(super) use paragraph_cursor::is_skipped_subtree;
 pub(super) use paragraph_mark::ParagraphMarkContext;
 pub(super) use paragraph_shading::{ParagraphShadingContext, scan_style_paragraph_shading};
-pub(super) use picture::PictureCropContext;
+pub(super) use picture::{
+    AnchorAxisPlacement, AnchorPlacement, PictureCropContext, doc_pr_states_hidden,
+};
+pub(super) use run_scan::{ParagraphRunScan, RunScan, RunScanContext};
 pub(super) use small_caps::SmallCapsContext;
 pub(super) use table_header::TableHeaderContext;
 #[cfg(test)]
 pub(super) use table_header::scan_table_headers;
 pub(super) use table_style::{ResolvedTableStyle, TableStyleContext, apply_table_text_style};
-pub(super) use vml::{VmlTextBoxContext, VmlTextBoxInfo};
+pub(super) use vml::{VmlTextBoxContext, VmlTextBoxInfo, horizontal_rule};
 pub(super) use word_wrap::{WordWrapContext, scan_style_word_wrap};
 pub(super) use wrap::{WrapContext, build_wrap_context_from_xml};
 
@@ -86,6 +94,9 @@ pub(super) struct DocxConversionContext {
     pub(super) vml_text_boxes: VmlTextBoxContext,
     pub(super) bidi: BidiContext,
     pub(super) small_caps: SmallCapsContext,
+    /// Each run's own `w14:ligatures` (issue #2205) and its line breaks'
+    /// `w:clear` (issue #2230), which docx-rs drops.
+    pub(super) run_scan: RunScanContext,
     pub(super) paragraph_shading: ParagraphShadingContext,
     pub(super) word_wraps: WordWrapContext,
     /// Each paragraph's `w:contextualSpacing`, which drops `w:spacing` gaps
@@ -130,11 +141,12 @@ impl DocxConversionContext {
             vml_text_boxes: VmlTextBoxContext::from_xml(story_xml),
             bidi: BidiContext::from_xml(story_xml),
             small_caps: SmallCapsContext::from_xml(story_xml),
+            run_scan: RunScanContext::from_xml(story_xml),
             paragraph_shading: ParagraphShadingContext::from_xml(story_xml),
             word_wraps: WordWrapContext::from_xml(story_xml),
             contextual_spacing: ContextualSpacingContext::from_xml(story_xml, styles_xml),
             paragraph_marks: ParagraphMarkContext::from_xml(story_xml),
-            fields: FieldContext::default(),
+            fields: FieldContext::for_header_footer_story(),
             default_paragraph_style_is_defined,
             paragraph_property_defaults_are_declared,
         }

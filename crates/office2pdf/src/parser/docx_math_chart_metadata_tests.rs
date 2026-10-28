@@ -147,7 +147,7 @@ fn test_parse_docx_with_complex_math() {
 
 fn build_docx_with_chart(document_xml: &str, chart_xml: &str) -> Vec<u8> {
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
 
     zip.start_file("[Content_Types].xml", options).unwrap();
     std::io::Write::write_all(
@@ -344,7 +344,7 @@ fn test_parse_docx_with_pie_chart() {
 
 fn build_docx_with_metadata(core_xml: &str) -> Vec<u8> {
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
 
     zip.start_file("[Content_Types].xml", options).unwrap();
     std::io::Write::write_all(

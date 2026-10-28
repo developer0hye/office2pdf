@@ -1,0 +1,3932 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 231.3216,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 35.04,
+        "x": 90.24,
+        "y": 506.88
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-b22cb94e92b6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 216.576,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 35.04,
+        "x": 386.88,
+        "y": 145.44
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-9f0b0874c455",
+      "region": "top"
+    },
+    {
+      "area_pt2": 207.5904,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 28.32,
+        "x": 90.72,
+        "y": 556.8
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-e833703d0ae8",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 152.5248,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 20.16,
+        "x": 89.76,
+        "y": 335.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-569ef6fb7544",
+      "region": "left"
+    },
+    {
+      "area_pt2": 150.6816,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 19.2,
+        "x": 90.72,
+        "y": 531.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-b23f2ee670e6",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 143.0784,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 22.08,
+        "x": 89.76,
+        "y": 407.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-6c18b6233357",
+      "region": "left"
+    },
+    {
+      "area_pt2": 141.9264,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 20.16,
+        "x": 415.68,
+        "y": 168.0
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-dc35ba739865",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 106.9056,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 15.84,
+        "x": 113.76,
+        "y": 337.44
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-6433c0ca2616",
+      "region": "left"
+    },
+    {
+      "area_pt2": 106.4448,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 14.4,
+        "x": 119.52,
+        "y": 383.04
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-0759222ed153",
+      "region": "left"
+    },
+    {
+      "area_pt2": 98.8416,
+      "bbox_pt": {
+        "height": 18.72,
+        "width": 13.92,
+        "x": 503.04,
+        "y": 219.36
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-86e9aea37d06",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 96.3072,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 17.76,
+        "x": 105.6,
+        "y": 120.48
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-681ed1795b9d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 89.6256,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 16.8,
+        "x": 406.56,
+        "y": 119.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-d8d968868ece",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 89.6256,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 17.76,
+        "x": 259.68,
+        "y": 168.0
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-831162ca8bfe",
+      "region": "top"
+    },
+    {
+      "area_pt2": 85.4784,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 13.92,
+        "x": 119.04,
+        "y": 557.76
+      },
+      "disposition": {
+        "issues": [
+          "#2237",
+          "#2397"
+        ],
+        "kind": "issue",
+        "note": "Leader rows: the dots now take the row run's face and size (#2244), but sit on the Noto Sans stand-in's lines and period advance (#2237), and are justified across each tab instead of set on Word's shared 3.501pt grid (#2397)."
+      },
+      "id": "p1-5fc3de928199",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 79.2576,
+      "bbox_pt": {
+        "height": 13.44,
+        "width": 12.0,
+        "x": 396.0,
+        "y": 168.96
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-ab24afa7bbb2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 76.032,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 13.92,
+        "x": 378.72,
+        "y": 118.56
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-95d7eeefe756",
+      "region": "top"
+    },
+    {
+      "area_pt2": 74.1888,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 6.72,
+        "x": 90.72,
+        "y": 168.0
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-3ae092470a61",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 71.8848,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 7.68,
+        "x": 90.24,
+        "y": 381.12
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-3f1360463075",
+      "region": "left"
+    },
+    {
+      "area_pt2": 70.0416,
+      "bbox_pt": {
+        "height": 16.32,
+        "width": 8.16,
+        "x": 89.76,
+        "y": 354.24
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-11f0fda52d59",
+      "region": "left"
+    },
+    {
+      "area_pt2": 66.5856,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 12.48,
+        "x": 108.0,
+        "y": 482.4
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-a02931bdd93c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 65.2032,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 7.68,
+        "x": 234.72,
+        "y": 168.0
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-9b9b5683d7a4",
+      "region": "top"
+    },
+    {
+      "area_pt2": 63.8208,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 8.64,
+        "x": 234.24,
+        "y": 143.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-3ac1cc246cff",
+      "region": "top"
+    },
+    {
+      "area_pt2": 61.056,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 10.56,
+        "x": 248.64,
+        "y": 170.4
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-d50be2883e11",
+      "region": "top"
+    },
+    {
+      "area_pt2": 59.6736,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 9.6,
+        "x": 99.84,
+        "y": 483.36
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-b3e4667bc56b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 59.4432,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 10.56,
+        "x": 277.44,
+        "y": 168.0
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-37fd384e3c95",
+      "region": "top"
+    },
+    {
+      "area_pt2": 58.2912,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 7.68,
+        "x": 90.24,
+        "y": 581.76
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-a390fb56c51c",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 57.3696,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 6.24,
+        "x": 117.12,
+        "y": 533.76
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-88fe651323a3",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 56.6784,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 6.24,
+        "x": 479.52,
+        "y": 582.24
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-8aa26b4c46ae",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 55.7568,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 10.56,
+        "x": 244.8,
+        "y": 119.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-e7e7d0744107",
+      "region": "top"
+    },
+    {
+      "area_pt2": 54.8352,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 7.2,
+        "x": 97.44,
+        "y": 356.16
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-7334f37b0fdd",
+      "region": "left"
+    },
+    {
+      "area_pt2": 54.3744,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 6.24,
+        "x": 316.32,
+        "y": 353.76
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-cd0f47d10d7c",
+      "region": "center"
+    },
+    {
+      "area_pt2": 53.4528,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 7.2,
+        "x": 104.64,
+        "y": 168.0
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-3e37fb2f5be2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 53.4528,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 8.16,
+        "x": 406.56,
+        "y": 168.0
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-49679d16fffa",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 53.2224,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 9.6,
+        "x": 89.76,
+        "y": 482.4
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-5f1f731212f6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 52.7616,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 6.24,
+        "x": 479.52,
+        "y": 556.8
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-eb28f993c107",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 51.6096,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 7.2,
+        "x": 378.72,
+        "y": 168.0
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-76ac4944b42d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 51.6096,
+      "bbox_pt": {
+        "height": 16.8,
+        "width": 6.24,
+        "x": 309.6,
+        "y": 354.24
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-1367121bb22e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 51.3792,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 8.64,
+        "x": 287.52,
+        "y": 217.92
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-b9a3c9bd73e8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 51.1488,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 6.24,
+        "x": 316.32,
+        "y": 380.64
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-64af83a11522",
+      "region": "center"
+    },
+    {
+      "area_pt2": 50.4576,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 6.24,
+        "x": 105.12,
+        "y": 383.04
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-31a008172dbe",
+      "region": "left"
+    },
+    {
+      "area_pt2": 50.4576,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 6.24,
+        "x": 316.32,
+        "y": 408.0
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-8d78d753d881",
+      "region": "center"
+    },
+    {
+      "area_pt2": 50.2272,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 6.24,
+        "x": 131.52,
+        "y": 483.36
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-665cab86ef58",
+      "region": "left"
+    },
+    {
+      "area_pt2": 49.0752,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 8.16,
+        "x": 89.76,
+        "y": 143.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-208d67ce2a1a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 49.0752,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 6.72,
+        "x": 242.88,
+        "y": 169.92
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-dcac4130a0d5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 49.0752,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 7.2,
+        "x": 104.64,
+        "y": 356.16
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-298ab168ec62",
+      "region": "left"
+    },
+    {
+      "area_pt2": 48.8448,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 7.68,
+        "x": 378.72,
+        "y": 143.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-704cc73f3520",
+      "region": "top"
+    },
+    {
+      "area_pt2": 48.384,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 6.72,
+        "x": 292.32,
+        "y": 408.0
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-5f601f48a700",
+      "region": "center"
+    },
+    {
+      "area_pt2": 48.384,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 6.72,
+        "x": 472.8,
+        "y": 582.24
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-b00ebe8d2cc0",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 47.9232,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 90.72,
+        "y": 118.56
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-c7c56bc86b5c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 47.4624,
+      "bbox_pt": {
+        "height": 16.8,
+        "width": 6.24,
+        "x": 299.52,
+        "y": 353.76
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-2320e12e98e1",
+      "region": "center"
+    },
+    {
+      "area_pt2": 47.232,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.72,
+        "x": 145.92,
+        "y": 506.88
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-0784a0983dec",
+      "region": "left"
+    },
+    {
+      "area_pt2": 46.7712,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 6.24,
+        "x": 97.92,
+        "y": 383.04
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-e4295cc31bd0",
+      "region": "left"
+    },
+    {
+      "area_pt2": 45.8496,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 7.2,
+        "x": 111.84,
+        "y": 383.04
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-12ca353a682b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 45.6192,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.72,
+        "x": 252.0,
+        "y": 145.44
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-d6fb6261cb1e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 45.6192,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 6.24,
+        "x": 299.52,
+        "y": 380.64
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-6778c5051e27",
+      "region": "center"
+    },
+    {
+      "area_pt2": 44.928,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 6.72,
+        "x": 441.12,
+        "y": 169.92
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-af2ae18c0014",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 44.0064,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 149.76,
+        "y": 319.68
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-c313d0fccd40",
+      "region": "left"
+    },
+    {
+      "area_pt2": 43.3152,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.6,
+        "x": 113.76,
+        "y": 322.56
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-4590c6b35077",
+      "region": "left"
+    },
+    {
+      "area_pt2": 43.3152,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 9.6,
+        "x": 187.2,
+        "y": 322.56
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-7234e98dad7e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 43.0848,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 6.24,
+        "x": 479.52,
+        "y": 531.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-081062e28166",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 42.8544,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 9.6,
+        "x": 187.2,
+        "y": 337.44
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-f0eb7641fb9c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 42.3936,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 6.24,
+        "x": 309.6,
+        "y": 408.0
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-f8d5d8bd9b2f",
+      "region": "center"
+    },
+    {
+      "area_pt2": 42.1632,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 6.72,
+        "x": 386.88,
+        "y": 170.4
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-f375ea23f3b9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 42.1632,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 131.52,
+        "y": 464.16
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-1b04f0f70294",
+      "region": "left"
+    },
+    {
+      "area_pt2": 41.9328,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 173.76,
+        "y": 322.56
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-86ee6dbb39aa",
+      "region": "left"
+    },
+    {
+      "area_pt2": 41.9328,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 173.76,
+        "y": 337.44
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-c8e9c7349f14",
+      "region": "left"
+    },
+    {
+      "area_pt2": 41.472,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.24,
+        "x": 120.48,
+        "y": 280.32
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-b9a6d377d71d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 40.5504,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 90.72,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-4b94b466925d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 40.5504,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 6.24,
+        "x": 309.6,
+        "y": 380.64
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-707555e9d387",
+      "region": "center"
+    },
+    {
+      "area_pt2": 40.5504,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.76,
+        "x": 103.68,
+        "y": 464.16
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-8cd943e39e6b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 40.32,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 7.2,
+        "x": 97.44,
+        "y": 169.92
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-8579c93298df",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 40.32,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.24,
+        "x": 129.6,
+        "y": 533.76
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-5731c04e4383",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 39.8592,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 6.24,
+        "x": 98.88,
+        "y": 120.48
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-a790fb0a5ea0",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 39.8592,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 6.24,
+        "x": 110.4,
+        "y": 531.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-e5906874cb88",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 39.6288,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 159.36,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-d2e4245bbe76",
+      "region": "left"
+    },
+    {
+      "area_pt2": 39.3984,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 109.92,
+        "y": 145.44
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-d9643ec8890e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 39.3984,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 5.76,
+        "x": 299.52,
+        "y": 408.0
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-fd26a87b3d93",
+      "region": "center"
+    },
+    {
+      "area_pt2": 39.168,
+      "bbox_pt": {
+        "height": 14.4,
+        "width": 6.24,
+        "x": 293.28,
+        "y": 381.12
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-26678e48b234",
+      "region": "center"
+    },
+    {
+      "area_pt2": 38.9376,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 5.28,
+        "x": 123.84,
+        "y": 531.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-e3e6a65259fc",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 6.72,
+        "x": 133.92,
+        "y": 101.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Heading glyphs at the same place (start and baseline within 0.2pt of Word): Word paints Calibri Bold, office2pdf the metric-compatible Carlito Bold; inspected crops show the same letters, weight and colour, with outline-only edge differences."
+      },
+      "id": "p1-f8b62d98a018",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 38.4768,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 7.68,
+        "x": 234.24,
+        "y": 118.56
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-e373fa106c10",
+      "region": "top"
+    },
+    {
+      "area_pt2": 38.2464,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.2,
+        "x": 138.24,
+        "y": 507.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-cb288f07dc96",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 11.52,
+        "x": 120.96,
+        "y": 99.84
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Heading glyphs at the same place (start and baseline within 0.2pt of Word): Word paints Calibri Bold, office2pdf the metric-compatible Carlito Bold; inspected crops show the same letters, weight and colour, with outline-only edge differences."
+      },
+      "id": "p1-d07c2e5df795",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.76,
+        "x": 515.52,
+        "y": 279.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-4b467872029b",
+      "region": "right"
+    },
+    {
+      "area_pt2": 37.5552,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.68,
+        "x": 159.36,
+        "y": 335.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-27dd8e460255",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.3248,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 516.48,
+        "y": 267.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-3f6cd5ebb64e",
+      "region": "right"
+    },
+    {
+      "area_pt2": 37.0944,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 6.72,
+        "x": 120.48,
+        "y": 584.16
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-8345b7ffa3a1",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 36.6336,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 149.76,
+        "y": 335.04
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-297391e6bed6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 36.1728,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 5.76,
+        "x": 436.32,
+        "y": 169.92
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-3d71622435af",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 36.1728,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 8.64,
+        "x": 102.72,
+        "y": 225.6
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-7d54ed4c5f19",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 36.1728,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.72,
+        "x": 492.96,
+        "y": 226.56
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-f137858f834f",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 36.1728,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.76,
+        "x": 480.0,
+        "y": 507.36
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-6c95719a4a54",
+      "region": "right"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 117.12,
+        "y": 267.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-fc8f089afec5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.2512,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 9.6,
+        "x": 106.08,
+        "y": 255.36
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-347b24bb1f9c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 35.2512,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 9.6,
+        "x": 106.08,
+        "y": 282.24
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-dbb269e86132",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.2512,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.24,
+        "x": 125.76,
+        "y": 508.8
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-a17986e6c9f7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.0208,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 5.76,
+        "x": 285.6,
+        "y": 241.92
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-9080944e3975",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.0208,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 284.16,
+        "y": 252.96
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-5b6273f695d4",
+      "region": "top"
+    },
+    {
+      "area_pt2": 35.0208,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 5.76,
+        "x": 280.8,
+        "y": 266.88
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-6674ac7b6575",
+      "region": "center"
+    },
+    {
+      "area_pt2": 34.56,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 103.68,
+        "y": 145.44
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-5513df37fdc5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 279.36,
+        "y": 279.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-0f4694b1bb46",
+      "region": "center"
+    },
+    {
+      "area_pt2": 32.9472,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 6.24,
+        "x": 473.28,
+        "y": 556.8
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-2b6872323917",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 400.8,
+        "y": 120.96
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-16c739bc4bd3",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.4864,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 132.96,
+        "y": 509.28
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-3a585a47fdc7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 32.0256,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 6.24,
+        "x": 496.32,
+        "y": 217.92
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-5325d850c0ac",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 8.16,
+        "x": 119.04,
+        "y": 253.44
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-ec74299bee49",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.28,
+        "x": 243.36,
+        "y": 145.44
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-df81651cf812",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 151.2,
+        "y": 534.72
+      },
+      "disposition": {
+        "issues": [
+          "#2237",
+          "#2397"
+        ],
+        "kind": "issue",
+        "note": "Leader rows: the dots now take the row run's face and size (#2244), but sit on the Noto Sans stand-in's lines and period advance (#2237), and are justified across each tab instead of set on Word's shared 3.501pt grid (#2397)."
+      },
+      "id": "p1-b30e7848f8fb",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.72,
+        "x": 295.68,
+        "y": 280.32
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-b91b7a28234a",
+      "region": "center"
+    },
+    {
+      "area_pt2": 30.8736,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 125.28,
+        "y": 467.04
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-b7d94bb5309b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 143.04,
+        "y": 322.56
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-79e7c5e90893",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 197.76,
+        "y": 322.56
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-398d2c71f5e8",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.24,
+        "x": 180.0,
+        "y": 337.44
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-a3f067752a3f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 197.28,
+        "y": 337.44
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-74f8e3cc79b6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 138.72,
+        "y": 467.04
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-c6f33c24ba38",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 138.24,
+        "y": 491.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-ac9b38f6d3e9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.24,
+        "x": 98.4,
+        "y": 322.56
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-a27cd81d643b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.24,
+        "x": 118.56,
+        "y": 467.04
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-f0e936ec9858",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.76,
+        "x": 298.08,
+        "y": 252.96
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-88d197feb326",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.952,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 319.68,
+        "y": 279.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-f87cba5e4e8b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 143.04,
+        "y": 337.44
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-ac8c7c2c69c9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 108.48,
+        "y": 436.32
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-4b2293febacb",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 96.48,
+        "y": 491.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-811776a0531c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.7216,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 118.56,
+        "y": 491.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-5bbf0342d6b1",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 304.8,
+        "y": 252.96
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-f6c87743354b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.4912,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 314.88,
+        "y": 252.96
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-fc23f8b53ddf",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.64,
+        "x": 104.16,
+        "y": 245.28
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-d5333a1ed238",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 8.64,
+        "x": 104.16,
+        "y": 270.24
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-6b1865818e80",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.76,
+        "x": 326.88,
+        "y": 279.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-a3966970b0bd",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.2608,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 125.28,
+        "y": 491.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-be4cf7e07042",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 6.24,
+        "x": 104.64,
+        "y": 98.88
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Heading glyphs at the same place (start and baseline within 0.2pt of Word): Word paints Calibri Bold, office2pdf the metric-compatible Carlito Bold; inspected crops show the same letters, weight and colour, with outline-only edge differences."
+      },
+      "id": "p1-570553d72a1d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 393.6,
+        "y": 120.96
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-ac069ffd05de",
+      "region": "top"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 7.68,
+        "x": 102.24,
+        "y": 217.92
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-8fb25eafecdc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 309.6,
+        "y": 279.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-2edc7d41720d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 96.96,
+        "y": 467.04
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-6e7855950043",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 7.2,
+        "x": 116.16,
+        "y": 242.88
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-11fc8e729d06",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 321.6,
+        "y": 252.96
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-2383692501e1",
+      "region": "top"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 466.56,
+        "y": 252.96
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-c471dcd169d2",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 491.04,
+        "y": 252.96
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-b412af837681",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 466.56,
+        "y": 279.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-db454296df86",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 491.04,
+        "y": 279.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-e064f4e2bd18",
+      "region": "right"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 124.32,
+        "y": 322.56
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-1d36e8b777b4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.72,
+        "x": 472.32,
+        "y": 615.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-ab5af73e2e35",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.76,
+        "x": 292.8,
+        "y": 433.92
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-b27904772373",
+      "region": "center"
+    },
+    {
+      "area_pt2": 28.3392,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 96.48,
+        "y": 228.48
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-c196f86d9c1f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.3392,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 313.44,
+        "y": 228.48
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-60de59510467",
+      "region": "top"
+    },
+    {
+      "area_pt2": 28.3392,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 115.68,
+        "y": 356.16
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-11fee4a9c374",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 295.2,
+        "y": 228.48
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-49d4df976cb4",
+      "region": "top"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 98.88,
+        "y": 255.36
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-c1bb6649103e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 98.88,
+        "y": 282.24
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-3ae6fcaa8575",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.72,
+        "x": 136.32,
+        "y": 320.16
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-1aad05de4a11",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 125.28,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-f382a2b3eb2f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 590.88
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-ab7252713ebe",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 319.68,
+        "y": 267.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-e335787eea66",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.24,
+        "x": 325.92,
+        "y": 267.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-7de6b6d7489d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 204.48,
+        "y": 337.44
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-c3de25134e0e",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 302.88,
+        "y": 280.32
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-bea420adcba4",
+      "region": "center"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 316.32,
+        "y": 434.4
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-e0e3cb40c197",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 136.8,
+        "y": 537.12
+      },
+      "disposition": {
+        "issues": [
+          "#2237",
+          "#2397"
+        ],
+        "kind": "issue",
+        "note": "Leader rows: the dots now take the row run's face and size (#2244), but sit on the Noto Sans stand-in's lines and period advance (#2237), and are justified across each tab instead of set on Word's shared 3.501pt grid (#2397)."
+      },
+      "id": "p1-cf2b61d45919",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 480.48,
+        "y": 253.44
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-9871937f2b00",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 480.48,
+        "y": 280.32
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-0c4f96f3bcef",
+      "region": "right"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.76,
+        "x": 180.48,
+        "y": 322.56
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-00fff935b2d6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.7264,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 5.76,
+        "x": 204.48,
+        "y": 322.56
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-1f1b38a1cb56",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 298.56,
+        "y": 242.88
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-eabcca5746b5",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 515.52,
+        "y": 253.44
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-311d0327f400",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 310.08,
+        "y": 267.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-a01a4a503180",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 4.8,
+        "x": 286.08,
+        "y": 408.0
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-3934c1fd4370",
+      "region": "center"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 479.52,
+        "y": 615.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-8b010c5d3c24",
+      "region": "bottom-right"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 304.8,
+        "y": 242.88
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-ece5694e71b8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 314.4,
+        "y": 242.88
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-2b4b0cafeb3f",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 321.12,
+        "y": 242.88
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-5d4220ce611c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 469.44,
+        "y": 242.88
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-711635309556",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 492.96,
+        "y": 242.88
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-b840143c20a1",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 469.44,
+        "y": 267.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-343fa5d6a7a9",
+      "region": "right"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 492.96,
+        "y": 267.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-149d595bfb12",
+      "region": "right"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 316.32,
+        "y": 337.92
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-33c1d395a62d",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.8048,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.72,
+        "x": 136.32,
+        "y": 335.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-44dfe009e877",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 6.24,
+        "x": 154.08,
+        "y": 510.24
+      },
+      "disposition": {
+        "issues": [
+          "#2237",
+          "#2397"
+        ],
+        "kind": "issue",
+        "note": "Leader rows: the dots now take the row run's face and size (#2244), but sit on the Noto Sans stand-in's lines and period advance (#2237), and are justified across each tab instead of set on Word's shared 3.501pt grid (#2397)."
+      },
+      "id": "p1-16b10f371fae",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 97.44,
+        "y": 244.8
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-5047f4f45740",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 296.64,
+        "y": 268.32
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-28e9eb5001a9",
+      "region": "center"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 97.44,
+        "y": 269.76
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-cb8a7e81f69a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 110.88,
+        "y": 364.32
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-67603b6163af",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 123.84,
+        "y": 364.32
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-7c2f4ead0228",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.72,
+        "x": 89.76,
+        "y": 464.64
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-48114f6652bb",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.8,
+        "x": 141.6,
+        "y": 101.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Heading glyphs at the same place (start and baseline within 0.2pt of Word): Word paints Calibri Bold, office2pdf the metric-compatible Carlito Bold; inspected crops show the same letters, weight and colour, with outline-only edge differences."
+      },
+      "id": "p1-df35a8bb9620",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 313.92,
+        "y": 219.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-8723d1dc216c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.1136,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 303.36,
+        "y": 268.32
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-33ed68ef45bd",
+      "region": "center"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 96.48,
+        "y": 219.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-6a2c45d9c541",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 297.12,
+        "y": 219.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-33d2df1af877",
+      "region": "top"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 482.4,
+        "y": 243.36
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-68b4f9253319",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 482.4,
+        "y": 268.32
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-9ae6e4903882",
+      "region": "right"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 300.0,
+        "y": 337.92
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-87a7af132943",
+      "region": "center"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 96.96,
+        "y": 436.32
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-2dfec5e5a700",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 97.92,
+        "y": 617.76
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-ae53a648c68e",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 310.08,
+        "y": 338.4
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-f4b554a3b921",
+      "region": "center"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.28,
+        "x": 516.48,
+        "y": 243.36
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-64acb8d409dc",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 24.4224,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 2.88,
+        "x": 118.08,
+        "y": 581.76
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-b10368d90380",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 10.56,
+        "width": 4.32,
+        "x": 112.32,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-7fa3ab822da5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 137.76,
+        "y": 617.76
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-5f2b5d8ffca9",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 144.48,
+        "y": 537.12
+      },
+      "disposition": {
+        "issues": [
+          "#2237",
+          "#2397"
+        ],
+        "kind": "issue",
+        "note": "Leader rows: the dots now take the row run's face and size (#2244), but sit on the Noto Sans stand-in's lines and period advance (#2237), and are justified across each tab instead of set on Word's shared 3.501pt grid (#2397)."
+      },
+      "id": "p1-8dd0b12678a2",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 133.92,
+        "y": 563.52
+      },
+      "disposition": {
+        "issues": [
+          "#2237",
+          "#2397"
+        ],
+        "kind": "issue",
+        "note": "Leader rows: the dots now take the row run's face and size (#2244), but sit on the Noto Sans stand-in's lines and period advance (#2237), and are justified across each tab instead of set on Word's shared 3.501pt grid (#2397)."
+      },
+      "id": "p1-fb28b8ccca64",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.72,
+        "x": 90.72,
+        "y": 615.36
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-a9a0edb3ee36",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 110.88,
+        "y": 590.88
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-9104b6bffe21",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 121.92,
+        "y": 617.76
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-f4331669058a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.5008,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 473.28,
+        "y": 252.96
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-918101bcaca4",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 23.5008,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 473.28,
+        "y": 279.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-1e944780c8a8",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.5008,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 497.76,
+        "y": 279.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-429116301c4a",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 459.84,
+        "y": 252.96
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-eb9958c6e892",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 286.08,
+        "y": 279.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-432920fb56c4",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 459.84,
+        "y": 279.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-1f4ba30ed0b4",
+      "region": "right"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 309.6,
+        "y": 433.92
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-35648b12f114",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 149.28,
+        "y": 491.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-51029106e949",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 105.6,
+        "y": 617.76
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-a6beea1daf5c",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.04,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 145.44,
+        "y": 617.76
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-52db44f9d9cc",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 287.04,
+        "y": 267.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-2e88a8cd6049",
+      "region": "center"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 508.8,
+        "y": 279.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-d8321603b546",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 302.4,
+        "y": 228.48
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-3755f0fdc6d4",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 499.2,
+        "y": 267.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-4f671acd91ef",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 509.76,
+        "y": 267.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-1f5cc6f663bc",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 4.8,
+        "x": 149.76,
+        "y": 467.04
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-bbcb978e4a4b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 462.72,
+        "y": 242.88
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-3b3e70b2ee80",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 476.16,
+        "y": 242.88
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-86e9df0fa48c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 462.72,
+        "y": 267.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-34b551426cd1",
+      "region": "right"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 5.76,
+        "x": 476.16,
+        "y": 267.84
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-e297fe1d7d09",
+      "region": "right"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 2.88,
+        "x": 97.44,
+        "y": 143.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-84e7b6eaae5e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 2.4,
+        "x": 249.12,
+        "y": 143.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-36cdd6c24432",
+      "region": "top"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 4.32,
+        "x": 210.72,
+        "y": 335.52
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-df16d3fba8d7",
+      "region": "center"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 2.4,
+        "x": 167.52,
+        "y": 319.68
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-ad9c0991f0ce",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 136.8,
+        "y": 583.68
+      },
+      "disposition": {
+        "issues": [
+          "#2237",
+          "#2397"
+        ],
+        "kind": "issue",
+        "note": "Leader rows: the dots now take the row run's face and size (#2244), but sit on the Noto Sans stand-in's lines and period advance (#2237), and are justified across each tab instead of set on Word's shared 3.501pt grid (#2397)."
+      },
+      "id": "p1-fe8f65a2ae1a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 447.84,
+        "y": 175.2
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-7b82c48ffd8a",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 122.88,
+        "y": 356.16
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-4d0e587ca753",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.28,
+        "x": 132.96,
+        "y": 383.04
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-8b1404a43c8f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 129.12,
+        "y": 617.76
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-9cb79b606b4e",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 4.32,
+        "x": 210.72,
+        "y": 321.12
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-3abb66323056",
+      "region": "center"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 141.12,
+        "y": 484.32
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-e84565d87ff1",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 3.36,
+        "x": 110.4,
+        "y": 335.04
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-0f4c72ba3edb",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 132.0,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-16ee6d3f76eb",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 104.64,
+        "y": 590.88
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-0e0e35bb30ab",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 4.8,
+        "x": 125.28,
+        "y": 590.88
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-cc82eb52a537",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 4.8,
+        "x": 105.12,
+        "y": 322.56
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-cefbfb4c8a14",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 89.76,
+        "y": 434.4
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-75122d002d4f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 4.8,
+        "x": 113.76,
+        "y": 464.64
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-88b4a4965ef5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 20.2752,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 98.88,
+        "y": 583.68
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Body text set in the Noto Sans stand-in for unembedded Aptos: wider glyphs and a taller line pitch move every following line down (up to 25pt on page 1, 17pt on page 2). Converted with Word's embedded Aptos subset, these lines land within 0.4pt of Word."
+      },
+      "id": "p1-afa3dff47f40",
+      "region": "bottom-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 243,
+    "duplicate": 0,
+    "total": 243,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

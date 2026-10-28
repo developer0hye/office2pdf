@@ -1,0 +1,846 @@
+{
+ "pages": [
+  {
+   "lines": {
+    "gt": 37,
+    "out": 40,
+    "matched": 35,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 35,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 29.252699722222232,
+    "worst_dy": 42.571500000000015,
+    "worst_dy_signed": 42.571500000000015,
+    "worst_line": "HierbijbiedikudevierdeIncidenteleSuppletoireBegroting2021aan"
+   },
+   "dx0": {
+    "mean_abs": 0.09305555555555697,
+    "worst": -0.35000000000002274
+   },
+   "width": {
+    "mean_abs_pct": 0.601244741493774,
+    "worst_pct": 2.1365595363176544
+   },
+   "instances": {
+    "compared": 36,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 35,
+    "large_shifts": [
+     {
+      "label": ">RetouradresPostbus203012500EHDenHaag",
+      "gt_x": 79.775,
+      "gt_y": 144.04999999999995,
+      "out_x": 79.5,
+      "out_y": 174.03345,
+      "dx": -0.2750000000000057,
+      "dy": 29.983450000000033,
+      "width_pct": -0.6619734232964449
+     },
+     {
+      "label": "DirectieFinancieel-",
+      "gt_x": 467.95,
+      "gt_y": 161.54999999999995,
+      "out_x": 467.95,
+      "out_y": 183.83344,
+      "dx": 0.0,
+      "dy": 22.28344000000004,
+      "width_pct": 0.47091880465703584
+     },
+     {
+      "label": "EconomischeZaken",
+      "gt_x": 467.95,
+      "gt_y": 170.54999999999995,
+      "out_x": 467.95,
+      "out_y": 192.83344,
+      "dx": 0.0,
+      "dy": 22.28344000000004,
+      "width_pct": 0.7014379875472808
+     },
+     {
+      "label": "AandevoorzittervandeTweedeKamerderStaten-Generaal",
+      "gt_x": 79.775,
+      "gt_y": 175.54999999999995,
+      "out_x": 79.5,
+      "out_y": 205.25403,
+      "dx": -0.2750000000000057,
+      "dy": 29.704030000000046,
+      "width_pct": -0.5721032272547156
+     },
+     {
+      "label": "Turfmarkt147",
+      "gt_x": 467.95,
+      "gt_y": 184.04999999999995,
+      "out_x": 467.95,
+      "out_y": 206.33344,
+      "dx": 0.0,
+      "dy": 22.28344000000004,
+      "width_pct": -0.6278566507719153
+     },
+     {
+      "label": "postbus20018",
+      "gt_x": 79.775,
+      "gt_y": 187.54999999999995,
+      "out_x": 79.5,
+      "out_y": 217.25403,
+      "dx": -0.2750000000000057,
+      "dy": 29.704030000000046,
+      "width_pct": -0.19445546437340347
+     },
+     {
+      "label": "2511EXDenHaag",
+      "gt_x": 467.95,
+      "gt_y": 193.04999999999995,
+      "out_x": 467.95,
+      "out_y": 215.33344,
+      "dx": 0.0,
+      "dy": 22.28344000000004,
+      "width_pct": -1.2681141341322746
+     },
+     {
+      "label": "2500EADenHaag",
+      "gt_x": 79.775,
+      "gt_y": 199.54999999999995,
+      "out_x": 79.5,
+      "out_y": 229.25403,
+      "dx": -0.2750000000000057,
+      "dy": 29.704030000000046,
+      "width_pct": -1.0790236101221473
+     },
+     {
+      "label": "Postbus20301",
+      "gt_x": 467.95,
+      "gt_y": 202.04999999999995,
+      "out_x": 467.95,
+      "out_y": 224.33344,
+      "dx": 0.0,
+      "dy": 22.28344000000004,
+      "width_pct": -0.24915439606196982
+     },
+     {
+      "label": "2500EHDenHaag",
+      "gt_x": 467.95,
+      "gt_y": 211.04999999999995,
+      "out_x": 467.95,
+      "out_y": 233.33344,
+      "dx": 0.0,
+      "dy": 22.28344000000004,
+      "width_pct": -1.005772995655216
+     },
+     {
+      "label": "www.rijksoverheid.nl/jenv",
+      "gt_x": 467.95,
+      "gt_y": 220.08000000000004,
+      "out_x": 467.95,
+      "out_y": 242.33344,
+      "dx": 0.0,
+      "dy": 22.253439999999955,
+      "width_pct": -2.1365595363176544
+     },
+     {
+      "label": "Contactpersoon",
+      "gt_x": 467.95,
+      "gt_y": 233.58000000000004,
+      "out_x": 467.95,
+      "out_y": 255.83344,
+      "dx": 0.0,
+      "dy": 22.253439999999955,
+      "width_pct": 1.17342964788996
+     },
+     {
+      "label": "M.A.Lindner",
+      "gt_x": 467.95,
+      "gt_y": 242.58000000000004,
+      "out_x": 467.95,
+      "out_y": 264.83345,
+      "dx": 0.0,
+      "dy": 22.253449999999987,
+      "width_pct": -0.6442427049035986
+     },
+     {
+      "label": "T0652877133",
+      "gt_x": 467.95,
+      "gt_y": 265.08000000000004,
+      "out_x": 467.95,
+      "out_y": 287.33345,
+      "dx": 0.0,
+      "dy": 22.253449999999987,
+      "width_pct": -2.095023899024788
+     },
+     {
+      "label": "m.a.lindner@minjenv.nl",
+      "gt_x": 467.95,
+      "gt_y": 274.08000000000004,
+      "out_x": 467.95,
+      "out_y": 296.33345,
+      "dx": 0.0,
+      "dy": 22.253449999999987,
+      "width_pct": -0.8629275263637871
+     },
+     {
+      "label": "Onskenmerk",
+      "gt_x": 467.95,
+      "gt_y": 296.58000000000004,
+      "out_x": 467.95,
+      "out_y": 318.83345,
+      "dx": 0.0,
+      "dy": 22.253449999999987,
+      "width_pct": 0.05565167445026071
+     },
+     {
+      "label": "1 [2/3]",
+      "gt_x": 467.95,
+      "gt_y": 305.6,
+      "out_x": 467.95,
+      "out_y": 327.83345,
+      "dx": 0.0,
+      "dy": 22.233450000000005,
+      "width_pct": 0.0768062903490853
+     },
+     {
+      "label": "Datum",
+      "gt_x": 79.775,
+      "gt_y": 307.1,
+      "out_x": 79.5,
+      "out_y": 336.80403,
+      "dx": -0.2750000000000057,
+      "dy": 29.70402999999999,
+      "width_pct": -0.10438526139530671
+     },
+     {
+      "label": "28september2021",
+      "gt_x": 134.8,
+      "gt_y": 307.1,
+      "out_x": 134.45,
+      "out_y": 336.80403,
+      "dx": -0.35000000000002274,
+      "dy": 29.70402999999999,
+      "width_pct": 0.1674242106661037
+     },
+     {
+      "label": "1 [3/3]",
+      "gt_x": 467.95,
+      "gt_y": 328.1,
+      "out_x": 467.95,
+      "out_y": 350.33345,
+      "dx": 0.0,
+      "dy": 22.233450000000005,
+      "width_pct": 0.0768062903490853
+     },
+     {
+      "label": "Bijbeantwoordingdedatum",
+      "gt_x": 467.95,
+      "gt_y": 341.6,
+      "out_x": 467.95,
+      "out_y": 363.83345,
+      "dx": 0.0,
+      "dy": 22.233450000000005,
+      "width_pct": -0.0776341234900596
+     },
+     {
+      "label": "Wiltuslechts\u00e9\u00e9nzaakinuw",
+      "gt_x": 467.95,
+      "gt_y": 359.6,
+      "out_x": 467.95,
+      "out_y": 381.83345,
+      "dx": 0.0,
+      "dy": 22.233450000000005,
+      "width_pct": -0.42097726330223606
+     },
+     {
+      "label": "briefbehandelen.",
+      "gt_x": 467.95,
+      "gt_y": 368.6,
+      "out_x": 467.95,
+      "out_y": 390.83345,
+      "dx": 0.0,
+      "dy": 22.233450000000005,
+      "width_pct": 0.6618160964809445
+     },
+     {
+      "label": "HierbijbiedikudevierdeIncidenteleSuppletoireBegroting2021aan",
+      "gt_x": 79.525,
+      "gt_y": 419.37,
+      "out_x": 79.4,
+      "out_y": 461.9415,
+      "dx": -0.125,
+      "dy": 42.571500000000015,
+      "width_pct": -0.6944356610286629
+     },
+     {
+      "label": "MinisterievanJustitieenVeiligheid.",
+      "gt_x": 79.525,
+      "gt_y": 430.37,
+      "out_x": 79.4,
+      "out_y": 472.41807,
+      "dx": -0.125,
+      "dy": 42.048069999999996,
+      "width_pct": -0.6102835031113238
+     },
+     {
+      "label": "Hetkabinetwildedoordeoverstromingengetroffeninwonersenorgani",
+      "gt_x": 79.525,
+      "gt_y": 453.12,
+      "out_x": 79.4,
+      "out_y": 494.1329,
+      "dx": -0.125,
+      "dy": 41.0129,
+      "width_pct": -0.12085946354658939
+     },
+     {
+      "label": "LimburgbijstaandoordeWettegemoetkomingschadebijrampen(Wts)in",
+      "gt_x": 79.525,
+      "gt_y": 465.12,
+      "out_x": 79.4,
+      "out_y": 506.1329,
+      "dx": -0.125,
+      "dy": 41.0129,
+      "width_pct": -0.6598853632423536
+     },
+     {
+      "label": "zetten.Omgedupeerdendeelstegemoettekomenbijschadedieniet",
+      "gt_x": 79.525,
+      "gt_y": 477.15,
+      "out_x": 79.4,
+      "out_y": 518.13296,
+      "dx": -0.125,
+      "dy": 40.98296000000005,
+      "width_pct": 0.09388289803328526
+     },
+     {
+      "label": "redelijkerwijsverzekerbaar,nietverhaalbaarennietvermijdbaari",
+      "gt_x": 79.525,
+      "gt_y": 489.15,
+      "out_x": 79.4,
+      "out_y": 530.13296,
+      "dx": -0.125,
+      "dy": 40.98296000000005,
+      "width_pct": -0.7772691367189816
+     },
+     {
+      "label": "WtsdeRegelingtegemoetkomingschade2021opgesteld.",
+      "gt_x": 79.525,
+      "gt_y": 501.15,
+      "out_x": 79.4,
+      "out_y": 542.13296,
+      "dx": -0.125,
+      "dy": 40.98296000000005,
+      "width_pct": 0.38586516120569125
+     },
+     {
+      "label": "IndezeIncidenteleSuppletoireBegrotingwordtaanditbesluitverde",
+      "gt_x": 79.525,
+      "gt_y": 525.15,
+      "out_x": 79.4,
+      "out_y": 566.13296,
+      "dx": -0.125,
+      "dy": 40.98296000000005,
+      "width_pct": -0.690916870872725
+     },
+     {
+      "label": "budgettaireuitwerkinggegeven.",
+      "gt_x": 79.525,
+      "gt_y": 537.15,
+      "out_x": 79.4,
+      "out_y": 578.13296,
+      "dx": -0.125,
+      "dy": 40.98296000000005,
+      "width_pct": 0.35100715990580744
+     },
+     {
+      "label": "MedenamensdeMinistervoorRechtsbescherming,",
+      "gt_x": 79.525,
+      "gt_y": 573.1700000000001,
+      "out_x": 79.4,
+      "out_y": 614.13296,
+      "dx": -0.125,
+      "dy": 40.96295999999995,
+      "width_pct": 0.5300178424289113
+     },
+     {
+      "label": "DeMinistervanJustitieenVeiligheid,",
+      "gt_x": 79.525,
+      "gt_y": 585.1800000000001,
+      "out_x": 79.4,
+      "out_y": 626.13296,
+      "dx": -0.125,
+      "dy": 40.95295999999996,
+      "width_pct": -0.847462854399177
+     },
+     {
+      "label": "FerdGrapperhaus",
+      "gt_x": 79.525,
+      "gt_y": 669.2,
+      "out_x": 79.4,
+      "out_y": 710.13296,
+      "dx": -0.125,
+      "dy": 40.93295999999998,
+      "width_pct": 0.42162327007872646
+     }
+    ],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 36,
+    "fine_shifts": [
+     {
+      "label": "1 [1/3]",
+      "gt_x": 79.525,
+      "gt_y": 130.04999999999995,
+      "out_x": 79.4,
+      "out_y": 128.25403,
+      "dx": -0.125,
+      "dy": -1.7959699999999543,
+      "width_pct": 0.07680629034835912
+     },
+     {
+      "label": ">RetouradresPostbus203012500EHDenHaag",
+      "gt_x": 79.775,
+      "gt_y": 144.04999999999995,
+      "out_x": 79.5,
+      "out_y": 174.03345,
+      "dx": -0.2750000000000057,
+      "dy": 29.983450000000033,
+      "width_pct": -0.6619734232964449
+     },
+     {
+      "label": "DirectieFinancieel-",
+      "gt_x": 467.95,
+      "gt_y": 161.54999999999995,
+      "out_x": 467.95,
+      "out_y": 183.83344,
+      "dx": 0.0,
+      "dy": 22.28344000000004,
+      "width_pct": 0.47091880465703584
+     },
+     {
+      "label": "EconomischeZaken",
+      "gt_x": 467.95,
+      "gt_y": 170.54999999999995,
+      "out_x": 467.95,
+      "out_y": 192.83344,
+      "dx": 0.0,
+      "dy": 22.28344000000004,
+      "width_pct": 0.7014379875472808
+     },
+     {
+      "label": "AandevoorzittervandeTweedeKamerderStaten-Generaal",
+      "gt_x": 79.775,
+      "gt_y": 175.54999999999995,
+      "out_x": 79.5,
+      "out_y": 205.25403,
+      "dx": -0.2750000000000057,
+      "dy": 29.704030000000046,
+      "width_pct": -0.5721032272547156
+     },
+     {
+      "label": "Turfmarkt147",
+      "gt_x": 467.95,
+      "gt_y": 184.04999999999995,
+      "out_x": 467.95,
+      "out_y": 206.33344,
+      "dx": 0.0,
+      "dy": 22.28344000000004,
+      "width_pct": -0.6278566507719153
+     },
+     {
+      "label": "postbus20018",
+      "gt_x": 79.775,
+      "gt_y": 187.54999999999995,
+      "out_x": 79.5,
+      "out_y": 217.25403,
+      "dx": -0.2750000000000057,
+      "dy": 29.704030000000046,
+      "width_pct": -0.19445546437340347
+     },
+     {
+      "label": "2511EXDenHaag",
+      "gt_x": 467.95,
+      "gt_y": 193.04999999999995,
+      "out_x": 467.95,
+      "out_y": 215.33344,
+      "dx": 0.0,
+      "dy": 22.28344000000004,
+      "width_pct": -1.2681141341322746
+     },
+     {
+      "label": "2500EADenHaag",
+      "gt_x": 79.775,
+      "gt_y": 199.54999999999995,
+      "out_x": 79.5,
+      "out_y": 229.25403,
+      "dx": -0.2750000000000057,
+      "dy": 29.704030000000046,
+      "width_pct": -1.0790236101221473
+     },
+     {
+      "label": "Postbus20301",
+      "gt_x": 467.95,
+      "gt_y": 202.04999999999995,
+      "out_x": 467.95,
+      "out_y": 224.33344,
+      "dx": 0.0,
+      "dy": 22.28344000000004,
+      "width_pct": -0.24915439606196982
+     },
+     {
+      "label": "2500EHDenHaag",
+      "gt_x": 467.95,
+      "gt_y": 211.04999999999995,
+      "out_x": 467.95,
+      "out_y": 233.33344,
+      "dx": 0.0,
+      "dy": 22.28344000000004,
+      "width_pct": -1.005772995655216
+     },
+     {
+      "label": "www.rijksoverheid.nl/jenv",
+      "gt_x": 467.95,
+      "gt_y": 220.08000000000004,
+      "out_x": 467.95,
+      "out_y": 242.33344,
+      "dx": 0.0,
+      "dy": 22.253439999999955,
+      "width_pct": -2.1365595363176544
+     },
+     {
+      "label": "Contactpersoon",
+      "gt_x": 467.95,
+      "gt_y": 233.58000000000004,
+      "out_x": 467.95,
+      "out_y": 255.83344,
+      "dx": 0.0,
+      "dy": 22.253439999999955,
+      "width_pct": 1.17342964788996
+     },
+     {
+      "label": "M.A.Lindner",
+      "gt_x": 467.95,
+      "gt_y": 242.58000000000004,
+      "out_x": 467.95,
+      "out_y": 264.83345,
+      "dx": 0.0,
+      "dy": 22.253449999999987,
+      "width_pct": -0.6442427049035986
+     },
+     {
+      "label": "T0652877133",
+      "gt_x": 467.95,
+      "gt_y": 265.08000000000004,
+      "out_x": 467.95,
+      "out_y": 287.33345,
+      "dx": 0.0,
+      "dy": 22.253449999999987,
+      "width_pct": -2.095023899024788
+     },
+     {
+      "label": "m.a.lindner@minjenv.nl",
+      "gt_x": 467.95,
+      "gt_y": 274.08000000000004,
+      "out_x": 467.95,
+      "out_y": 296.33345,
+      "dx": 0.0,
+      "dy": 22.253449999999987,
+      "width_pct": -0.8629275263637871
+     },
+     {
+      "label": "Onskenmerk",
+      "gt_x": 467.95,
+      "gt_y": 296.58000000000004,
+      "out_x": 467.95,
+      "out_y": 318.83345,
+      "dx": 0.0,
+      "dy": 22.253449999999987,
+      "width_pct": 0.05565167445026071
+     },
+     {
+      "label": "1 [2/3]",
+      "gt_x": 467.95,
+      "gt_y": 305.6,
+      "out_x": 467.95,
+      "out_y": 327.83345,
+      "dx": 0.0,
+      "dy": 22.233450000000005,
+      "width_pct": 0.0768062903490853
+     },
+     {
+      "label": "Datum",
+      "gt_x": 79.775,
+      "gt_y": 307.1,
+      "out_x": 79.5,
+      "out_y": 336.80403,
+      "dx": -0.2750000000000057,
+      "dy": 29.70402999999999,
+      "width_pct": -0.10438526139530671
+     },
+     {
+      "label": "28september2021",
+      "gt_x": 134.8,
+      "gt_y": 307.1,
+      "out_x": 134.45,
+      "out_y": 336.80403,
+      "dx": -0.35000000000002274,
+      "dy": 29.70402999999999,
+      "width_pct": 0.1674242106661037
+     },
+     {
+      "label": "1 [3/3]",
+      "gt_x": 467.95,
+      "gt_y": 328.1,
+      "out_x": 467.95,
+      "out_y": 350.33345,
+      "dx": 0.0,
+      "dy": 22.233450000000005,
+      "width_pct": 0.0768062903490853
+     },
+     {
+      "label": "Bijbeantwoordingdedatum",
+      "gt_x": 467.95,
+      "gt_y": 341.6,
+      "out_x": 467.95,
+      "out_y": 363.83345,
+      "dx": 0.0,
+      "dy": 22.233450000000005,
+      "width_pct": -0.0776341234900596
+     },
+     {
+      "label": "Wiltuslechts\u00e9\u00e9nzaakinuw",
+      "gt_x": 467.95,
+      "gt_y": 359.6,
+      "out_x": 467.95,
+      "out_y": 381.83345,
+      "dx": 0.0,
+      "dy": 22.233450000000005,
+      "width_pct": -0.42097726330223606
+     },
+     {
+      "label": "briefbehandelen.",
+      "gt_x": 467.95,
+      "gt_y": 368.6,
+      "out_x": 467.95,
+      "out_y": 390.83345,
+      "dx": 0.0,
+      "dy": 22.233450000000005,
+      "width_pct": 0.6618160964809445
+     },
+     {
+      "label": "HierbijbiedikudevierdeIncidenteleSuppletoireBegroting2021aan",
+      "gt_x": 79.525,
+      "gt_y": 419.37,
+      "out_x": 79.4,
+      "out_y": 461.9415,
+      "dx": -0.125,
+      "dy": 42.571500000000015,
+      "width_pct": -0.6944356610286629
+     },
+     {
+      "label": "MinisterievanJustitieenVeiligheid.",
+      "gt_x": 79.525,
+      "gt_y": 430.37,
+      "out_x": 79.4,
+      "out_y": 472.41807,
+      "dx": -0.125,
+      "dy": 42.048069999999996,
+      "width_pct": -0.6102835031113238
+     },
+     {
+      "label": "Hetkabinetwildedoordeoverstromingengetroffeninwonersenorgani",
+      "gt_x": 79.525,
+      "gt_y": 453.12,
+      "out_x": 79.4,
+      "out_y": 494.1329,
+      "dx": -0.125,
+      "dy": 41.0129,
+      "width_pct": -0.12085946354658939
+     },
+     {
+      "label": "LimburgbijstaandoordeWettegemoetkomingschadebijrampen(Wts)in",
+      "gt_x": 79.525,
+      "gt_y": 465.12,
+      "out_x": 79.4,
+      "out_y": 506.1329,
+      "dx": -0.125,
+      "dy": 41.0129,
+      "width_pct": -0.6598853632423536
+     },
+     {
+      "label": "zetten.Omgedupeerdendeelstegemoettekomenbijschadedieniet",
+      "gt_x": 79.525,
+      "gt_y": 477.15,
+      "out_x": 79.4,
+      "out_y": 518.13296,
+      "dx": -0.125,
+      "dy": 40.98296000000005,
+      "width_pct": 0.09388289803328526
+     },
+     {
+      "label": "redelijkerwijsverzekerbaar,nietverhaalbaarennietvermijdbaari",
+      "gt_x": 79.525,
+      "gt_y": 489.15,
+      "out_x": 79.4,
+      "out_y": 530.13296,
+      "dx": -0.125,
+      "dy": 40.98296000000005,
+      "width_pct": -0.7772691367189816
+     },
+     {
+      "label": "WtsdeRegelingtegemoetkomingschade2021opgesteld.",
+      "gt_x": 79.525,
+      "gt_y": 501.15,
+      "out_x": 79.4,
+      "out_y": 542.13296,
+      "dx": -0.125,
+      "dy": 40.98296000000005,
+      "width_pct": 0.38586516120569125
+     },
+     {
+      "label": "IndezeIncidenteleSuppletoireBegrotingwordtaanditbesluitverde",
+      "gt_x": 79.525,
+      "gt_y": 525.15,
+      "out_x": 79.4,
+      "out_y": 566.13296,
+      "dx": -0.125,
+      "dy": 40.98296000000005,
+      "width_pct": -0.690916870872725
+     },
+     {
+      "label": "budgettaireuitwerkinggegeven.",
+      "gt_x": 79.525,
+      "gt_y": 537.15,
+      "out_x": 79.4,
+      "out_y": 578.13296,
+      "dx": -0.125,
+      "dy": 40.98296000000005,
+      "width_pct": 0.35100715990580744
+     },
+     {
+      "label": "MedenamensdeMinistervoorRechtsbescherming,",
+      "gt_x": 79.525,
+      "gt_y": 573.1700000000001,
+      "out_x": 79.4,
+      "out_y": 614.13296,
+      "dx": -0.125,
+      "dy": 40.96295999999995,
+      "width_pct": 0.5300178424289113
+     },
+     {
+      "label": "DeMinistervanJustitieenVeiligheid,",
+      "gt_x": 79.525,
+      "gt_y": 585.1800000000001,
+      "out_x": 79.4,
+      "out_y": 626.13296,
+      "dx": -0.125,
+      "dy": 40.95295999999996,
+      "width_pct": -0.847462854399177
+     },
+     {
+      "label": "FerdGrapperhaus",
+      "gt_x": 79.525,
+      "gt_y": 669.2,
+      "out_x": 79.4,
+      "out_y": 710.13296,
+      "dx": -0.125,
+      "dy": 40.93295999999998,
+      "width_pct": 0.42162327007872646
+     }
+    ]
+   },
+   "visibility": {
+    "mismatch_count": 1,
+    "mismatches": [
+     {
+      "label": "1 [1/3]",
+      "gt": "hidden",
+      "out": "painted"
+     }
+    ],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 34,
+    "worst_delta": 31.779419999999988
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 2,
+    "out_lines": 5,
+    "samples": [
+     "Onderwerpvierdeincidentelesuppletoirebegroting2021Bijlagen",
+     "enonskenmerkvermelden."
+    ]
+   },
+   "rects": {
+    "gt_count": 1,
+    "out_count": 1,
+    "canonical_gt_count": 1,
+    "canonical_out_count": 1,
+    "matched": 0,
+    "unmatched_gt": 1,
+    "unmatched_out": 1,
+    "mean_center_delta": 0.0,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 0,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [],
+    "x": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "y": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "width": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "height": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "top": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "right": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "bottom": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     }
+    }
+   },
+   "noise_floor": 0.12
+  }
+ ],
+ "gt_pages": 1,
+ "out_pages": 1
+}

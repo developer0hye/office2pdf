@@ -624,6 +624,114 @@ fn a_substitute_face_is_named_and_a_familys_own_face_is_not() {
     );
 }
 
+/// Word lays a line out by its own face's `hhea`, whatever face the converting
+/// host paints it with. A listed family therefore keeps its reference metrics
+/// whenever its own face does not answer, whether a substitute does or nothing
+/// does. Its own face, wherever one resolves, still answers for itself, and an
+/// unlisted family keeps whatever its chain reached (issue #2247).
+#[test]
+fn a_listed_family_this_host_lacks_is_measured_by_its_reference_hhea() {
+    let tahoma: HheaMetrics = HheaMetrics {
+        ascender: 2049,
+        descender: -423,
+        line_gap: 0,
+        units_per_em: 2048,
+    };
+    for resolved in [
+        None,
+        Some("Liberation Sans"),
+        Some("Arimo"),
+        Some("DejaVu Sans"),
+    ] {
+        assert_eq!(
+            reference_hhea_unless_own_face("Tahoma", resolved),
+            Some(tahoma),
+            "Tahoma resolved to {resolved:?} must keep Tahoma's reference metrics"
+        );
+    }
+    assert_eq!(
+        reference_hhea_unless_own_face(" TAHOMA ", Some("Liberation Sans")),
+        Some(tahoma),
+        "the family name is matched as Office matches it, case-insensitively"
+    );
+    for own in ["Tahoma", "tahoma"] {
+        assert_eq!(
+            reference_hhea_unless_own_face("Tahoma", Some(own)),
+            None,
+            "an installed or supplied Tahoma answers for itself"
+        );
+    }
+    for (family, resolved) in [
+        ("Arial", Some("Liberation Sans")),
+        ("Verdana", Some("DejaVu Sans")),
+        ("Verdana", None),
+    ] {
+        assert_eq!(
+            reference_hhea_unless_own_face(family, resolved),
+            None,
+            "{family} has no reference metrics, so its chain's face answers"
+        );
+    }
+
+    let (top_em, bottom_em, pitch_em) = tahoma.line_metrics_em();
+    assert!((top_em - 2049.0 / 2048.0).abs() < 1e-12, "{top_em}");
+    assert!((bottom_em - 423.0 / 2048.0).abs() < 1e-12, "{bottom_em}");
+    assert!((pitch_em - 2472.0 / 2048.0).abs() < 1e-12, "{pitch_em}");
+}
+
+/// Every Word line metric of a missing Tahoma is Tahoma's: `hhea` 2049/-423/0
+/// at 2048 units per em, read from the Tahoma and Tahoma Bold subsets Microsoft
+/// Word exports embed. Liberation Sans, which paints it since issue #2235,
+/// declares 1854/-434/67, so laying the line out on the painted face advanced
+/// each single-spaced line 4.7% short and seated it 0.0625em high (issue #2247).
+/// A host that installs Tahoma measures its own copy instead.
+#[test]
+fn a_missing_tahoma_keeps_tahomas_line_metrics() {
+    let own_face: Option<typst::text::Font> =
+        best_face("Tahoma").filter(|_| substitute_face_family("Tahoma").is_none());
+    let (expected_line, expected_ascender, expected_gap) = match own_face {
+        Some(font) => {
+            let instance = measured_instance(&font);
+            let ttf = instance.ttf();
+            let upem: f64 = f64::from(ttf.units_per_em()).max(1.0);
+            let hhea = ttf.tables().hhea;
+            let top: f64 = (f64::from(hhea.ascender) + f64::from(hhea.line_gap)) / upem;
+            let pitch: f64 = (f64::from(hhea.ascender) - f64::from(hhea.descender)
+                + f64::from(hhea.line_gap))
+                / upem;
+            (
+                (top, pitch - top, pitch),
+                f64::from(hhea.ascender) / upem,
+                f64::from(hhea.line_gap) / upem,
+            )
+        }
+        None => (
+            (2049.0 / 2048.0, 423.0 / 2048.0, 2472.0 / 2048.0),
+            2049.0 / 2048.0,
+            0.0,
+        ),
+    };
+
+    let line = font_line_metrics_em("Tahoma").expect("Tahoma's line metrics are always known");
+    assert!(
+        (line.0 - expected_line.0).abs() < 1e-12
+            && (line.1 - expected_line.1).abs() < 1e-12
+            && (line.2 - expected_line.2).abs() < 1e-12,
+        "Tahoma must be laid out on Tahoma's line, not its substitute's: \
+         {line:?} against {expected_line:?}"
+    );
+    let ascender: f64 = font_hhea_ascender_em("Tahoma").expect("Tahoma's ascender is always known");
+    assert!(
+        (ascender - expected_ascender).abs() < 1e-12,
+        "a Tahoma header must be seated on Tahoma's ascender: {ascender}"
+    );
+    let gap: f64 = font_line_gap_em("Tahoma").expect("Tahoma's line gap is always known");
+    assert!(
+        (gap - expected_gap).abs() < 1e-12,
+        "Tahoma's line gap must not be its substitute's: {gap}"
+    );
+}
+
 #[test]
 fn a_width_suffixed_family_measures_the_member_its_name_denotes() {
     // `Arial Narrow.ttf` and Office's `Aptos-Narrow.ttf` name their families

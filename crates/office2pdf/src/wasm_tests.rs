@@ -16,8 +16,8 @@ fn make_minimal_pptx() -> Vec<u8> {
     let buf = Vec::new();
     let cursor = Cursor::new(buf);
     let mut zip = zip::ZipWriter::new(cursor);
-    let options =
-        zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
 
     zip.start_file("[Content_Types].xml", options).unwrap();
     zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

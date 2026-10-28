@@ -13,15 +13,18 @@ fn build_xlsx_with_chart(cells: &[(&str, &str)], chart_xml: &str) -> Vec<u8> {
 
         for i in 0..archive.len() {
             let mut entry = archive.by_index(i).unwrap();
-            let options: zip::write::FileOptions =
-                zip::write::FileOptions::default().compression_method(entry.compression());
+            let options: zip::write::SimpleFileOptions =
+                zip::write::SimpleFileOptions::default().compression_method(entry.compression());
             writer
-                .start_file(entry.name().to_string(), options)
+                .start_file(
+                    entry.name().expect("entry name should decode").into_owned(),
+                    options,
+                )
                 .unwrap();
             std::io::copy(&mut entry, &mut writer).unwrap();
         }
 
-        let options: zip::write::FileOptions = zip::write::FileOptions::default();
+        let options: zip::write::SimpleFileOptions = zip::write::SimpleFileOptions::default();
         writer.start_file("xl/charts/chart1.xml", options).unwrap();
         use std::io::Write;
         writer.write_all(chart_xml.as_bytes()).unwrap();
@@ -174,11 +177,11 @@ fn build_xlsx_with_anchored_chart(
     {
         let cursor = std::io::Cursor::new(&mut out_buf);
         let mut writer = zip::ZipWriter::new(cursor);
-        let options: zip::write::FileOptions = zip::write::FileOptions::default();
+        let options: zip::write::SimpleFileOptions = zip::write::SimpleFileOptions::default();
 
         for i in 0..archive.len() {
             let mut entry = archive.by_index(i).unwrap();
-            let name = entry.name().to_string();
+            let name = entry.name().expect("entry name should decode").into_owned();
             writer.start_file(&name, options).unwrap();
             if name == sheet_part_path {
                 // The relationship alone attaches nothing: Excel puts a
@@ -387,10 +390,15 @@ fn chart_with_related_stroke_style(local_line: &str, style_line: &str) -> Chart 
     let data = build_xlsx_with_chart(&[("A1", "Cash Flow")], &chart_xml);
     let mut archive = zip::ZipArchive::new(Cursor::new(data)).unwrap();
     let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
     for i in 0..archive.len() {
         let mut entry = archive.by_index(i).unwrap();
-        writer.start_file(entry.name(), options).unwrap();
+        writer
+            .start_file(
+                entry.name().expect("entry name should decode").into_owned(),
+                options,
+            )
+            .unwrap();
         std::io::copy(&mut entry, &mut writer).unwrap();
     }
     writer

@@ -1,5 +1,5 @@
 use super::*;
-use crate::ir::{ImageCrop, ImageParagraphSpacing};
+use crate::ir::{ImageCrop, ImageParagraphIndent, ImageParagraphSpacing};
 
 /// Minimal valid 1x1 red pixel PNG for testing.
 const MINIMAL_PNG: &[u8] = &[
@@ -64,6 +64,7 @@ fn floating_band_picture(
                 clip_shape: None,
                 shadow: None,
                 paragraph_spacing: None,
+                paragraph_indent: None,
             },
             wrap_mode,
             vertical_anchor: FloatingImageVerticalAnchor::Margin,
@@ -250,6 +251,486 @@ fn docx_picture_source_crops_follow_each_occurrence_of_shared_media() {
     );
 }
 
+/// The left edges of the pictures the compiled document paints on its first
+/// page, in layout order.
+#[cfg(not(target_arch = "wasm32"))]
+fn compiled_picture_left_edges_pt(document: &Document) -> Vec<f64> {
+    let output = generate_typst(document).unwrap();
+    crate::render::pdf::compiled_image_boxes(&output.source, &output.images, 0)
+        .expect("the picture document compiles")
+        .iter()
+        .map(|picture| picture.corners[0].0)
+        .collect()
+}
+
+/// docxide-pdf's `inline-picture-indent-*` cases, unmodified: one paragraph
+/// holding only a 180x90pt inline picture, under eight combinations of `w:jc`
+/// and `w:ind`, with 72pt side margins. Word places the picture where it
+/// places a first line of text: that line runs from `left + firstLine` (a
+/// hanging indent is a negative first line) to `right`, and the alignment
+/// works inside it. Main drew every picture as if the paragraph had no
+/// indent (issue #2201).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_inline_picture_paragraph_places_its_picture_by_the_paragraph_indent() {
+    use crate::parser::{Parser, docx::DocxParser};
+
+    let cases: [(&str, &[u8], f64); 8] = [
+        (
+            "left, firstLine 709",
+            include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/inline_picture_indent_left_first.docx"
+            ),
+            107.45,
+        ),
+        (
+            "both, firstLine 709",
+            include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/inline_picture_indent_justify_first.docx"
+            ),
+            107.45,
+        ),
+        (
+            "left, left 720 hanging 360",
+            include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/inline_picture_indent_left_hanging.docx"
+            ),
+            90.0,
+        ),
+        (
+            "center, firstLine 709",
+            include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/inline_picture_indent_center_first.docx"
+            ),
+            225.38,
+        ),
+        (
+            "center, left 720 hanging 360",
+            include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/inline_picture_indent_center_hanging.docx"
+            ),
+            216.65,
+        ),
+        (
+            "center, left 720 right 360",
+            include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/inline_picture_indent_center_left_right.docx"
+            ),
+            216.65,
+        ),
+        (
+            "center, no indent",
+            include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/inline_picture_indent_center_zero.docx"
+            ),
+            207.65,
+        ),
+        (
+            "right, firstLine 709",
+            include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/inline_picture_indent_right_first.docx"
+            ),
+            343.3,
+        ),
+    ];
+    for (case, source, word_left_pt) in cases {
+        let (document, _) = DocxParser
+            .parse(source, &crate::config::ConvertOptions::default())
+            .expect("the picture document parses");
+        let left_edges: Vec<f64> = compiled_picture_left_edges_pt(&document);
+        assert!(
+            left_edges.len() == 1 && (left_edges[0] - word_left_pt).abs() < 0.05,
+            "{case}: Word puts the picture's left edge at {word_left_pt}pt, got {left_edges:?}"
+        );
+    }
+}
+
+/// The general rule behind
+/// [`an_inline_picture_paragraph_places_its_picture_by_the_paragraph_indent`]:
+/// pictures sit where the paragraph's lines of text would (issue #2201).
+/// Several pictures in one paragraph wrap like words, so only the first line
+/// takes the first-line indent and a wrapped picture starts at `left`. A
+/// negative indent, or a hanging first line past a zero `left`, widens the
+/// line into the margin, as Word does.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn inline_pictures_start_where_the_paragraphs_text_lines_would() {
+    let picture = |width: f64, alignment: Option<Alignment>, indent: ImageParagraphIndent| {
+        let Block::Image(mut image) = make_image(ImageFormat::Png, Some(width), Some(40.0)) else {
+            unreachable!();
+        };
+        image.data = make_quadrant_png();
+        image.alignment = alignment;
+        image.paragraph_indent = Some(indent);
+        image
+    };
+    let hanging = ImageParagraphIndent {
+        left: 36.0,
+        right: 0.0,
+        first_line: -18.0,
+    };
+    // A4 with 72pt margins: the text column runs from 72pt to 523.28pt.
+    let cases: [(&str, Block, &[f64]); 5] = [
+        (
+            "left 0, hanging 18",
+            Block::Image(picture(
+                100.0,
+                None,
+                ImageParagraphIndent {
+                    left: 0.0,
+                    right: 0.0,
+                    first_line: -18.0,
+                },
+            )),
+            &[54.0],
+        ),
+        (
+            "right-aligned, right 18, firstLine 36",
+            Block::Image(picture(
+                100.0,
+                Some(Alignment::Right),
+                ImageParagraphIndent {
+                    left: 0.0,
+                    right: 18.0,
+                    first_line: 36.0,
+                },
+            )),
+            &[405.28],
+        ),
+        (
+            "left -36",
+            Block::Image(picture(
+                100.0,
+                None,
+                ImageParagraphIndent {
+                    left: -36.0,
+                    right: 0.0,
+                    first_line: 0.0,
+                },
+            )),
+            &[36.0],
+        ),
+        (
+            "right-aligned, right -18",
+            Block::Image(picture(
+                100.0,
+                Some(Alignment::Right),
+                ImageParagraphIndent {
+                    left: 0.0,
+                    right: -18.0,
+                    first_line: 0.0,
+                },
+            )),
+            &[441.28],
+        ),
+        (
+            "two pictures too wide to share a line, left 36, hanging 18",
+            Block::InlineImages(vec![
+                picture(250.0, None, hanging),
+                picture(250.0, None, hanging),
+            ]),
+            &[90.0, 108.0],
+        ),
+    ];
+    for (case, block, expected_left_edges) in cases {
+        let left_edges: Vec<f64> =
+            compiled_picture_left_edges_pt(&make_doc(vec![make_flow_page(vec![block])]));
+        assert!(
+            left_edges.len() == expected_left_edges.len()
+                && left_edges
+                    .iter()
+                    .zip(expected_left_edges)
+                    .all(|(left, expected)| (left - expected).abs() < 0.05),
+            "{case}: the pictures must start at {expected_left_edges:?}pt, got {left_edges:?}"
+        );
+    }
+}
+
+/// An inline picture between two text runs is a glyph-like object on their
+/// line, as Word lays it out (issue #2227). Its bottom edge sits on the
+/// baseline both runs share and the run after it starts at its right edge. A
+/// picture taller than the text grows the line upward only: the line's descent
+/// and leading stay the text's, so the next line follows as far below the
+/// baseline as it does under a short picture, which in the body is one
+/// ordinary line pitch. Main drew the picture as its own block above the
+/// paragraph and set both runs on one line beneath it.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_inline_picture_between_text_runs_stands_on_their_baseline() {
+    use crate::parser::{Parser, docx::DocxParser};
+
+    let line = |text: &str| docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text(text));
+    for place in ["body", "table cell"] {
+        // The gap from the picture line's baseline down to the next one, for a
+        // 72pt-wide picture 36pt tall (taller than the text) and 4pt tall.
+        let mut gaps_below_baseline: Vec<f64> = Vec::new();
+        for height_pt in [36.0, 4.0] {
+            let case = format!("{height_pt}pt picture in the {place}");
+            let picture_paragraph = docx_rs::Paragraph::new()
+                .add_run(docx_rs::Run::new().add_text("Left "))
+                .add_run(docx_rs::Run::new().add_image(
+                    docx_rs::Pic::new(MINIMAL_PNG).size(914_400, (height_pt * 12_700.0) as u32),
+                ))
+                .add_run(docx_rs::Run::new().add_text(" End"));
+            let docx = docx_rs::Docx::new().add_paragraph(line("First line"));
+            let docx = match place {
+                "body" => docx.add_paragraph(picture_paragraph),
+                _ => docx.add_table(docx_rs::Table::new(vec![docx_rs::TableRow::new(vec![
+                    docx_rs::TableCell::new().add_paragraph(picture_paragraph),
+                ])])),
+            }
+            .add_paragraph(line("Next line"))
+            .add_paragraph(line("Last line"));
+            let mut cursor = Cursor::new(Vec::new());
+            docx.build().pack(&mut cursor).unwrap();
+            let (document, _) = DocxParser
+                .parse(
+                    &cursor.into_inner(),
+                    &crate::config::ConvertOptions::default(),
+                )
+                .expect("the picture document parses");
+            let output = generate_typst(&document).unwrap();
+            let pictures =
+                crate::render::pdf::compiled_image_boxes(&output.source, &output.images, 0)
+                    .expect("the picture document compiles");
+            let runs = crate::render::pdf::compiled_text_runs_with_images(
+                &output.source,
+                &output.images,
+                0,
+            )
+            .expect("the picture document compiles");
+            let run_with = |needle: &str| {
+                runs.iter()
+                    .find(|run| run.text.contains(needle))
+                    .unwrap_or_else(|| panic!("{case}: no run holds {needle:?} in {runs:?}"))
+            };
+            let [picture] = pictures.as_slice() else {
+                panic!("{case}: expected one picture, got {pictures:?}");
+            };
+            let (picture_left, picture_top) = picture.corners[0];
+            let (picture_right, picture_bottom) = picture.corners[2];
+            let (first, left, end, next) = (
+                run_with("First"),
+                run_with("Left"),
+                run_with("End"),
+                run_with("Next"),
+            );
+            assert!(
+                (left.baseline_pt - picture_bottom).abs() < 0.05
+                    && (end.baseline_pt - picture_bottom).abs() < 0.05,
+                "{case}: the picture's bottom edge ({picture_bottom}pt) must sit on the baseline \
+                 of the runs on either side, got {}pt and {}pt",
+                left.baseline_pt,
+                end.baseline_pt
+            );
+            assert!(
+                left.left_pt < picture_left && (end.left_pt - picture_right).abs() < 0.05,
+                "{case}: the picture ({picture_left}..{picture_right}pt) must follow `Left ` \
+                 at {}pt and lead ` End`, which starts at {}pt",
+                left.left_pt,
+                end.left_pt
+            );
+            assert!(
+                picture_top > first.baseline_pt,
+                "{case}: the picture's top ({picture_top}pt) must stay below the line above, \
+                 whose baseline is at {}pt",
+                first.baseline_pt
+            );
+            gaps_below_baseline.push(next.baseline_pt - picture_bottom);
+            if place == "body" {
+                let pitch: f64 = run_with("Last").baseline_pt - next.baseline_pt;
+                assert!(
+                    (next.baseline_pt - picture_bottom - pitch).abs() < 0.05,
+                    "{case}: the next line must follow one line pitch ({pitch}pt) below the \
+                     picture line's baseline ({picture_bottom}pt), got {}pt",
+                    next.baseline_pt
+                );
+            }
+        }
+        assert!(
+            (gaps_below_baseline[0] - gaps_below_baseline[1]).abs() < 0.05,
+            "{place}: a tall picture must leave the line's descent and leading alone, but the \
+             next line follows {gaps_below_baseline:?}pt below the 36pt and 4pt picture lines"
+        );
+    }
+}
+
+/// A line under `w:lineRule="exact"` keeps its stated height whatever it
+/// holds (issue #2228). An inline picture taller than the line's ascent still
+/// stands on the baseline, but Word clips it to the line box instead of
+/// growing the line: its export of docxide-pdf's `cell-inline-exact` shows
+/// only the bottom 14.4pt of a 36pt picture, and the next paragraph starts one
+/// 18pt line below the table's top. So the text and the next line sit where
+/// they do without the picture, and the picture stays visible from the line's
+/// top down to the baseline. A picture that fits is drawn whole, and an
+/// at-least line, which states only a minimum, still grows to hold it.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_inline_picture_taller_than_an_exact_line_is_clipped_to_the_line() {
+    use crate::parser::{Parser, docx::DocxParser};
+
+    struct Laid {
+        left_baseline_pt: f64,
+        end_baseline_pt: f64,
+        next_baseline_pt: f64,
+        picture: Option<crate::render::pdf::PlacedImageBox>,
+    }
+    let lay_out = |place: &str,
+                   rule: docx_rs::LineSpacingType,
+                   line_twips: i32,
+                   picture_height_pt: Option<f64>| {
+        let mut paragraph = docx_rs::Paragraph::new()
+            .line_spacing(docx_rs::LineSpacing::new().line_rule(rule).line(line_twips))
+            .add_run(docx_rs::Run::new().add_text("Left "));
+        if let Some(height_pt) = picture_height_pt {
+            paragraph = paragraph.add_run(docx_rs::Run::new().add_image(
+                docx_rs::Pic::new(MINIMAL_PNG).size(914_400, (height_pt * 12_700.0) as u32),
+            ));
+        }
+        let paragraph = paragraph.add_run(docx_rs::Run::new().add_text(" End"));
+        // The paragraph, or the borderless table holding it, opens the page,
+        // so its line's top is the top margin.
+        let docx = docx_rs::Docx::new().page_margin(
+            docx_rs::PageMargin::new()
+                .top(1440)
+                .bottom(1440)
+                .left(1440)
+                .right(1440),
+        );
+        let docx = match place {
+            "body" => docx.add_paragraph(paragraph),
+            _ => docx.add_table(docx_rs::Table::without_borders(vec![
+                docx_rs::TableRow::new(vec![docx_rs::TableCell::new().add_paragraph(paragraph)]),
+            ])),
+        }
+        .add_paragraph(
+            docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Next line")),
+        );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let (document, _) = DocxParser
+            .parse(
+                &cursor.into_inner(),
+                &crate::config::ConvertOptions::default(),
+            )
+            .expect("the exact-line document parses");
+        let output = generate_typst(&document).unwrap();
+        let pictures = crate::render::pdf::compiled_image_boxes(&output.source, &output.images, 0)
+            .expect("the exact-line document compiles");
+        let runs =
+            crate::render::pdf::compiled_text_runs_with_images(&output.source, &output.images, 0)
+                .expect("the exact-line document compiles");
+        let baseline_of = |needle: &str| {
+            runs.iter()
+                .find(|run| run.text.contains(needle))
+                .unwrap_or_else(|| panic!("no run holds {needle:?} in {runs:?}"))
+                .baseline_pt
+        };
+        assert!(
+            pictures.len() <= 1,
+            "expected at most one picture, got {pictures:?}"
+        );
+        Laid {
+            left_baseline_pt: baseline_of("Left"),
+            end_baseline_pt: baseline_of("End"),
+            next_baseline_pt: baseline_of("Next"),
+            picture: pictures.first().copied(),
+        }
+    };
+    let line_top_pt: f64 = 72.0;
+    let drawn_whole = |picture: &crate::render::pdf::PlacedImageBox| {
+        let (left, top) = picture.corners[0];
+        let (right, bottom) = picture.corners[2];
+        picture
+            .clip
+            .is_none_or(|(clip_left, clip_top, clip_right, clip_bottom)| {
+                clip_left <= left + 0.05
+                    && clip_top <= top + 0.05
+                    && clip_right >= right - 0.05
+                    && clip_bottom >= bottom - 0.05
+            })
+    };
+    for place in ["body", "table cell"] {
+        // 18pt and 24pt exact lines.
+        for line_twips in [360, 480] {
+            let without_picture: Laid =
+                lay_out(place, docx_rs::LineSpacingType::Exact, line_twips, None);
+            let ascent_pt: f64 = without_picture.left_baseline_pt - line_top_pt;
+            for height_pt in [36.0, 60.0, 4.0] {
+                let case = format!(
+                    "{height_pt}pt picture on a {line_twips}-twip exact line in the {place}"
+                );
+                let laid: Laid = lay_out(
+                    place,
+                    docx_rs::LineSpacingType::Exact,
+                    line_twips,
+                    Some(height_pt),
+                );
+                let picture = laid
+                    .picture
+                    .unwrap_or_else(|| panic!("{case}: the picture is not painted"));
+                let picture_bottom_pt: f64 = picture.corners[2].1;
+                assert!(
+                    (laid.left_baseline_pt - without_picture.left_baseline_pt).abs() < 0.05
+                        && (laid.end_baseline_pt - without_picture.left_baseline_pt).abs() < 0.05,
+                    "{case}: the text must keep the exact line's baseline ({}pt), got {}pt and {}pt",
+                    without_picture.left_baseline_pt,
+                    laid.left_baseline_pt,
+                    laid.end_baseline_pt
+                );
+                assert!(
+                    (picture_bottom_pt - laid.left_baseline_pt).abs() < 0.05,
+                    "{case}: the picture's bottom ({picture_bottom_pt}pt) must sit on the \
+                     baseline ({}pt)",
+                    laid.left_baseline_pt
+                );
+                assert!(
+                    (laid.next_baseline_pt - without_picture.next_baseline_pt).abs() < 0.05,
+                    "{case}: the next line must follow the exact line as it does with no \
+                     picture ({}pt), got {}pt",
+                    without_picture.next_baseline_pt,
+                    laid.next_baseline_pt
+                );
+                if height_pt > ascent_pt {
+                    let (clip_left, clip_top, clip_right, clip_bottom) = picture
+                        .clip
+                        .unwrap_or_else(|| panic!("{case}: the picture overflows unclipped"));
+                    assert!(
+                        (clip_top - line_top_pt).abs() < 0.05
+                            && clip_bottom >= picture_bottom_pt - 0.05
+                            && clip_left <= picture.corners[0].0 + 0.05
+                            && clip_right >= picture.corners[2].0 - 0.05,
+                        "{case}: the picture must stay visible across its width from the \
+                         line's top ({line_top_pt}pt) to the baseline ({picture_bottom_pt}pt), \
+                         got the clip {:?}",
+                        picture.clip
+                    );
+                } else {
+                    assert!(
+                        drawn_whole(&picture),
+                        "{case}: a picture inside the line must be drawn whole, got the clip {:?}",
+                        picture.clip
+                    );
+                }
+            }
+        }
+        let without_picture: Laid = lay_out(place, docx_rs::LineSpacingType::AtLeast, 360, None);
+        let laid: Laid = lay_out(place, docx_rs::LineSpacingType::AtLeast, 360, Some(36.0));
+        let picture = laid
+            .picture
+            .unwrap_or_else(|| panic!("at-least line in the {place}: the picture is not painted"));
+        assert!(
+            laid.next_baseline_pt > without_picture.next_baseline_pt + 10.0
+                && drawn_whole(&picture),
+            "an at-least line in the {place} must grow to hold the whole picture: the next line \
+             moved from {}pt to {}pt, clip {:?}",
+            without_picture.next_baseline_pt,
+            laid.next_baseline_pt,
+            picture.clip
+        );
+    }
+}
+
 fn make_image(format: ImageFormat, width: Option<f64>, height: Option<f64>) -> Block {
     Block::Image(ImageData {
         rotation_deg: None,
@@ -267,6 +748,7 @@ fn make_image(format: ImageFormat, width: Option<f64>, height: Option<f64>) -> B
         fill_rect: None,
         shadow: None,
         paragraph_spacing: None,
+        paragraph_indent: None,
     })
 }
 
@@ -295,6 +777,7 @@ fn picture_paragraph_spacing_becomes_block_gaps() {
             before: Some(6.0),
             after: Some(3.0),
         }),
+        paragraph_indent: None,
     })])]);
     let output = generate_typst(&doc).unwrap();
     assert!(
@@ -360,6 +843,7 @@ fn test_image_crop_preprocesses_raster_asset() {
         fill_rect: None,
         shadow: None,
         paragraph_spacing: None,
+        paragraph_indent: None,
     })])]);
     let output = generate_typst(&doc).unwrap();
     assert!(
@@ -543,6 +1027,7 @@ fn test_image_with_border_renders_box_stroke() {
         fill_rect: None,
         shadow: None,
         paragraph_spacing: None,
+        paragraph_indent: None,
     })])]);
     let output = generate_typst(&doc).unwrap();
     assert!(
@@ -606,6 +1091,7 @@ fn a_bordered_picture_casts_its_shadow_from_the_stroked_frame() {
                     opacity: 0.38,
                 }),
                 paragraph_spacing: None,
+                paragraph_indent: None,
             }),
         }],
     )]);
@@ -670,6 +1156,7 @@ fn a_bordered_picture_rounds_its_shadow_corner_like_the_border_join() {
                         opacity: 0.38,
                     }),
                     paragraph_spacing: None,
+                    paragraph_indent: None,
                 }),
             }],
         )]);
@@ -729,6 +1216,7 @@ fn a_blurred_picture_uses_one_filtered_frame_asset() {
                     opacity: 0.38,
                 }),
                 paragraph_spacing: None,
+                paragraph_indent: None,
             }),
         }],
     )]);
@@ -789,6 +1277,7 @@ fn test_fixed_image_with_border_uses_rect_overlay() {
                 fill_rect: None,
                 shadow: None,
                 paragraph_spacing: None,
+                paragraph_indent: None,
             }),
         }],
     )]);
@@ -842,6 +1331,7 @@ fn a_fixed_picture_flip_is_applied_inside_its_rotation() {
                 fill_rect: None,
                 shadow: None,
                 paragraph_spacing: None,
+                paragraph_indent: None,
             }),
         }],
     )]);
@@ -901,6 +1391,7 @@ fn oversized_turned_picture() -> (Document, [(f64, f64); 4]) {
                 fill_rect: None,
                 shadow: None,
                 paragraph_spacing: None,
+                paragraph_indent: None,
             }),
         }],
     )]);
@@ -1019,6 +1510,7 @@ fn an_svg_crop_narrows_the_view_box() {
         fill_rect: None,
         shadow: None,
         paragraph_spacing: None,
+        paragraph_indent: None,
     })])]);
 
     let output = generate_typst(&doc).unwrap();
@@ -1085,6 +1577,7 @@ fn an_uncropped_svg_is_left_alone() {
         fill_rect: None,
         shadow: None,
         paragraph_spacing: None,
+        paragraph_indent: None,
     })])]);
 
     let output = generate_typst(&doc).unwrap();

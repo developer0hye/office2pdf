@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """Show what the agent started by `scripts/issue_loop.sh` is doing right now.
 
-The loop reports only after an agent exits, because `claude -p --output-format json`
-writes its report at the end. This reads the live session transcript instead, so a
-run in progress is visible, and follows the switch to a new transcript when the loop
-moves to the next issue.
+Claude runs are read from its live session transcripts; Codex runs are read from
+JSONL logs written by the loop. Both follow new attempts as the queue advances.
 
-    scripts/issue_loop_watch.py            # follow live until interrupted
-    scripts/issue_loop_watch.py --dump 20  # print the last 20 events and exit
+    scripts/issue_loop_watch.py --agent codex            # follow live
+    scripts/issue_loop_watch.py --agent codex --dump 20  # last 20 events
 """
 
 from __future__ import annotations
@@ -19,6 +17,7 @@ import os
 import subprocess
 import sys
 import time
+from typing import TextIO
 
 POLL_SECONDS = 2.0
 TAIL_LINES_ON_ATTACH = 40
@@ -45,11 +44,23 @@ def transcript_dir(repo_path: str, home: str | None = None) -> str:
 
 
 def newest_transcript(directory: str, exclude: tuple[str, ...] = ()) -> str | None:
-    candidates = [
-        path
-        for path in glob.glob(os.path.join(directory, "*.jsonl"))
-        if not any(token in path for token in exclude)
-    ]
+    # Codex's live events are separate from the transcript copy made at completion.
+    paths = (glob.glob(os.path.join(directory, "*.jsonl"))
+             + glob.glob(os.path.join(directory, "runs", "issue-*", "*", "events.jsonl"))
+             + glob.glob(os.path.join(directory, "runs", "reflect-*", "events.jsonl")))
+    candidates = []
+    for path in paths:
+        if any(token in path for token in exclude):
+            continue
+        if exclude:
+            try:
+                with open(path, encoding="utf-8") as handle:
+                    header = json.loads(handle.readline())
+            except (OSError, ValueError):
+                header = {}
+            if isinstance(header, dict) and header.get("thread_id") in exclude:
+                continue
+        candidates.append(path)
     return max(candidates, key=os.path.getmtime) if candidates else None
 
 
@@ -63,7 +74,29 @@ def format_events(raw_line: str, max_text: int = 300) -> list[str]:
         record = json.loads(raw_line)
     except (json.JSONDecodeError, TypeError):
         return []
-    if not isinstance(record, dict) or record.get("type") != "assistant":
+    if not isinstance(record, dict):
+        return []
+    kind = record.get("type")
+    if kind in ("error", "turn.failed"):
+        error = record.get("error") or {}
+        message = error.get("message", "") if isinstance(error, dict) else str(error)
+        return [f"[ERROR] {str(record.get('message') or message)[:max_text]}".replace("\n", " ")]
+    if kind in ("item.started", "item.completed"):
+        item = record.get("item") or {}
+        if not isinstance(item, dict):
+            return []
+        if item.get("type") == "command_execution":
+            status = "start" if kind == "item.started" else f"exit {item.get('exit_code')}"
+            return [f"[TOOL] {status}: {str(item.get('command', ''))[:150]}".replace("\n", " ")]
+        if kind == "item.completed" and item.get("type") == "agent_message":
+            return [f"[SAY]  {str(item.get('text', ''))[:max_text]}".replace("\n", " ")]
+        if kind == "item.completed" and item.get("type") == "file_change":
+            paths = ", ".join(str(change.get("path", "")) for change in item.get("changes", []))
+            return [f"[EDIT] {paths[:max_text]}"]
+        if item.get("type") == "mcp_tool_call":
+            return [f"[TOOL] {item.get('server')}/{item.get('tool')}: {item.get('status', kind)}"]
+        return []
+    if kind != "assistant":
         return []
     message = record.get("message") or {}
     events: list[str] = []
@@ -97,6 +130,21 @@ def dump(directory: str, count: int, exclude: tuple[str, ...]) -> int:
     return 0
 
 
+def read_complete_lines(handle: TextIO) -> list[str]:
+    """Keep the cursor before a torn JSONL record so the next poll retries it."""
+    lines: list[str] = []
+    while True:
+        position = handle.tell()
+        line = handle.readline()
+        if not line:
+            break
+        if not line.endswith("\n"):
+            handle.seek(position)
+            break
+        lines.append(line)
+    return lines
+
+
 def follow(directory: str, exclude: tuple[str, ...]) -> int:
     current: str | None = None
     handle = None
@@ -108,13 +156,13 @@ def follow(directory: str, exclude: tuple[str, ...]) -> int:
                     handle.close()
                 current = newest
                 handle = open(current, encoding="utf-8")
-                recent = handle.readlines()[-TAIL_LINES_ON_ATTACH:]
+                recent = read_complete_lines(handle)[-TAIL_LINES_ON_ATTACH:]
                 print(f"\n>>> now watching {os.path.basename(current)}", flush=True)
                 for line in recent:
                     for event in format_events(line):
                         print(event, flush=True)
             if handle is not None:
-                for line in handle:
+                for line in read_complete_lines(handle):
                     for event in format_events(line):
                         print(event, flush=True)
             time.sleep(POLL_SECONDS)
@@ -138,10 +186,15 @@ def main() -> int:
         default="",
         help="comma-separated session ids to ignore (e.g. the session you are typing in)",
     )
+    parser.add_argument("--agent", choices=("claude", "codex"), default="claude")
+    parser.add_argument("--log-dir", help="Codex JSONL directory (default target/issue-loop-logs)")
     args = parser.parse_args()
 
     exclude = tuple(token for token in args.exclude.split(",") if token)
-    directory = transcript_dir(repo_root())
+    if args.agent == "codex":
+        directory = args.log_dir or os.path.join(repo_root(), "target", "issue-loop-logs")
+    else:
+        directory = transcript_dir(repo_root())
     if args.dump is not None:
         return dump(directory, args.dump, exclude)
     return follow(directory, exclude)

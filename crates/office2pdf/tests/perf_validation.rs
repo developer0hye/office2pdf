@@ -205,7 +205,7 @@ fn build_large_xlsx() -> Vec<u8> {
 fn build_pptx_n_slides(n: usize) -> Vec<u8> {
     let cursor = Cursor::new(Vec::new());
     let mut writer = zip::ZipWriter::new(cursor);
-    let opts: zip::write::FileOptions = zip::write::FileOptions::default();
+    let opts: zip::write::SimpleFileOptions = zip::write::SimpleFileOptions::default();
 
     let mut slide_ct = String::new();
     for i in 1..=n {
@@ -322,7 +322,7 @@ fn build_pptx_n_slides(n: usize) -> Vec<u8> {
 fn build_pptx_n_slides_with_shapes(n: usize) -> Vec<u8> {
     let cursor = Cursor::new(Vec::new());
     let mut writer = zip::ZipWriter::new(cursor);
-    let opts: zip::write::FileOptions = zip::write::FileOptions::default();
+    let opts: zip::write::SimpleFileOptions = zip::write::SimpleFileOptions::default();
 
     let mut slide_ct = String::new();
     for i in 1..=n {

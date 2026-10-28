@@ -1,0 +1,2304 @@
+{
+ "pages": [
+  {
+   "lines": {
+    "gt": 48,
+    "out": 46,
+    "matched": 44,
+    "missing": 4,
+    "extra": 2,
+    "deviant": 44,
+    "missing_text": [
+     "pogingenvanhetexamen2LTindekandidatuurtekunnenbenutten.Teven",
+     "evaluatieperiode(desgevallendstageperiode)voldoendetijdomzek",
+     "Niv2+.Zijzullenevenwelwordenbenoemdindegraadvan1SM,waardeNiv",
+     "wordenbenoemdindegraadvan1Sgt."
+    ],
+    "extra_text": [
+     "pogingenvanhetexamen2LTindekandidatuurtekunnenbenutten.Teven",
+     "deevaluatieperiode(desgevallendstageperiode)voldoendetijdomz"
+    ]
+   },
+   "baseline": {
+    "mean_abs_dy": 6.531818235294108,
+    "worst_dy": 6.652920000000023,
+    "worst_dy_signed": 6.652920000000023,
+    "worst_line": "1."
+   },
+   "dx0": {
+    "mean_abs": 0.039239215686265816,
+    "worst": 0.11619999999999209
+   },
+   "width": {
+    "mean_abs_pct": 3.2459267955473114,
+    "worst_pct": 13.809457429821459
+   },
+   "instances": {
+    "compared": 51,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 51,
+    "large_shifts": [
+     {
+      "label": "SynthesedocumentK4New",
+      "gt_x": 184.08,
+      "gt_y": 73.77999999999997,
+      "out_x": 184.1962,
+      "out_y": 80.40997,
+      "dx": 0.11619999999999209,
+      "dy": 6.629970000000029,
+      "width_pct": -0.014447897776094355
+     },
+     {
+      "label": "1.",
+      "gt_x": 85.025,
+      "gt_y": 113.27999999999997,
+      "out_x": 85.05,
+      "out_y": 119.93292,
+      "dx": 0.024999999999991473,
+      "dy": 6.652920000000023,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "Bepaalde(deel)artikelsvandeoudeK4wordenniethernomenindeK4New",
+      "gt_x": 106.3,
+      "gt_y": 113.27999999999997,
+      "out_x": 106.35,
+      "out_y": 119.93292,
+      "dx": 0.04999999999999716,
+      "dy": 6.652920000000023,
+      "width_pct": -4.790987107537269
+     },
+     {
+      "label": "niveauwetwerdengebracht(eenaantaldefinities,debevordering,de",
+      "gt_x": 106.3,
+      "gt_y": 124.77999999999997,
+      "out_x": 106.35,
+      "out_y": 131.43195,
+      "dx": 0.04999999999999716,
+      "dy": 6.651950000000028,
+      "width_pct": -2.9039965909328838
+     },
+     {
+      "label": "kandidaten,deafwachtingsperiodeen\u2013stage)ofineenanderKBworden",
+      "gt_x": 106.3,
+      "gt_y": 136.29999999999995,
+      "out_x": 106.35,
+      "out_y": 142.93097,
+      "dx": 0.04999999999999716,
+      "dy": 6.6309700000000475,
+      "width_pct": -9.576446029198534
+     },
+     {
+      "label": "(beroepscommissie<->beroepsinstantie).",
+      "gt_x": 106.3,
+      "gt_y": 147.79999999999995,
+      "out_x": 106.35,
+      "out_y": 154.43,
+      "dx": 0.04999999999999716,
+      "dy": 6.630000000000052,
+      "width_pct": 0.10762399895610454
+     },
+     {
+      "label": "2.",
+      "gt_x": 85.025,
+      "gt_y": 170.79999999999995,
+      "out_x": 85.05,
+      "out_y": 177.42804,
+      "dx": 0.024999999999991473,
+      "dy": 6.628040000000055,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "DeartikelsvandenieuweK4diehierondernietverderwordenbesproken",
+      "gt_x": 106.3,
+      "gt_y": 170.79999999999995,
+      "out_x": 106.35,
+      "out_y": 177.42804,
+      "dx": 0.04999999999999716,
+      "dy": 6.628040000000055,
+      "width_pct": -6.738745265625212
+     },
+     {
+      "label": "fundamentelewijzigingenondergaanenzullenverderwordentoegepas",
+      "gt_x": 106.3,
+      "gt_y": 182.29999999999995,
+      "out_x": 106.35,
+      "out_y": 188.92707,
+      "dx": 0.04999999999999716,
+      "dy": 6.627070000000032,
+      "width_pct": -4.875169708925513
+     },
+     {
+      "label": "reedshetgevalis.Detypehoedanighedenwerdenevenwelaangepastaan",
+      "gt_x": 106.3,
+      "gt_y": 193.79999999999995,
+      "out_x": 106.35,
+      "out_y": 200.42609,
+      "dx": 0.04999999999999716,
+      "dy": 6.626090000000033,
+      "width_pct": -9.146845330808384
+     },
+     {
+      "label": "terminologie(wervingen,NiveauA/B/C).",
+      "gt_x": 106.3,
+      "gt_y": 205.29999999999995,
+      "out_x": 106.35,
+      "out_y": 211.92511,
+      "dx": 0.04999999999999716,
+      "dy": 6.625110000000035,
+      "width_pct": 0.08438843718708686
+     },
+     {
+      "label": "3.",
+      "gt_x": 85.025,
+      "gt_y": 228.33000000000004,
+      "out_x": 85.05,
+      "out_y": 234.92316,
+      "dx": 0.024999999999991473,
+      "dy": 6.593159999999955,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "HoofdstukI:Devormingscycli",
+      "gt_x": 106.3,
+      "gt_y": 228.33000000000004,
+      "out_x": 106.35,
+      "out_y": 234.92316,
+      "dx": 0.04999999999999716,
+      "dy": 6.593159999999955,
+      "width_pct": 0.22010067952885556
+     },
+     {
+      "label": "a.",
+      "gt_x": 106.3,
+      "gt_y": 251.33000000000004,
+      "out_x": 106.35,
+      "out_y": 257.9212,
+      "dx": 0.04999999999999716,
+      "dy": 6.591199999999958,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "Art6:AlgemenebepalingenvoordevormingscyclivandeKBONivAenB",
+      "gt_x": 127.55,
+      "gt_y": 251.33000000000004,
+      "out_x": 127.6,
+      "out_y": 257.9212,
+      "dx": 0.04999999999999716,
+      "dy": 6.591199999999958,
+      "width_pct": -0.006143492400592441
+     },
+     {
+      "label": "(1)DelateralewervingvandeKBOvanNivAisnieuw.Devormingzalbesta",
+      "gt_x": 127.55,
+      "gt_y": 274.33000000000004,
+      "out_x": 127.6,
+      "out_y": 280.91926,
+      "dx": 0.04999999999999716,
+      "dy": 6.5892599999999675,
+      "width_pct": -1.367690890075065
+     },
+     {
+      "label": "MBV,eenGPV(OOJ)eneenevaluatieperiode(desgevallendeenstageper",
+      "gt_x": 148.83,
+      "gt_y": 285.83000000000004,
+      "out_x": 148.85,
+      "out_y": 292.41828,
+      "dx": 0.01999999999998181,
+      "dy": 6.588279999999941,
+      "width_pct": 0.03668897277720564
+     },
+     {
+      "label": "(2)OokdebijzonderewervingvandeKBOvanNivBisnieuw.Zijzijnheteq",
+      "gt_x": 127.55,
+      "gt_y": 308.85,
+      "out_x": 127.6,
+      "out_y": 315.41633,
+      "dx": 0.04999999999999716,
+      "dy": 6.566329999999994,
+      "width_pct": -4.221844019718084
+     },
+     {
+      "label": "vandehuidigeKBObijzonderewervingNivAgeneralisten.Hunvormingz",
+      "gt_x": 148.83,
+      "gt_y": 320.35,
+      "out_x": 148.85,
+      "out_y": 326.91535,
+      "dx": 0.01999999999998181,
+      "dy": 6.565349999999967,
+      "width_pct": -9.051258926826119
+     },
+     {
+      "label": "bestaanuiteenMBV,eenGPVeneenevaluatieperiode.",
+      "gt_x": 148.83,
+      "gt_y": 331.85,
+      "out_x": 148.85,
+      "out_y": 338.41438,
+      "dx": 0.01999999999998181,
+      "dy": 6.5643799999999715,
+      "width_pct": 0.13149173416297918
+     },
+     {
+      "label": "b.",
+      "gt_x": 106.3,
+      "gt_y": 354.85,
+      "out_x": 106.35,
+      "out_y": 361.4124,
+      "dx": 0.04999999999999716,
+      "dy": 6.562399999999968,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "Art12:SpecifiekebepalingenvoordevormingsduurvandeKBOvanNivAv",
+      "gt_x": 127.55,
+      "gt_y": 354.85,
+      "out_x": 127.6,
+      "out_y": 361.4124,
+      "dx": 0.04999999999999716,
+      "dy": 6.562399999999968,
+      "width_pct": -8.077081330386862
+     },
+     {
+      "label": "lateralewerving.",
+      "gt_x": 127.55,
+      "gt_y": 366.35,
+      "out_x": 127.6,
+      "out_y": 372.91145,
+      "dx": 0.04999999999999716,
+      "dy": 6.561449999999979,
+      "width_pct": 0.39996513282906765
+     },
+     {
+      "label": "DeduurvandevormingvanTWEEjarenmoetondermeertoelatendeVIERmog",
+      "gt_x": 127.55,
+      "gt_y": 389.37,
+      "out_x": 127.6,
+      "out_y": 395.9095,
+      "dx": 0.04999999999999716,
+      "dy": 6.539499999999975,
+      "width_pct": 0.04665640286486254
+     },
+     {
+      "label": "biedenomtrentdewaardevandekandidaatalvorenshemtebenoemeninde",
+      "gt_x": 127.55,
+      "gt_y": 423.87,
+      "out_x": 127.6,
+      "out_y": 430.40657,
+      "dx": 0.04999999999999716,
+      "dy": 6.536569999999983,
+      "width_pct": 0.03267521438897131
+     },
+     {
+      "label": "majoor!Deconcreteduurvandevormingsgedeeltenvandecyclusbasisv",
+      "gt_x": 127.55,
+      "gt_y": 435.37,
+      "out_x": 127.6,
+      "out_y": 441.90559,
+      "dx": 0.04999999999999716,
+      "dy": 6.535590000000013,
+      "width_pct": 0.053861663982267154
+     },
+     {
+      "label": "nadereregelswordenvastgelegdinhetREGFMNBAS001.",
+      "gt_x": 127.55,
+      "gt_y": 446.87,
+      "out_x": 127.6,
+      "out_y": 453.4046,
+      "dx": 0.04999999999999716,
+      "dy": 6.534600000000012,
+      "width_pct": 0.07227683259598894
+     },
+     {
+      "label": "c.",
+      "gt_x": 106.3,
+      "gt_y": 469.9,
+      "out_x": 106.35,
+      "out_y": 476.40266,
+      "dx": 0.04999999999999716,
+      "dy": 6.5026600000000485,
+      "width_pct": 0.0
+     },
+     {
+      "label": "Art14:SpecifiekebepalingenvoordevormingsduurvandeKBOvanNivBv",
+      "gt_x": 127.55,
+      "gt_y": 469.9,
+      "out_x": 127.6,
+      "out_y": 476.40266,
+      "dx": 0.04999999999999716,
+      "dy": 6.5026600000000485,
+      "width_pct": -8.077081330386862
+     },
+     {
+      "label": "bijzonderewerving.",
+      "gt_x": 127.55,
+      "gt_y": 481.4,
+      "out_x": 127.6,
+      "out_y": 487.90168,
+      "dx": 0.04999999999999716,
+      "dy": 6.501680000000022,
+      "width_pct": 0.17444227525089834
+     },
+     {
+      "label": "(1)DeduurvandevormingisDRIEjaren(opgelet:gewijzigdvanTWEEnaa",
+      "gt_x": 127.55,
+      "gt_y": 504.4,
+      "out_x": 127.6,
+      "out_y": 510.89973,
+      "dx": 0.04999999999999716,
+      "dy": 6.49973,
+      "width_pct": -5.381699447936405
+     },
+     {
+      "label": "t.o.v.hetvoorstelindebriefingG1aandeDirGenHRvan01Mar13).Deze",
+      "gt_x": 148.83,
+      "gt_y": 515.9,
+      "out_x": 148.85,
+      "out_y": 522.39877,
+      "dx": 0.01999999999998181,
+      "dy": 6.498770000000036,
+      "width_pct": -9.691815556628566
+     },
+     {
+      "label": "wijziginglaattoeALLEbestaandevormingstrajecten(ookdelangetra",
+      "gt_x": 148.83,
+      "gt_y": 527.4,
+      "out_x": 148.85,
+      "out_y": 533.89779,
+      "dx": 0.01999999999998181,
+      "dy": 6.497790000000009,
+      "width_pct": -3.403447252904538
+     },
+     {
+      "label": "BijvdievandeGnofParacdo)tebe\u00ebindigenbinnendekandidatuurperio",
+      "gt_x": 148.83,
+      "gt_y": 538.9,
+      "out_x": 148.85,
+      "out_y": 545.3968,
+      "dx": 0.01999999999998181,
+      "dy": 6.4968000000000075,
+      "width_pct": -1.6782352986359803
+     },
+     {
+      "label": "eenvoldoendelangeevaluatieperiodetegaranderen.Vandaagstellen",
+      "gt_x": 148.83,
+      "gt_y": 550.4,
+      "out_x": 148.85,
+      "out_y": 556.8958,
+      "dx": 0.01999999999998181,
+      "dy": 6.495800000000031,
+      "width_pct": -3.4230637831693027
+     },
+     {
+      "label": "vastdatnietallevormingstrajectenvandehuidigeKBOvanNivAvandeb",
+      "gt_x": 148.83,
+      "gt_y": 561.9200000000001,
+      "out_x": 148.85,
+      "out_y": 568.39486,
+      "dx": 0.01999999999998181,
+      "dy": 6.4748599999999215,
+      "width_pct": -0.6217715089983756
+     },
+     {
+      "label": "wervinggeneralisten(=equivalentvandetoekomstigeKBOvanNivBvan",
+      "gt_x": 148.83,
+      "gt_y": 573.4200000000001,
+      "out_x": 148.85,
+      "out_y": 579.89389,
+      "dx": 0.01999999999998181,
+      "dy": 6.473889999999983,
+      "width_pct": -7.227308684329051
+     },
+     {
+      "label": "bijzonderewerving)binnendeTWEEjarenkandidatuurkunnenwordenbe",
+      "gt_x": 148.83,
+      "gt_y": 584.9300000000001,
+      "out_x": 148.85,
+      "out_y": 591.3929,
+      "dx": 0.01999999999998181,
+      "dy": 6.4628999999999905,
+      "width_pct": 0.07095366785941144
+     },
+     {
+      "label": "(2)VoordeKBOvanNivAvandenormalewervingdiewordengereclasseerd",
+      "gt_x": 127.55,
+      "gt_y": 607.9300000000001,
+      "out_x": 127.6,
+      "out_y": 614.3909,
+      "dx": 0.04999999999999716,
+      "dy": 6.460899999999924,
+      "width_pct": -5.47284292410396
+     },
+     {
+      "label": "KBOvanNivBzaldeduurevenwelTWEEvormingsjarenbedragen.Zijhebbe",
+      "gt_x": 148.83,
+      "gt_y": 619.42,
+      "out_x": 148.85,
+      "out_y": 625.88998,
+      "dx": 0.01999999999998181,
+      "dy": 6.469980000000078,
+      "width_pct": -5.90389667608475
+     },
+     {
+      "label": "immersalminimumDRIEjaarKMSachterderugenzijninprincipealgesla",
+      "gt_x": 148.83,
+      "gt_y": 630.92,
+      "out_x": 148.85,
+      "out_y": 637.389,
+      "dx": 0.01999999999998181,
+      "dy": 6.469000000000051,
+      "width_pct": -3.0748876504319034
+     },
+     {
+      "label": "deMBV.EensoortgelijkeregelbestaatnureedsvoordeKBOvandenormal",
+      "gt_x": 148.83,
+      "gt_y": 642.45,
+      "out_x": 148.85,
+      "out_y": 648.888,
+      "dx": 0.01999999999998181,
+      "dy": 6.437999999999988,
+      "width_pct": -7.71719692607528
+     },
+     {
+      "label": "werving,aangesteldindegraadvanOLt,diewordengereklasseerdnaar",
+      "gt_x": 148.83,
+      "gt_y": 653.95,
+      "out_x": 148.85,
+      "out_y": 660.387,
+      "dx": 0.01999999999998181,
+      "dy": 6.436999999999898,
+      "width_pct": 0.03396400081676167
+     },
+     {
+      "label": "d.",
+      "gt_x": 106.3,
+      "gt_y": 676.95,
+      "out_x": 106.35,
+      "out_y": 683.3851,
+      "dx": 0.04999999999999716,
+      "dy": 6.43509999999992,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "Art16:AlgemenebepalingenvoordevormingscyclivandeKBOO",
+      "gt_x": 127.55,
+      "gt_y": 676.95,
+      "out_x": 127.6,
+      "out_y": 683.3851,
+      "dx": 0.04999999999999716,
+      "dy": 6.43509999999992,
+      "width_pct": -0.013680437001703025
+     },
+     {
+      "label": "(1)DenormalewervingvandeKBOOvanNivBisnieuw.DevormingsduurisD",
+      "gt_x": 127.55,
+      "gt_y": 699.95,
+      "out_x": 127.6,
+      "out_y": 706.3831,
+      "dx": 0.04999999999999716,
+      "dy": 6.433099999999968,
+      "width_pct": -4.888893321129312
+     },
+     {
+      "label": "jarenenbehelstdeacademischevorming,eenMBVendesgevallendeen",
+      "gt_x": 148.83,
+      "gt_y": 711.45,
+      "out_x": 148.85,
+      "out_y": 717.88217,
+      "dx": 0.01999999999998181,
+      "dy": 6.432169999999928,
+      "width_pct": -12.896760330445483
+     },
+     {
+      "label": "stageperiode.Deconcreteduurvandevormingsgedeeltenvandecyclus",
+      "gt_x": 148.83,
+      "gt_y": 722.95,
+      "out_x": 148.85,
+      "out_y": 729.38119,
+      "dx": 0.01999999999998181,
+      "dy": 6.431189999999901,
+      "width_pct": -13.809457429821459
+     },
+     {
+      "label": "basisvormingendenadereregelswordenvastgelegdinhetREGFMNBAS00",
+      "gt_x": 148.83,
+      "gt_y": 734.47,
+      "out_x": 148.85,
+      "out_y": 740.8802,
+      "dx": 0.01999999999998181,
+      "dy": 6.410199999999918,
+      "width_pct": 0.08288212201682017
+     },
+     {
+      "label": "(2)DebijzonderewervingvandeKBOOvanNivBisenkelquabenamingnieu",
+      "gt_x": 127.55,
+      "gt_y": 757.475,
+      "out_x": 127.6,
+      "out_y": 763.87826,
+      "dx": 0.04999999999999716,
+      "dy": 6.403259999999932,
+      "width_pct": -2.719932113127646
+     },
+     {
+      "label": "voorderest,quavorming,vollediggelijkaandehuidigebijzonderewe",
+      "gt_x": 148.83,
+      "gt_y": 768.975,
+      "out_x": 148.85,
+      "out_y": 775.37728,
+      "dx": 0.01999999999998181,
+      "dy": 6.402280000000019,
+      "width_pct": -2.8729164657224677
+     }
+    ],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 51,
+    "fine_shifts": [
+     {
+      "label": "SynthesedocumentK4New",
+      "gt_x": 184.08,
+      "gt_y": 73.77999999999997,
+      "out_x": 184.1962,
+      "out_y": 80.40997,
+      "dx": 0.11619999999999209,
+      "dy": 6.629970000000029,
+      "width_pct": -0.014447897776094355
+     },
+     {
+      "label": "1.",
+      "gt_x": 85.025,
+      "gt_y": 113.27999999999997,
+      "out_x": 85.05,
+      "out_y": 119.93292,
+      "dx": 0.024999999999991473,
+      "dy": 6.652920000000023,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "Bepaalde(deel)artikelsvandeoudeK4wordenniethernomenindeK4New",
+      "gt_x": 106.3,
+      "gt_y": 113.27999999999997,
+      "out_x": 106.35,
+      "out_y": 119.93292,
+      "dx": 0.04999999999999716,
+      "dy": 6.652920000000023,
+      "width_pct": -4.790987107537269
+     },
+     {
+      "label": "niveauwetwerdengebracht(eenaantaldefinities,debevordering,de",
+      "gt_x": 106.3,
+      "gt_y": 124.77999999999997,
+      "out_x": 106.35,
+      "out_y": 131.43195,
+      "dx": 0.04999999999999716,
+      "dy": 6.651950000000028,
+      "width_pct": -2.9039965909328838
+     },
+     {
+      "label": "kandidaten,deafwachtingsperiodeen\u2013stage)ofineenanderKBworden",
+      "gt_x": 106.3,
+      "gt_y": 136.29999999999995,
+      "out_x": 106.35,
+      "out_y": 142.93097,
+      "dx": 0.04999999999999716,
+      "dy": 6.6309700000000475,
+      "width_pct": -9.576446029198534
+     },
+     {
+      "label": "(beroepscommissie<->beroepsinstantie).",
+      "gt_x": 106.3,
+      "gt_y": 147.79999999999995,
+      "out_x": 106.35,
+      "out_y": 154.43,
+      "dx": 0.04999999999999716,
+      "dy": 6.630000000000052,
+      "width_pct": 0.10762399895610454
+     },
+     {
+      "label": "2.",
+      "gt_x": 85.025,
+      "gt_y": 170.79999999999995,
+      "out_x": 85.05,
+      "out_y": 177.42804,
+      "dx": 0.024999999999991473,
+      "dy": 6.628040000000055,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "DeartikelsvandenieuweK4diehierondernietverderwordenbesproken",
+      "gt_x": 106.3,
+      "gt_y": 170.79999999999995,
+      "out_x": 106.35,
+      "out_y": 177.42804,
+      "dx": 0.04999999999999716,
+      "dy": 6.628040000000055,
+      "width_pct": -6.738745265625212
+     },
+     {
+      "label": "fundamentelewijzigingenondergaanenzullenverderwordentoegepas",
+      "gt_x": 106.3,
+      "gt_y": 182.29999999999995,
+      "out_x": 106.35,
+      "out_y": 188.92707,
+      "dx": 0.04999999999999716,
+      "dy": 6.627070000000032,
+      "width_pct": -4.875169708925513
+     },
+     {
+      "label": "reedshetgevalis.Detypehoedanighedenwerdenevenwelaangepastaan",
+      "gt_x": 106.3,
+      "gt_y": 193.79999999999995,
+      "out_x": 106.35,
+      "out_y": 200.42609,
+      "dx": 0.04999999999999716,
+      "dy": 6.626090000000033,
+      "width_pct": -9.146845330808384
+     },
+     {
+      "label": "terminologie(wervingen,NiveauA/B/C).",
+      "gt_x": 106.3,
+      "gt_y": 205.29999999999995,
+      "out_x": 106.35,
+      "out_y": 211.92511,
+      "dx": 0.04999999999999716,
+      "dy": 6.625110000000035,
+      "width_pct": 0.08438843718708686
+     },
+     {
+      "label": "3.",
+      "gt_x": 85.025,
+      "gt_y": 228.33000000000004,
+      "out_x": 85.05,
+      "out_y": 234.92316,
+      "dx": 0.024999999999991473,
+      "dy": 6.593159999999955,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "HoofdstukI:Devormingscycli",
+      "gt_x": 106.3,
+      "gt_y": 228.33000000000004,
+      "out_x": 106.35,
+      "out_y": 234.92316,
+      "dx": 0.04999999999999716,
+      "dy": 6.593159999999955,
+      "width_pct": 0.22010067952885556
+     },
+     {
+      "label": "a.",
+      "gt_x": 106.3,
+      "gt_y": 251.33000000000004,
+      "out_x": 106.35,
+      "out_y": 257.9212,
+      "dx": 0.04999999999999716,
+      "dy": 6.591199999999958,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "Art6:AlgemenebepalingenvoordevormingscyclivandeKBONivAenB",
+      "gt_x": 127.55,
+      "gt_y": 251.33000000000004,
+      "out_x": 127.6,
+      "out_y": 257.9212,
+      "dx": 0.04999999999999716,
+      "dy": 6.591199999999958,
+      "width_pct": -0.006143492400592441
+     },
+     {
+      "label": "(1)DelateralewervingvandeKBOvanNivAisnieuw.Devormingzalbesta",
+      "gt_x": 127.55,
+      "gt_y": 274.33000000000004,
+      "out_x": 127.6,
+      "out_y": 280.91926,
+      "dx": 0.04999999999999716,
+      "dy": 6.5892599999999675,
+      "width_pct": -1.367690890075065
+     },
+     {
+      "label": "MBV,eenGPV(OOJ)eneenevaluatieperiode(desgevallendeenstageper",
+      "gt_x": 148.83,
+      "gt_y": 285.83000000000004,
+      "out_x": 148.85,
+      "out_y": 292.41828,
+      "dx": 0.01999999999998181,
+      "dy": 6.588279999999941,
+      "width_pct": 0.03668897277720564
+     },
+     {
+      "label": "(2)OokdebijzonderewervingvandeKBOvanNivBisnieuw.Zijzijnheteq",
+      "gt_x": 127.55,
+      "gt_y": 308.85,
+      "out_x": 127.6,
+      "out_y": 315.41633,
+      "dx": 0.04999999999999716,
+      "dy": 6.566329999999994,
+      "width_pct": -4.221844019718084
+     },
+     {
+      "label": "vandehuidigeKBObijzonderewervingNivAgeneralisten.Hunvormingz",
+      "gt_x": 148.83,
+      "gt_y": 320.35,
+      "out_x": 148.85,
+      "out_y": 326.91535,
+      "dx": 0.01999999999998181,
+      "dy": 6.565349999999967,
+      "width_pct": -9.051258926826119
+     },
+     {
+      "label": "bestaanuiteenMBV,eenGPVeneenevaluatieperiode.",
+      "gt_x": 148.83,
+      "gt_y": 331.85,
+      "out_x": 148.85,
+      "out_y": 338.41438,
+      "dx": 0.01999999999998181,
+      "dy": 6.5643799999999715,
+      "width_pct": 0.13149173416297918
+     },
+     {
+      "label": "b.",
+      "gt_x": 106.3,
+      "gt_y": 354.85,
+      "out_x": 106.35,
+      "out_y": 361.4124,
+      "dx": 0.04999999999999716,
+      "dy": 6.562399999999968,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "Art12:SpecifiekebepalingenvoordevormingsduurvandeKBOvanNivAv",
+      "gt_x": 127.55,
+      "gt_y": 354.85,
+      "out_x": 127.6,
+      "out_y": 361.4124,
+      "dx": 0.04999999999999716,
+      "dy": 6.562399999999968,
+      "width_pct": -8.077081330386862
+     },
+     {
+      "label": "lateralewerving.",
+      "gt_x": 127.55,
+      "gt_y": 366.35,
+      "out_x": 127.6,
+      "out_y": 372.91145,
+      "dx": 0.04999999999999716,
+      "dy": 6.561449999999979,
+      "width_pct": 0.39996513282906765
+     },
+     {
+      "label": "DeduurvandevormingvanTWEEjarenmoetondermeertoelatendeVIERmog",
+      "gt_x": 127.55,
+      "gt_y": 389.37,
+      "out_x": 127.6,
+      "out_y": 395.9095,
+      "dx": 0.04999999999999716,
+      "dy": 6.539499999999975,
+      "width_pct": 0.04665640286486254
+     },
+     {
+      "label": "biedenomtrentdewaardevandekandidaatalvorenshemtebenoemeninde",
+      "gt_x": 127.55,
+      "gt_y": 423.87,
+      "out_x": 127.6,
+      "out_y": 430.40657,
+      "dx": 0.04999999999999716,
+      "dy": 6.536569999999983,
+      "width_pct": 0.03267521438897131
+     },
+     {
+      "label": "majoor!Deconcreteduurvandevormingsgedeeltenvandecyclusbasisv",
+      "gt_x": 127.55,
+      "gt_y": 435.37,
+      "out_x": 127.6,
+      "out_y": 441.90559,
+      "dx": 0.04999999999999716,
+      "dy": 6.535590000000013,
+      "width_pct": 0.053861663982267154
+     },
+     {
+      "label": "nadereregelswordenvastgelegdinhetREGFMNBAS001.",
+      "gt_x": 127.55,
+      "gt_y": 446.87,
+      "out_x": 127.6,
+      "out_y": 453.4046,
+      "dx": 0.04999999999999716,
+      "dy": 6.534600000000012,
+      "width_pct": 0.07227683259598894
+     },
+     {
+      "label": "c.",
+      "gt_x": 106.3,
+      "gt_y": 469.9,
+      "out_x": 106.35,
+      "out_y": 476.40266,
+      "dx": 0.04999999999999716,
+      "dy": 6.5026600000000485,
+      "width_pct": 0.0
+     },
+     {
+      "label": "Art14:SpecifiekebepalingenvoordevormingsduurvandeKBOvanNivBv",
+      "gt_x": 127.55,
+      "gt_y": 469.9,
+      "out_x": 127.6,
+      "out_y": 476.40266,
+      "dx": 0.04999999999999716,
+      "dy": 6.5026600000000485,
+      "width_pct": -8.077081330386862
+     },
+     {
+      "label": "bijzonderewerving.",
+      "gt_x": 127.55,
+      "gt_y": 481.4,
+      "out_x": 127.6,
+      "out_y": 487.90168,
+      "dx": 0.04999999999999716,
+      "dy": 6.501680000000022,
+      "width_pct": 0.17444227525089834
+     },
+     {
+      "label": "(1)DeduurvandevormingisDRIEjaren(opgelet:gewijzigdvanTWEEnaa",
+      "gt_x": 127.55,
+      "gt_y": 504.4,
+      "out_x": 127.6,
+      "out_y": 510.89973,
+      "dx": 0.04999999999999716,
+      "dy": 6.49973,
+      "width_pct": -5.381699447936405
+     },
+     {
+      "label": "t.o.v.hetvoorstelindebriefingG1aandeDirGenHRvan01Mar13).Deze",
+      "gt_x": 148.83,
+      "gt_y": 515.9,
+      "out_x": 148.85,
+      "out_y": 522.39877,
+      "dx": 0.01999999999998181,
+      "dy": 6.498770000000036,
+      "width_pct": -9.691815556628566
+     },
+     {
+      "label": "wijziginglaattoeALLEbestaandevormingstrajecten(ookdelangetra",
+      "gt_x": 148.83,
+      "gt_y": 527.4,
+      "out_x": 148.85,
+      "out_y": 533.89779,
+      "dx": 0.01999999999998181,
+      "dy": 6.497790000000009,
+      "width_pct": -3.403447252904538
+     },
+     {
+      "label": "BijvdievandeGnofParacdo)tebe\u00ebindigenbinnendekandidatuurperio",
+      "gt_x": 148.83,
+      "gt_y": 538.9,
+      "out_x": 148.85,
+      "out_y": 545.3968,
+      "dx": 0.01999999999998181,
+      "dy": 6.4968000000000075,
+      "width_pct": -1.6782352986359803
+     },
+     {
+      "label": "eenvoldoendelangeevaluatieperiodetegaranderen.Vandaagstellen",
+      "gt_x": 148.83,
+      "gt_y": 550.4,
+      "out_x": 148.85,
+      "out_y": 556.8958,
+      "dx": 0.01999999999998181,
+      "dy": 6.495800000000031,
+      "width_pct": -3.4230637831693027
+     },
+     {
+      "label": "vastdatnietallevormingstrajectenvandehuidigeKBOvanNivAvandeb",
+      "gt_x": 148.83,
+      "gt_y": 561.9200000000001,
+      "out_x": 148.85,
+      "out_y": 568.39486,
+      "dx": 0.01999999999998181,
+      "dy": 6.4748599999999215,
+      "width_pct": -0.6217715089983756
+     },
+     {
+      "label": "wervinggeneralisten(=equivalentvandetoekomstigeKBOvanNivBvan",
+      "gt_x": 148.83,
+      "gt_y": 573.4200000000001,
+      "out_x": 148.85,
+      "out_y": 579.89389,
+      "dx": 0.01999999999998181,
+      "dy": 6.473889999999983,
+      "width_pct": -7.227308684329051
+     },
+     {
+      "label": "bijzonderewerving)binnendeTWEEjarenkandidatuurkunnenwordenbe",
+      "gt_x": 148.83,
+      "gt_y": 584.9300000000001,
+      "out_x": 148.85,
+      "out_y": 591.3929,
+      "dx": 0.01999999999998181,
+      "dy": 6.4628999999999905,
+      "width_pct": 0.07095366785941144
+     },
+     {
+      "label": "(2)VoordeKBOvanNivAvandenormalewervingdiewordengereclasseerd",
+      "gt_x": 127.55,
+      "gt_y": 607.9300000000001,
+      "out_x": 127.6,
+      "out_y": 614.3909,
+      "dx": 0.04999999999999716,
+      "dy": 6.460899999999924,
+      "width_pct": -5.47284292410396
+     },
+     {
+      "label": "KBOvanNivBzaldeduurevenwelTWEEvormingsjarenbedragen.Zijhebbe",
+      "gt_x": 148.83,
+      "gt_y": 619.42,
+      "out_x": 148.85,
+      "out_y": 625.88998,
+      "dx": 0.01999999999998181,
+      "dy": 6.469980000000078,
+      "width_pct": -5.90389667608475
+     },
+     {
+      "label": "immersalminimumDRIEjaarKMSachterderugenzijninprincipealgesla",
+      "gt_x": 148.83,
+      "gt_y": 630.92,
+      "out_x": 148.85,
+      "out_y": 637.389,
+      "dx": 0.01999999999998181,
+      "dy": 6.469000000000051,
+      "width_pct": -3.0748876504319034
+     },
+     {
+      "label": "deMBV.EensoortgelijkeregelbestaatnureedsvoordeKBOvandenormal",
+      "gt_x": 148.83,
+      "gt_y": 642.45,
+      "out_x": 148.85,
+      "out_y": 648.888,
+      "dx": 0.01999999999998181,
+      "dy": 6.437999999999988,
+      "width_pct": -7.71719692607528
+     },
+     {
+      "label": "werving,aangesteldindegraadvanOLt,diewordengereklasseerdnaar",
+      "gt_x": 148.83,
+      "gt_y": 653.95,
+      "out_x": 148.85,
+      "out_y": 660.387,
+      "dx": 0.01999999999998181,
+      "dy": 6.436999999999898,
+      "width_pct": 0.03396400081676167
+     },
+     {
+      "label": "d.",
+      "gt_x": 106.3,
+      "gt_y": 676.95,
+      "out_x": 106.35,
+      "out_y": 683.3851,
+      "dx": 0.04999999999999716,
+      "dy": 6.43509999999992,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "Art16:AlgemenebepalingenvoordevormingscyclivandeKBOO",
+      "gt_x": 127.55,
+      "gt_y": 676.95,
+      "out_x": 127.6,
+      "out_y": 683.3851,
+      "dx": 0.04999999999999716,
+      "dy": 6.43509999999992,
+      "width_pct": -0.013680437001703025
+     },
+     {
+      "label": "(1)DenormalewervingvandeKBOOvanNivBisnieuw.DevormingsduurisD",
+      "gt_x": 127.55,
+      "gt_y": 699.95,
+      "out_x": 127.6,
+      "out_y": 706.3831,
+      "dx": 0.04999999999999716,
+      "dy": 6.433099999999968,
+      "width_pct": -4.888893321129312
+     },
+     {
+      "label": "jarenenbehelstdeacademischevorming,eenMBVendesgevallendeen",
+      "gt_x": 148.83,
+      "gt_y": 711.45,
+      "out_x": 148.85,
+      "out_y": 717.88217,
+      "dx": 0.01999999999998181,
+      "dy": 6.432169999999928,
+      "width_pct": -12.896760330445483
+     },
+     {
+      "label": "stageperiode.Deconcreteduurvandevormingsgedeeltenvandecyclus",
+      "gt_x": 148.83,
+      "gt_y": 722.95,
+      "out_x": 148.85,
+      "out_y": 729.38119,
+      "dx": 0.01999999999998181,
+      "dy": 6.431189999999901,
+      "width_pct": -13.809457429821459
+     },
+     {
+      "label": "basisvormingendenadereregelswordenvastgelegdinhetREGFMNBAS00",
+      "gt_x": 148.83,
+      "gt_y": 734.47,
+      "out_x": 148.85,
+      "out_y": 740.8802,
+      "dx": 0.01999999999998181,
+      "dy": 6.410199999999918,
+      "width_pct": 0.08288212201682017
+     },
+     {
+      "label": "(2)DebijzonderewervingvandeKBOOvanNivBisenkelquabenamingnieu",
+      "gt_x": 127.55,
+      "gt_y": 757.475,
+      "out_x": 127.6,
+      "out_y": 763.87826,
+      "dx": 0.04999999999999716,
+      "dy": 6.403259999999932,
+      "width_pct": -2.719932113127646
+     },
+     {
+      "label": "voorderest,quavorming,vollediggelijkaandehuidigebijzonderewe",
+      "gt_x": 148.83,
+      "gt_y": 768.975,
+      "out_x": 148.85,
+      "out_y": 775.37728,
+      "dx": 0.01999999999998181,
+      "dy": 6.402280000000019,
+      "width_pct": -2.8729164657224677
+     }
+    ]
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 43,
+    "worst_delta": 0.03195000000008008
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 3,
+    "out_count": 5,
+    "canonical_gt_count": 3,
+    "canonical_out_count": 3,
+    "matched": 0,
+    "unmatched_gt": 3,
+    "unmatched_out": 3,
+    "mean_center_delta": 0.0,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 0,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [],
+    "x": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "y": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "width": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "height": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "top": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "right": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "bottom": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     }
+    }
+   },
+   "noise_floor": 0.12
+  },
+  {
+   "lines": {
+    "gt": 45,
+    "out": 47,
+    "matched": 43,
+    "missing": 2,
+    "extra": 4,
+    "deviant": 42,
+    "missing_text": [
+     "Zieoverzichtstabel.Deaangebodenmogelijkhedentotre\u00efntegratiez",
+     "eenstudievanalletheoretischemogelijkhedentotre\u00efntegratie,waa"
+    ],
+    "extra_text": [
+     "Niv2+.Zijzullenevenwelwordenbenoemdindegraadvan1SM,waardeNiv",
+     "wordenbenoemdindegraadvan1Sgt.",
+     "Zieoverzichtstabel.Deaangebodenmogelijkhedentotre\u00efntegratiez",
+     "vaneenstudievanalletheoretischemogelijkhedentotre\u00efntegratie,"
+    ]
+   },
+   "baseline": {
+    "mean_abs_dy": 21.24613134615384,
+    "worst_dy": 22.87314000000002,
+    "worst_dy_signed": 22.87314000000002,
+    "worst_line": "(3)DeaanvullendewervingKBOONivBisnieuw.Zijvolgendezelfderege"
+   },
+   "dx0": {
+    "mean_abs": 0.03654673076922121,
+    "worst": -0.09999999999999432
+   },
+   "width": {
+    "mean_abs_pct": 2.032146751960083,
+    "worst_pct": 11.581768012453239
+   },
+   "instances": {
+    "compared": 52,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 51,
+    "large_shifts": [
+     {
+      "label": "(3)DeaanvullendewervingKBOONivBisnieuw.Zijvolgendezelfderege",
+      "gt_x": 127.55,
+      "gt_y": 84.52999999999997,
+      "out_x": 127.6,
+      "out_y": 107.40314,
+      "dx": 0.04999999999999716,
+      "dy": 22.87314000000002,
+      "width_pct": -2.473409873419012
+     },
+     {
+      "label": "reedsvoorzienwarenvoordebestaandeaanvullendewervingKBONivA.",
+      "gt_x": 148.83,
+      "gt_y": 96.02999999999997,
+      "out_x": 148.85,
+      "out_y": 118.90216,
+      "dx": 0.01999999999998181,
+      "dy": 22.872160000000022,
+      "width_pct": -0.0388865519971114
+     },
+     {
+      "label": "4.",
+      "gt_x": 85.025,
+      "gt_y": 119.02999999999997,
+      "out_x": 85.05,
+      "out_y": 141.9002,
+      "dx": 0.024999999999991473,
+      "dy": 22.87020000000004,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "HoofdstukII:Deori\u00ebntering,devrijstelling,hetuitstelendeheror",
+      "gt_x": 106.3,
+      "gt_y": 119.02999999999997,
+      "out_x": 106.35,
+      "out_y": 141.9002,
+      "dx": 0.04999999999999716,
+      "dy": 22.87020000000004,
+      "width_pct": 0.07459870274019106
+     },
+     {
+      "label": "Art22:deherori\u00ebntering",
+      "gt_x": 106.3,
+      "gt_y": 142.04999999999995,
+      "out_x": 106.35,
+      "out_y": 164.89826,
+      "dx": 0.04999999999999716,
+      "dy": 22.84826000000004,
+      "width_pct": 0.286175233380248
+     },
+     {
+      "label": "a. [1/2]",
+      "gt_x": 106.3,
+      "gt_y": 165.04999999999995,
+      "out_x": 106.35,
+      "out_y": 187.8963,
+      "dx": 0.04999999999999716,
+      "dy": 22.846300000000042,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "\u00a72:nieuwisdatdeDGHReenoverheidkanaanwijzenomtebeslissenoverd",
+      "gt_x": 127.55,
+      "gt_y": 165.04999999999995,
+      "out_x": 127.6,
+      "out_y": 187.8963,
+      "dx": 0.04999999999999716,
+      "dy": 22.846300000000042,
+      "width_pct": -11.581768012453239
+     },
+     {
+      "label": "herori\u00ebntering.",
+      "gt_x": 127.55,
+      "gt_y": 176.54999999999995,
+      "out_x": 127.6,
+      "out_y": 199.39533,
+      "dx": 0.04999999999999716,
+      "dy": 22.845330000000047,
+      "width_pct": 0.3267902636339959
+     },
+     {
+      "label": "b. [1/2]",
+      "gt_x": 106.3,
+      "gt_y": 199.54999999999995,
+      "out_x": 106.35,
+      "out_y": 222.39337,
+      "dx": 0.04999999999999716,
+      "dy": 22.84337000000005,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "Herori\u00ebnteringopaanvraag(zieookoverzichtstabelinBijl)",
+      "gt_x": 127.55,
+      "gt_y": 199.54999999999995,
+      "out_x": 127.6,
+      "out_y": 222.39337,
+      "dx": 0.04999999999999716,
+      "dy": 22.84337000000005,
+      "width_pct": -0.018066007075211516
+     },
+     {
+      "label": "(1)Algemeneregel:herori\u00ebnteringmaximaalEENdiplomaniveauofcat",
+      "gt_x": 127.55,
+      "gt_y": 222.58000000000004,
+      "out_x": 127.6,
+      "out_y": 245.39142,
+      "dx": 0.04999999999999716,
+      "dy": 22.81141999999997,
+      "width_pct": -0.6178543374390985
+     },
+     {
+      "label": "actueeldiplomaniveauofcategorievandeKand.Hetheeftbijvoorbeel",
+      "gt_x": 148.83,
+      "gt_y": 234.08000000000004,
+      "out_x": 148.85,
+      "out_y": 256.89045,
+      "dx": 0.01999999999998181,
+      "dy": 22.810449999999946,
+      "width_pct": -4.930168317046761
+     },
+     {
+      "label": "eenNivAteherori\u00ebnterennaareenNivComdathijop(zelfsopkorte)ter",
+      "gt_x": 148.83,
+      "gt_y": 245.58000000000004,
+      "out_x": 148.85,
+      "out_y": 268.38948,
+      "dx": 0.01999999999998181,
+      "dy": 22.80947999999995,
+      "width_pct": -2.9171190778874614
+     },
+     {
+      "label": "ge\u00efnteresseerdisomzijnloopbaanTWEEniveauslageruittebouwen.",
+      "gt_x": 148.83,
+      "gt_y": 257.08000000000004,
+      "out_x": 148.85,
+      "out_y": 279.8885,
+      "dx": 0.01999999999998181,
+      "dy": 22.80849999999998,
+      "width_pct": 0.0659235645219718
+     },
+     {
+      "label": "(2)\u00a74:alletypeskandidatenkunnenwordengeherori\u00ebnteerdnaareena",
+      "gt_x": 127.55,
+      "gt_y": 280.07000000000005,
+      "out_x": 127.6,
+      "out_y": 302.88655,
+      "dx": 0.04999999999999716,
+      "dy": 22.81654999999995,
+      "width_pct": -10.05357656412903
+     },
+     {
+      "label": "specifiekevormingscyclusindezelfdehoedanigheid,BEHALVEKBONiv",
+      "gt_x": 148.83,
+      "gt_y": 291.57000000000005,
+      "out_x": 148.85,
+      "out_y": 314.38557,
+      "dx": 0.01999999999998181,
+      "dy": 22.815569999999923,
+      "width_pct": -0.5124118157764093
+     },
+     {
+      "label": "werving(wantgeworvenvoorenopbasisvaneenberoepservaringinEENb",
+      "gt_x": 148.83,
+      "gt_y": 303.1,
+      "out_x": 148.85,
+      "out_y": 325.88459,
+      "dx": 0.01999999999998181,
+      "dy": 22.78458999999998,
+      "width_pct": -1.4939445914480187
+     },
+     {
+      "label": "domein)endeKBOONivBnormalewerving(wantgeworvenvooreenzeer",
+      "gt_x": 148.83,
+      "gt_y": 314.6,
+      "out_x": 148.85,
+      "out_y": 337.3836,
+      "dx": 0.01999999999998181,
+      "dy": 22.78359999999998,
+      "width_pct": -10.485769124193551
+     },
+     {
+      "label": "specifiekefunctieeneenkandidatuurperiodedieinhoofdzaakbestaa",
+      "gt_x": 148.83,
+      "gt_y": 326.1,
+      "out_x": 148.85,
+      "out_y": 348.88264,
+      "dx": 0.01999999999998181,
+      "dy": 22.782639999999958,
+      "width_pct": -0.10271476019517423
+     },
+     {
+      "label": "korteacademischevorming<->rendement).",
+      "gt_x": 148.83,
+      "gt_y": 337.6,
+      "out_x": 148.85,
+      "out_y": 360.38166,
+      "dx": 0.01999999999998181,
+      "dy": 22.781659999999988,
+      "width_pct": 0.08109428385535844
+     },
+     {
+      "label": "(3)\u00a76:Dusgeenherori\u00ebnteringopaanvraagmogelijkvanKBOONivCnaar",
+      "gt_x": 127.55,
+      "gt_y": 361.6,
+      "out_x": 127.6,
+      "out_y": 384.3177,
+      "dx": 0.04999999999999716,
+      "dy": 22.71769999999998,
+      "width_pct": -5.966066307104098
+     },
+     {
+      "label": "Momenteelwordtdezeherori\u00ebnteringdikwijlsmisbruiktdoorKBOOdie",
+      "gt_x": 148.83,
+      "gt_y": 373.35,
+      "out_x": 148.85,
+      "out_y": 396.02864,
+      "dx": 0.01999999999998181,
+      "dy": 22.678639999999973,
+      "width_pct": -0.2772692509245422
+     },
+     {
+      "label": "zijnmethunwapenkeuzeenopdiemanierdaaraantrachtenteontsnappen",
+      "gt_x": 148.83,
+      "gt_y": 384.87,
+      "out_x": 148.85,
+      "out_y": 407.52766,
+      "dx": 0.01999999999998181,
+      "dy": 22.65766000000002,
+      "width_pct": -1.1333123471303739
+     },
+     {
+      "label": "evenweleenherori\u00ebnteringmogelijknaarKVBDL.Geziendezekerheidv",
+      "gt_x": 148.83,
+      "gt_y": 397.12,
+      "out_x": 148.85,
+      "out_y": 419.96467,
+      "dx": 0.01999999999998181,
+      "dy": 22.844670000000008,
+      "width_pct": -0.08013264924636411
+     },
+     {
+      "label": "employmentwegvaltzullendeKBOONivCmeerdantweekeernadenkenalvo",
+      "gt_x": 148.83,
+      "gt_y": 408.87,
+      "out_x": 148.85,
+      "out_y": 431.6756,
+      "dx": 0.01999999999998181,
+      "dy": 22.80559999999997,
+      "width_pct": -0.9797149682969393
+     },
+     {
+      "label": "eenherori\u00ebnteringnaarKVBDLaantevragen.Bovendienzullenallekan",
+      "gt_x": 148.83,
+      "gt_y": 420.37,
+      "out_x": 148.85,
+      "out_y": 443.17463,
+      "dx": 0.01999999999998181,
+      "dy": 22.804629999999975,
+      "width_pct": -6.045676909499608
+     },
+     {
+      "label": "vrijwilligersinhetBDL-statuutwordengeworven.Hetisoneerlijkka",
+      "gt_x": 148.83,
+      "gt_y": 431.87,
+      "out_x": 148.85,
+      "out_y": 454.67366,
+      "dx": 0.01999999999998181,
+      "dy": 22.80365999999998,
+      "width_pct": -1.615566561290734
+     },
+     {
+      "label": "\u201cincident\u201deenbeterstatuuttoetekennendandekandidatendievoorts",
+      "gt_x": 148.83,
+      "gt_y": 443.37,
+      "out_x": 148.85,
+      "out_y": 466.17268,
+      "dx": 0.01999999999998181,
+      "dy": 22.80268000000001,
+      "width_pct": -0.9839385068676793
+     },
+     {
+      "label": "regulierewervingen.",
+      "gt_x": 148.83,
+      "gt_y": 454.87,
+      "out_x": 148.85,
+      "out_y": 477.6717,
+      "dx": 0.01999999999998181,
+      "dy": 22.801699999999983,
+      "width_pct": 0.32315065224348916
+     },
+     {
+      "label": "5.",
+      "gt_x": 85.025,
+      "gt_y": 478.9,
+      "out_x": 85.05,
+      "out_y": 500.66975,
+      "dx": 0.024999999999991473,
+      "dy": 21.769750000000045,
+      "width_pct": 0.742620198487352
+     },
+     {
+      "label": "HoofdstukV:Demaatregeleningevalvanmislukkingineenspecifiekev",
+      "gt_x": 106.3,
+      "gt_y": 478.9,
+      "out_x": 106.35,
+      "out_y": 500.66975,
+      "dx": 0.04999999999999716,
+      "dy": 21.769750000000045,
+      "width_pct": 0.07534364625257758
+     },
+     {
+      "label": "a. [2/2]",
+      "gt_x": 106.3,
+      "gt_y": 503.9,
+      "out_x": 106.35,
+      "out_y": 525.5965,
+      "dx": 0.04999999999999716,
+      "dy": 21.696500000000015,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "Art41werdingevoegdomhetlottekunnenbepalenvandeFranstaligekan",
+      "gt_x": 127.55,
+      "gt_y": 503.9,
+      "out_x": 127.6,
+      "out_y": 525.5965,
+      "dx": 0.04999999999999716,
+      "dy": 21.696500000000015,
+      "width_pct": -7.087806683517134
+     },
+     {
+      "label": "geneeskundediedetoelatingkrijgenomhun1BatespreidenoverTWEEja",
+      "gt_x": 127.55,
+      "gt_y": 515.4,
+      "out_x": 127.6,
+      "out_y": 537.0955,
+      "dx": 0.04999999999999716,
+      "dy": 21.695500000000038,
+      "width_pct": -6.854658297309395
+     },
+     {
+      "label": "zullenhetlotvolgenvandevolgendeProm.",
+      "gt_x": 127.55,
+      "gt_y": 526.9,
+      "out_x": 127.6,
+      "out_y": 548.59457,
+      "dx": 0.04999999999999716,
+      "dy": 21.69457,
+      "width_pct": 0.15768656677693796
+     },
+     {
+      "label": "b. [2/2]",
+      "gt_x": 106.3,
+      "gt_y": 551.9,
+      "out_x": 106.35,
+      "out_y": 573.5213,
+      "dx": 0.04999999999999716,
+      "dy": 21.62130000000002,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "Art42:dereklassering",
+      "gt_x": 127.55,
+      "gt_y": 551.9,
+      "out_x": 127.6,
+      "out_y": 573.5213,
+      "dx": 0.04999999999999716,
+      "dy": 21.62130000000002,
+      "width_pct": 0.2683220522971833
+     },
+     {
+      "label": "(1)",
+      "gt_x": 126.05,
+      "gt_y": 577.9200000000001,
+      "out_x": 125.95,
+      "out_y": 598.44808,
+      "dx": -0.09999999999999432,
+      "dy": 20.52807999999993,
+      "width_pct": 1.164197354469151
+     },
+     {
+      "label": "Dezelfderedeneringenzijnvantoepassingzoalsbepaaldvoordeheror",
+      "gt_x": 148.83,
+      "gt_y": 577.9200000000001,
+      "out_x": 148.85,
+      "out_y": 598.44808,
+      "dx": 0.01999999999998181,
+      "dy": 20.52807999999993,
+      "width_pct": -1.8930285951452746
+     },
+     {
+      "label": "aanvraag(ziePar4.a.enb.hierboven).",
+      "gt_x": 148.83,
+      "gt_y": 589.4300000000001,
+      "out_x": 148.85,
+      "out_y": 609.9471,
+      "dx": 0.01999999999998181,
+      "dy": 20.517099999999914,
+      "width_pct": 0.15997354163982044
+     },
+     {
+      "label": "(2)",
+      "gt_x": 126.05,
+      "gt_y": 615.42,
+      "out_x": 125.95,
+      "out_y": 634.87387,
+      "dx": -0.09999999999999432,
+      "dy": 19.45387000000005,
+      "width_pct": 1.164197354469151
+     },
+     {
+      "label": "\u00a714:eentweedereklasseringwordtmogelijkgemaaktvoorbepaaldekan",
+      "gt_x": 148.83,
+      "gt_y": 615.42,
+      "out_x": 148.85,
+      "out_y": 634.87387,
+      "dx": 0.01999999999998181,
+      "dy": 19.45387000000005,
+      "width_pct": -3.5144568443631905
+     },
+     {
+      "label": "zijndedeKBONivAnormalewervingPOLendeKBOONivCdieeenATOvolgen,",
+      "gt_x": 148.83,
+      "gt_y": 626.92,
+      "out_x": 148.85,
+      "out_y": 646.37289,
+      "dx": 0.01999999999998181,
+      "dy": 19.452890000000025,
+      "width_pct": -1.2575711228107878
+     },
+     {
+      "label": "indienhuneerstereklasseringhetgevolgwasvaneendefinitievemisl",
+      "gt_x": 148.83,
+      "gt_y": 638.42,
+      "out_x": 148.85,
+      "out_y": 657.8719,
+      "dx": 0.01999999999998181,
+      "dy": 19.451900000000023,
+      "width_pct": -9.767487987916782
+     },
+     {
+      "label": "wegensonvoldoendebeoordelingvandeprofessionelehoedanighedent",
+      "gt_x": 148.83,
+      "gt_y": 649.95,
+      "out_x": 148.85,
+      "out_y": 669.3709,
+      "dx": 0.01999999999998181,
+      "dy": 19.42089999999996,
+      "width_pct": -0.5518869300002317
+     },
+     {
+      "label": "heteindevande1BaPOLofATO.",
+      "gt_x": 148.83,
+      "gt_y": 661.45,
+      "out_x": 148.85,
+      "out_y": 680.86996,
+      "dx": 0.01999999999998181,
+      "dy": 19.419959999999946,
+      "width_pct": 0.20746558316188926
+     },
+     {
+      "label": "c.",
+      "gt_x": 106.3,
+      "gt_y": 687.45,
+      "out_x": 106.35,
+      "out_y": 705.7967,
+      "dx": 0.04999999999999716,
+      "dy": 18.34669999999994,
+      "width_pct": 3.340903825520495
+     },
+     {
+      "label": "Art44:dere\u00efntegratie",
+      "gt_x": 127.55,
+      "gt_y": 687.45,
+      "out_x": 127.6,
+      "out_y": 705.7967,
+      "dx": 0.04999999999999716,
+      "dy": 18.34669999999994,
+      "width_pct": 0.1529436363237172
+     },
+     {
+      "label": "mogelijkhedenwerdenbehoudendiezinvolzijn(eenmeerwaardehebben",
+      "gt_x": 127.55,
+      "gt_y": 735.47,
+      "out_x": 127.6,
+      "out_y": 753.7215,
+      "dx": 0.04999999999999716,
+      "dy": 18.251499999999965,
+      "width_pct": 0.056079104607908006
+     },
+     {
+      "label": "kandidaatENvoordeorganisatie.Deweerhoudenmogelijkhedenwerden",
+      "gt_x": 127.55,
+      "gt_y": 746.975,
+      "out_x": 127.6,
+      "out_y": 765.2205,
+      "dx": 0.04999999999999716,
+      "dy": 18.245499999999993,
+      "width_pct": 0.011841205711192248
+     },
+     {
+      "label": "TFG1,HRB-VR,HRB-Car,HRM-Strat/BurPolicyenHRB-VR/Kand",
+      "gt_x": 127.55,
+      "gt_y": 758.475,
+      "out_x": 127.6,
+      "out_y": 776.71957,
+      "dx": 0.04999999999999716,
+      "dy": 18.244569999999953,
+      "width_pct": -0.03529099536372233
+     }
+    ],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 51,
+    "fine_shifts": [
+     {
+      "label": "(3)DeaanvullendewervingKBOONivBisnieuw.Zijvolgendezelfderege",
+      "gt_x": 127.55,
+      "gt_y": 84.52999999999997,
+      "out_x": 127.6,
+      "out_y": 107.40314,
+      "dx": 0.04999999999999716,
+      "dy": 22.87314000000002,
+      "width_pct": -2.473409873419012
+     },
+     {
+      "label": "reedsvoorzienwarenvoordebestaandeaanvullendewervingKBONivA.",
+      "gt_x": 148.83,
+      "gt_y": 96.02999999999997,
+      "out_x": 148.85,
+      "out_y": 118.90216,
+      "dx": 0.01999999999998181,
+      "dy": 22.872160000000022,
+      "width_pct": -0.0388865519971114
+     },
+     {
+      "label": "4.",
+      "gt_x": 85.025,
+      "gt_y": 119.02999999999997,
+      "out_x": 85.05,
+      "out_y": 141.9002,
+      "dx": 0.024999999999991473,
+      "dy": 22.87020000000004,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "HoofdstukII:Deori\u00ebntering,devrijstelling,hetuitstelendeheror",
+      "gt_x": 106.3,
+      "gt_y": 119.02999999999997,
+      "out_x": 106.35,
+      "out_y": 141.9002,
+      "dx": 0.04999999999999716,
+      "dy": 22.87020000000004,
+      "width_pct": 0.07459870274019106
+     },
+     {
+      "label": "Art22:deherori\u00ebntering",
+      "gt_x": 106.3,
+      "gt_y": 142.04999999999995,
+      "out_x": 106.35,
+      "out_y": 164.89826,
+      "dx": 0.04999999999999716,
+      "dy": 22.84826000000004,
+      "width_pct": 0.286175233380248
+     },
+     {
+      "label": "a. [1/2]",
+      "gt_x": 106.3,
+      "gt_y": 165.04999999999995,
+      "out_x": 106.35,
+      "out_y": 187.8963,
+      "dx": 0.04999999999999716,
+      "dy": 22.846300000000042,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "\u00a72:nieuwisdatdeDGHReenoverheidkanaanwijzenomtebeslissenoverd",
+      "gt_x": 127.55,
+      "gt_y": 165.04999999999995,
+      "out_x": 127.6,
+      "out_y": 187.8963,
+      "dx": 0.04999999999999716,
+      "dy": 22.846300000000042,
+      "width_pct": -11.581768012453239
+     },
+     {
+      "label": "herori\u00ebntering.",
+      "gt_x": 127.55,
+      "gt_y": 176.54999999999995,
+      "out_x": 127.6,
+      "out_y": 199.39533,
+      "dx": 0.04999999999999716,
+      "dy": 22.845330000000047,
+      "width_pct": 0.3267902636339959
+     },
+     {
+      "label": "b. [1/2]",
+      "gt_x": 106.3,
+      "gt_y": 199.54999999999995,
+      "out_x": 106.35,
+      "out_y": 222.39337,
+      "dx": 0.04999999999999716,
+      "dy": 22.84337000000005,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "Herori\u00ebnteringopaanvraag(zieookoverzichtstabelinBijl)",
+      "gt_x": 127.55,
+      "gt_y": 199.54999999999995,
+      "out_x": 127.6,
+      "out_y": 222.39337,
+      "dx": 0.04999999999999716,
+      "dy": 22.84337000000005,
+      "width_pct": -0.018066007075211516
+     },
+     {
+      "label": "(1)Algemeneregel:herori\u00ebnteringmaximaalEENdiplomaniveauofcat",
+      "gt_x": 127.55,
+      "gt_y": 222.58000000000004,
+      "out_x": 127.6,
+      "out_y": 245.39142,
+      "dx": 0.04999999999999716,
+      "dy": 22.81141999999997,
+      "width_pct": -0.6178543374390985
+     },
+     {
+      "label": "actueeldiplomaniveauofcategorievandeKand.Hetheeftbijvoorbeel",
+      "gt_x": 148.83,
+      "gt_y": 234.08000000000004,
+      "out_x": 148.85,
+      "out_y": 256.89045,
+      "dx": 0.01999999999998181,
+      "dy": 22.810449999999946,
+      "width_pct": -4.930168317046761
+     },
+     {
+      "label": "eenNivAteherori\u00ebnterennaareenNivComdathijop(zelfsopkorte)ter",
+      "gt_x": 148.83,
+      "gt_y": 245.58000000000004,
+      "out_x": 148.85,
+      "out_y": 268.38948,
+      "dx": 0.01999999999998181,
+      "dy": 22.80947999999995,
+      "width_pct": -2.9171190778874614
+     },
+     {
+      "label": "ge\u00efnteresseerdisomzijnloopbaanTWEEniveauslageruittebouwen.",
+      "gt_x": 148.83,
+      "gt_y": 257.08000000000004,
+      "out_x": 148.85,
+      "out_y": 279.8885,
+      "dx": 0.01999999999998181,
+      "dy": 22.80849999999998,
+      "width_pct": 0.0659235645219718
+     },
+     {
+      "label": "(2)\u00a74:alletypeskandidatenkunnenwordengeherori\u00ebnteerdnaareena",
+      "gt_x": 127.55,
+      "gt_y": 280.07000000000005,
+      "out_x": 127.6,
+      "out_y": 302.88655,
+      "dx": 0.04999999999999716,
+      "dy": 22.81654999999995,
+      "width_pct": -10.05357656412903
+     },
+     {
+      "label": "specifiekevormingscyclusindezelfdehoedanigheid,BEHALVEKBONiv",
+      "gt_x": 148.83,
+      "gt_y": 291.57000000000005,
+      "out_x": 148.85,
+      "out_y": 314.38557,
+      "dx": 0.01999999999998181,
+      "dy": 22.815569999999923,
+      "width_pct": -0.5124118157764093
+     },
+     {
+      "label": "werving(wantgeworvenvoorenopbasisvaneenberoepservaringinEENb",
+      "gt_x": 148.83,
+      "gt_y": 303.1,
+      "out_x": 148.85,
+      "out_y": 325.88459,
+      "dx": 0.01999999999998181,
+      "dy": 22.78458999999998,
+      "width_pct": -1.4939445914480187
+     },
+     {
+      "label": "domein)endeKBOONivBnormalewerving(wantgeworvenvooreenzeer",
+      "gt_x": 148.83,
+      "gt_y": 314.6,
+      "out_x": 148.85,
+      "out_y": 337.3836,
+      "dx": 0.01999999999998181,
+      "dy": 22.78359999999998,
+      "width_pct": -10.485769124193551
+     },
+     {
+      "label": "specifiekefunctieeneenkandidatuurperiodedieinhoofdzaakbestaa",
+      "gt_x": 148.83,
+      "gt_y": 326.1,
+      "out_x": 148.85,
+      "out_y": 348.88264,
+      "dx": 0.01999999999998181,
+      "dy": 22.782639999999958,
+      "width_pct": -0.10271476019517423
+     },
+     {
+      "label": "korteacademischevorming<->rendement).",
+      "gt_x": 148.83,
+      "gt_y": 337.6,
+      "out_x": 148.85,
+      "out_y": 360.38166,
+      "dx": 0.01999999999998181,
+      "dy": 22.781659999999988,
+      "width_pct": 0.08109428385535844
+     },
+     {
+      "label": "(3)\u00a76:Dusgeenherori\u00ebnteringopaanvraagmogelijkvanKBOONivCnaar",
+      "gt_x": 127.55,
+      "gt_y": 361.6,
+      "out_x": 127.6,
+      "out_y": 384.3177,
+      "dx": 0.04999999999999716,
+      "dy": 22.71769999999998,
+      "width_pct": -5.966066307104098
+     },
+     {
+      "label": "Momenteelwordtdezeherori\u00ebnteringdikwijlsmisbruiktdoorKBOOdie",
+      "gt_x": 148.83,
+      "gt_y": 373.35,
+      "out_x": 148.85,
+      "out_y": 396.02864,
+      "dx": 0.01999999999998181,
+      "dy": 22.678639999999973,
+      "width_pct": -0.2772692509245422
+     },
+     {
+      "label": "zijnmethunwapenkeuzeenopdiemanierdaaraantrachtenteontsnappen",
+      "gt_x": 148.83,
+      "gt_y": 384.87,
+      "out_x": 148.85,
+      "out_y": 407.52766,
+      "dx": 0.01999999999998181,
+      "dy": 22.65766000000002,
+      "width_pct": -1.1333123471303739
+     },
+     {
+      "label": "evenweleenherori\u00ebnteringmogelijknaarKVBDL.Geziendezekerheidv",
+      "gt_x": 148.83,
+      "gt_y": 397.12,
+      "out_x": 148.85,
+      "out_y": 419.96467,
+      "dx": 0.01999999999998181,
+      "dy": 22.844670000000008,
+      "width_pct": -0.08013264924636411
+     },
+     {
+      "label": "employmentwegvaltzullendeKBOONivCmeerdantweekeernadenkenalvo",
+      "gt_x": 148.83,
+      "gt_y": 408.87,
+      "out_x": 148.85,
+      "out_y": 431.6756,
+      "dx": 0.01999999999998181,
+      "dy": 22.80559999999997,
+      "width_pct": -0.9797149682969393
+     },
+     {
+      "label": "eenherori\u00ebnteringnaarKVBDLaantevragen.Bovendienzullenallekan",
+      "gt_x": 148.83,
+      "gt_y": 420.37,
+      "out_x": 148.85,
+      "out_y": 443.17463,
+      "dx": 0.01999999999998181,
+      "dy": 22.804629999999975,
+      "width_pct": -6.045676909499608
+     },
+     {
+      "label": "vrijwilligersinhetBDL-statuutwordengeworven.Hetisoneerlijkka",
+      "gt_x": 148.83,
+      "gt_y": 431.87,
+      "out_x": 148.85,
+      "out_y": 454.67366,
+      "dx": 0.01999999999998181,
+      "dy": 22.80365999999998,
+      "width_pct": -1.615566561290734
+     },
+     {
+      "label": "\u201cincident\u201deenbeterstatuuttoetekennendandekandidatendievoorts",
+      "gt_x": 148.83,
+      "gt_y": 443.37,
+      "out_x": 148.85,
+      "out_y": 466.17268,
+      "dx": 0.01999999999998181,
+      "dy": 22.80268000000001,
+      "width_pct": -0.9839385068676793
+     },
+     {
+      "label": "regulierewervingen.",
+      "gt_x": 148.83,
+      "gt_y": 454.87,
+      "out_x": 148.85,
+      "out_y": 477.6717,
+      "dx": 0.01999999999998181,
+      "dy": 22.801699999999983,
+      "width_pct": 0.32315065224348916
+     },
+     {
+      "label": "5.",
+      "gt_x": 85.025,
+      "gt_y": 478.9,
+      "out_x": 85.05,
+      "out_y": 500.66975,
+      "dx": 0.024999999999991473,
+      "dy": 21.769750000000045,
+      "width_pct": 0.742620198487352
+     },
+     {
+      "label": "HoofdstukV:Demaatregeleningevalvanmislukkingineenspecifiekev",
+      "gt_x": 106.3,
+      "gt_y": 478.9,
+      "out_x": 106.35,
+      "out_y": 500.66975,
+      "dx": 0.04999999999999716,
+      "dy": 21.769750000000045,
+      "width_pct": 0.07534364625257758
+     },
+     {
+      "label": "a. [2/2]",
+      "gt_x": 106.3,
+      "gt_y": 503.9,
+      "out_x": 106.35,
+      "out_y": 525.5965,
+      "dx": 0.04999999999999716,
+      "dy": 21.696500000000015,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "Art41werdingevoegdomhetlottekunnenbepalenvandeFranstaligekan",
+      "gt_x": 127.55,
+      "gt_y": 503.9,
+      "out_x": 127.6,
+      "out_y": 525.5965,
+      "dx": 0.04999999999999716,
+      "dy": 21.696500000000015,
+      "width_pct": -7.087806683517134
+     },
+     {
+      "label": "geneeskundediedetoelatingkrijgenomhun1BatespreidenoverTWEEja",
+      "gt_x": 127.55,
+      "gt_y": 515.4,
+      "out_x": 127.6,
+      "out_y": 537.0955,
+      "dx": 0.04999999999999716,
+      "dy": 21.695500000000038,
+      "width_pct": -6.854658297309395
+     },
+     {
+      "label": "zullenhetlotvolgenvandevolgendeProm.",
+      "gt_x": 127.55,
+      "gt_y": 526.9,
+      "out_x": 127.6,
+      "out_y": 548.59457,
+      "dx": 0.04999999999999716,
+      "dy": 21.69457,
+      "width_pct": 0.15768656677693796
+     },
+     {
+      "label": "b. [2/2]",
+      "gt_x": 106.3,
+      "gt_y": 551.9,
+      "out_x": 106.35,
+      "out_y": 573.5213,
+      "dx": 0.04999999999999716,
+      "dy": 21.62130000000002,
+      "width_pct": 0.7247919517586573
+     },
+     {
+      "label": "Art42:dereklassering",
+      "gt_x": 127.55,
+      "gt_y": 551.9,
+      "out_x": 127.6,
+      "out_y": 573.5213,
+      "dx": 0.04999999999999716,
+      "dy": 21.62130000000002,
+      "width_pct": 0.2683220522971833
+     },
+     {
+      "label": "(1)",
+      "gt_x": 126.05,
+      "gt_y": 577.9200000000001,
+      "out_x": 125.95,
+      "out_y": 598.44808,
+      "dx": -0.09999999999999432,
+      "dy": 20.52807999999993,
+      "width_pct": 1.164197354469151
+     },
+     {
+      "label": "Dezelfderedeneringenzijnvantoepassingzoalsbepaaldvoordeheror",
+      "gt_x": 148.83,
+      "gt_y": 577.9200000000001,
+      "out_x": 148.85,
+      "out_y": 598.44808,
+      "dx": 0.01999999999998181,
+      "dy": 20.52807999999993,
+      "width_pct": -1.8930285951452746
+     },
+     {
+      "label": "aanvraag(ziePar4.a.enb.hierboven).",
+      "gt_x": 148.83,
+      "gt_y": 589.4300000000001,
+      "out_x": 148.85,
+      "out_y": 609.9471,
+      "dx": 0.01999999999998181,
+      "dy": 20.517099999999914,
+      "width_pct": 0.15997354163982044
+     },
+     {
+      "label": "(2)",
+      "gt_x": 126.05,
+      "gt_y": 615.42,
+      "out_x": 125.95,
+      "out_y": 634.87387,
+      "dx": -0.09999999999999432,
+      "dy": 19.45387000000005,
+      "width_pct": 1.164197354469151
+     },
+     {
+      "label": "\u00a714:eentweedereklasseringwordtmogelijkgemaaktvoorbepaaldekan",
+      "gt_x": 148.83,
+      "gt_y": 615.42,
+      "out_x": 148.85,
+      "out_y": 634.87387,
+      "dx": 0.01999999999998181,
+      "dy": 19.45387000000005,
+      "width_pct": -3.5144568443631905
+     },
+     {
+      "label": "zijndedeKBONivAnormalewervingPOLendeKBOONivCdieeenATOvolgen,",
+      "gt_x": 148.83,
+      "gt_y": 626.92,
+      "out_x": 148.85,
+      "out_y": 646.37289,
+      "dx": 0.01999999999998181,
+      "dy": 19.452890000000025,
+      "width_pct": -1.2575711228107878
+     },
+     {
+      "label": "indienhuneerstereklasseringhetgevolgwasvaneendefinitievemisl",
+      "gt_x": 148.83,
+      "gt_y": 638.42,
+      "out_x": 148.85,
+      "out_y": 657.8719,
+      "dx": 0.01999999999998181,
+      "dy": 19.451900000000023,
+      "width_pct": -9.767487987916782
+     },
+     {
+      "label": "wegensonvoldoendebeoordelingvandeprofessionelehoedanighedent",
+      "gt_x": 148.83,
+      "gt_y": 649.95,
+      "out_x": 148.85,
+      "out_y": 669.3709,
+      "dx": 0.01999999999998181,
+      "dy": 19.42089999999996,
+      "width_pct": -0.5518869300002317
+     },
+     {
+      "label": "heteindevande1BaPOLofATO.",
+      "gt_x": 148.83,
+      "gt_y": 661.45,
+      "out_x": 148.85,
+      "out_y": 680.86996,
+      "dx": 0.01999999999998181,
+      "dy": 19.419959999999946,
+      "width_pct": 0.20746558316188926
+     },
+     {
+      "label": "c.",
+      "gt_x": 106.3,
+      "gt_y": 687.45,
+      "out_x": 106.35,
+      "out_y": 705.7967,
+      "dx": 0.04999999999999716,
+      "dy": 18.34669999999994,
+      "width_pct": 3.340903825520495
+     },
+     {
+      "label": "Art44:dere\u00efntegratie",
+      "gt_x": 127.55,
+      "gt_y": 687.45,
+      "out_x": 127.6,
+      "out_y": 705.7967,
+      "dx": 0.04999999999999716,
+      "dy": 18.34669999999994,
+      "width_pct": 0.1529436363237172
+     },
+     {
+      "label": "mogelijkhedenwerdenbehoudendiezinvolzijn(eenmeerwaardehebben",
+      "gt_x": 127.55,
+      "gt_y": 735.47,
+      "out_x": 127.6,
+      "out_y": 753.7215,
+      "dx": 0.04999999999999716,
+      "dy": 18.251499999999965,
+      "width_pct": 0.056079104607908006
+     },
+     {
+      "label": "kandidaatENvoordeorganisatie.Deweerhoudenmogelijkhedenwerden",
+      "gt_x": 127.55,
+      "gt_y": 746.975,
+      "out_x": 127.6,
+      "out_y": 765.2205,
+      "dx": 0.04999999999999716,
+      "dy": 18.245499999999993,
+      "width_pct": 0.011841205711192248
+     },
+     {
+      "label": "TFG1,HRB-VR,HRB-Car,HRM-Strat/BurPolicyenHRB-VR/Kand",
+      "gt_x": 127.55,
+      "gt_y": 758.475,
+      "out_x": 127.6,
+      "out_y": 776.71957,
+      "dx": 0.04999999999999716,
+      "dy": 18.244569999999953,
+      "width_pct": -0.03529099536372233
+     }
+    ]
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 42,
+    "worst_delta": 22.78112999999999
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 5,
+    "out_count": 5,
+    "canonical_gt_count": 5,
+    "canonical_out_count": 5,
+    "matched": 0,
+    "unmatched_gt": 5,
+    "unmatched_out": 5,
+    "mean_center_delta": 0.0,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 0,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [],
+    "x": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "y": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "width": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "height": {
+     "mean_abs": 0.0,
+     "worst": 0.0
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "top": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "right": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     },
+     "bottom": {
+      "mean_abs": 0.0,
+      "worst": 0.0
+     }
+    }
+   },
+   "noise_floor": 0.12
+  }
+ ],
+ "gt_pages": 2,
+ "out_pages": 2
+}

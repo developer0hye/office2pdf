@@ -29,7 +29,7 @@ fn styled_chart(
     };
     let (directory, file) = chart_path.rsplit_once('/').unwrap();
     let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
     writer
         .start_file(format!("{directory}/_rels/{file}.rels"), options)
         .unwrap();

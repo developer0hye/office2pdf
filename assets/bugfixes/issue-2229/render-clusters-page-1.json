@@ -1,0 +1,147 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 308.5056,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 53.76,
+        "x": 335.04,
+        "y": 152.16
+      },
+      "disposition": {
+        "issues": [
+          "#2148",
+          "#1874"
+        ],
+        "kind": "issue",
+        "note": "BodyNext now lies beside the table, as in Word, 4.40pt right of Word's line: the room starts at the table's right edge plus rightFromText, and the table starts 5.42pt right of Word's (#2148); the remaining 1.02pt, by which Word's line starts right of its own table edge plus 9pt, is sub-material (#1874)."
+      },
+      "id": "p1-f94f84324392",
+      "region": "top"
+    },
+    {
+      "area_pt2": 231.552,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 39.84,
+        "x": 87.36,
+        "y": 172.32
+      },
+      "disposition": {
+        "issues": [
+          "#2148",
+          "#2233"
+        ],
+        "kind": "issue",
+        "note": "TopicOne, 10.77pt right of Word, unchanged from before: the table's left edge one 5.4pt cell margin right (#2148) plus its paragraph's w:ind left -105 twips (-5.25pt) clamped to zero in a cell (#2233)."
+      },
+      "id": "p1-bf023f6c8921",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 214.7328,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 40.32,
+        "x": 99.36,
+        "y": 88.32
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "HeaderOne, 5.52pt right of Word: this compatibility-mode-14 document's full-width table starts one 5.4pt cell margin right of Word's table edge, unchanged from before."
+      },
+      "id": "p1-d7372d4047dc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 71.1936,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 13.92,
+        "x": 84.96,
+        "y": 88.8
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "HeaderOne, 5.52pt right of Word: this compatibility-mode-14 document's full-width table starts one 5.4pt cell margin right of Word's table edge, unchanged from before."
+      },
+      "id": "p1-0f7c5b389192",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.1968,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 4.8,
+        "x": 133.44,
+        "y": 174.72
+      },
+      "disposition": {
+        "issues": [
+          "#2148",
+          "#2233"
+        ],
+        "kind": "issue",
+        "note": "TopicOne, 10.77pt right of Word, unchanged from before: the table's left edge one 5.4pt cell margin right (#2148) plus its paragraph's w:ind left -105 twips (-5.25pt) clamped to zero in a cell (#2233)."
+      },
+      "id": "p1-de550f496bf3",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.9664,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 4.8,
+        "x": 140.16,
+        "y": 91.2
+      },
+      "disposition": {
+        "issue": "#2148",
+        "kind": "issue",
+        "note": "HeaderOne, 5.52pt right of Word: this compatibility-mode-14 document's full-width table starts one 5.4pt cell margin right of Word's table edge, unchanged from before."
+      },
+      "id": "p1-a8541b9fc9fd",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 7.2,
+        "x": 79.68,
+        "y": 172.32
+      },
+      "disposition": {
+        "issues": [
+          "#2148",
+          "#2233"
+        ],
+        "kind": "issue",
+        "note": "TopicOne, 10.77pt right of Word, unchanged from before: the table's left edge one 5.4pt cell margin right (#2148) plus its paragraph's w:ind left -105 twips (-5.25pt) clamped to zero in a cell (#2233)."
+      },
+      "id": "p1-905202101fc8",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 7,
+    "duplicate": 0,
+    "total": 7,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

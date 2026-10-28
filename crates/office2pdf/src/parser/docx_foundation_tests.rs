@@ -599,6 +599,31 @@ fn test_paragraph_line_spacing_exact() {
     }
 }
 
+/// `w:lineRule="atLeast"` states a minimum, not the line itself: a face whose
+/// natural line is taller keeps it, so the value stays apart from an exact
+/// line (issue #2214).
+#[test]
+fn test_paragraph_line_spacing_at_least() {
+    let data = build_docx_bytes(vec![
+        docx_rs::Paragraph::new()
+            .add_run(docx_rs::Run::new().add_text("At least spaced"))
+            .line_spacing(
+                docx_rs::LineSpacing::new()
+                    .line_rule(docx_rs::LineSpacingType::AtLeast)
+                    .line(300),
+            ),
+    ]);
+    let parser = DocxParser;
+    let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
+    let para = first_paragraph(&doc);
+    match para.style.line_spacing {
+        Some(LineSpacing::AtLeast(pts)) => {
+            assert!((pts - 15.0).abs() < 0.01, "Expected 15pt, got {pts}");
+        }
+        other => panic!("Expected AtLeast line spacing, got {other:?}"),
+    }
+}
+
 #[test]
 fn test_paragraph_uses_word_default_spacing_when_unspecified() {
     let data = build_docx_bytes(vec![

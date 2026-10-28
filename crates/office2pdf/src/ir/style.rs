@@ -123,6 +123,9 @@ pub struct ParagraphStyle {
     /// This paragraph fragment follows a hard break in its source paragraph.
     /// Typst uses the marker for continuation-specific layout behavior.
     pub starts_after_layout_break: bool,
+    /// The line breaks in the runs' text that resume the next line below
+    /// the floating objects beside it (`w:br w:clear`), in text order.
+    pub clearing_breaks: Box<[ClearingBreak]>,
     /// Leading runs carry a list number and source separator inside the paragraph frame.
     pub has_inline_list_number: bool,
     /// Resolved numbering suffix; absent for generic list paragraphs.
@@ -136,6 +139,16 @@ pub struct ParagraphStyle {
     pub line_box: Option<LineBox>,
     pub space_before: Option<f64>,
     pub space_after: Option<f64>,
+    /// The `w:after` of an empty section mark that ends the previous section
+    /// without a line of its own, on the first paragraph of the continuous
+    /// section after it. Word adds only the part of `space_before` beyond it
+    /// to the previous paragraph's whole after-gap (issue #2232).
+    pub section_mark_after: Option<f64>,
+    /// The paragraph opens a continuous section, and keeps its `space_before`
+    /// at the top of the next page when it does not fit on the current one,
+    /// as Word's export of docxide-pdf's `cont-first-text-overflow` shows
+    /// (issue #2255). The renderer sets it.
+    pub keeps_space_before_at_page_top: bool,
     /// Decoration-only portion of before-spacing suppressed at a later page top.
     pub decoration_before_spacing: Option<f64>,
     /// DrawingML paragraph spacing stated as a fraction of the paragraph's
@@ -169,6 +182,14 @@ pub struct ParagraphStyle {
     /// `border` is — four more `f64` inline push the paragraph-carrying enum
     /// variants past clippy's size threshold.
     pub border_space: Option<Box<super::elements::Insets>>,
+    /// A VML horizontal rule that is the paragraph's only content, drawn at the
+    /// bottom of its line outside table cells (issue #2251). Boxed for the
+    /// same reason `border` is.
+    pub horizontal_rule: Option<Box<HorizontalRule>>,
+    /// A header or footer paragraph whose only content was drawings Word
+    /// places against the page or its margins, which the story draws at
+    /// their anchors: the paragraph is still a line of its mark (issue #2327).
+    pub holds_anchored_drawing: bool,
     /// The font family of the paragraph mark — the empty run PowerPoint keeps
     /// after the last character, written as `<a:endParaRPr>`.
     ///
@@ -199,6 +220,18 @@ pub struct ParagraphStyle {
     /// `None` when visible runs size the paragraph or the format does not use
     /// its mark to size a blank line.
     pub paragraph_mark_text_style: Option<Box<TextStyle>>,
+    /// Formatting a numbered paragraph's list label takes before its level's
+    /// own run properties.
+    ///
+    /// Word formats the label with the paragraph mark's run properties,
+    /// resolved over the paragraph style and document defaults, whatever the
+    /// item's runs state (issue #2337). The renderer formats numbers with it;
+    /// bullets keep the formatting their runs share until a native probe
+    /// settles which mark properties Word gives them. Boxed as
+    /// `paragraph_mark_text_style` is. `None` for a paragraph without Word
+    /// numbering, and for a format whose labels take the item's run
+    /// formatting.
+    pub numbering_label_style: Option<Box<TextStyle>>,
     /// The glyphs a worksheet cell's selected number-format section reserves
     /// space for without painting them — e.g. the `)` a `_)`-padded positive
     /// section holds room for beside a parenthesised negative section.
@@ -214,6 +247,37 @@ pub struct ParagraphStyle {
     /// glyphs whose hidden advance precedes that prefix; `Some("")` still
     /// selects the split layout when no leading glyph is reserved.
     pub sheet_number_format_accounting_leading_reserved_glyphs: Option<Box<str>>,
+}
+
+/// Word's *Insert > Horizontal Line*: a VML `v:rect` with `o:hr="t"`.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct HorizontalRule {
+    pub width: HorizontalRuleWidth,
+    /// The rule's height in points, from its `style`.
+    pub height: f64,
+    /// Where a rule narrower than its paragraph sits (`o:hralign`).
+    pub alignment: Alignment,
+    pub paint: HorizontalRulePaint,
+}
+
+/// How wide a horizontal rule is.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum HorizontalRuleWidth {
+    /// A fraction of the paragraph's width between its indents: `o:hrpct` in
+    /// tenths of a percent, or the whole width when the attribute is absent
+    /// and the `style` width is Word's unitless `0`.
+    Fraction(f64),
+    /// The `style` width in points, which Word uses only with `o:hrpct="0"`.
+    Points(f64),
+}
+
+/// How a horizontal rule is painted.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum HorizontalRulePaint {
+    /// Word's default shaded rule, which ignores `fillcolor`.
+    Shaded,
+    /// `o:hrnoshade="t"`: a solid bar in the rule's `fillcolor`.
+    Solid(Color),
 }
 
 /// A custom tab stop definition.
@@ -248,6 +312,25 @@ pub enum TabLeader {
     Underscore,
 }
 
+/// A line break that resumes the next line past the floating objects beside
+/// it, as a `w:br` with `w:clear` does.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ClearingBreak {
+    /// Which `'\n'` of the paragraph's run text this is, counting from zero
+    /// across all its runs.
+    pub line_break: usize,
+    pub clear: BreakClear,
+}
+
+/// Which side of the line a clearing break needs free of floating objects
+/// (ECMA-376 `ST_BrClear`; `none` is a plain line break).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BreakClear {
+    Left,
+    Right,
+    All,
+}
+
 /// Text direction for bidirectional (BiDi) rendering.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TextDirection {
@@ -273,6 +356,10 @@ pub enum LineSpacing {
     Proportional(f64),
     /// Exact spacing in points.
     Exact(f64),
+    /// A minimum line height in points (`w:lineRule="atLeast"`): a face whose
+    /// natural line is taller keeps it. Rendered as [`LineSpacing::Exact`]
+    /// except where Word's exact-line seat would misplace it.
+    AtLeast(f64),
 }
 
 /// Font-relative line box metrics.
@@ -351,6 +438,37 @@ impl PairKerning {
     }
 }
 
+/// The OpenType ligature classes a run is shaped with.
+///
+/// Word states them per run in `w14:ligatures`, a Word 2010 extension whose
+/// `ST_Ligatures` values name any combination of standard (`liga`),
+/// contextual (`clig`), historical (`hlig`) and discretional (`dlig`)
+/// ligatures, or `none`. A document that states nothing gets none at all,
+/// which is not the shaping engine's own default of standard and contextual
+/// ligatures on (issue #2205).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Ligatures {
+    /// `liga`: the `fi`, `fl` and `ffi` forms a face substitutes by default.
+    pub standard: bool,
+    /// `clig`: ligatures a face substitutes only in context.
+    pub contextual: bool,
+    /// `hlig`: archaic forms such as a long-s ligature.
+    pub historical: bool,
+    /// `dlig`: decorative forms such as `ct` and `st`.
+    pub discretional: bool,
+}
+
+impl Ligatures {
+    /// No ligature of any class, which is what Word draws for a document that
+    /// states none.
+    pub const NONE: Ligatures = Ligatures {
+        standard: false,
+        contextual: false,
+        historical: false,
+        discretional: false,
+    };
+}
+
 /// Character-level formatting.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct TextStyle {
@@ -408,6 +526,15 @@ pub struct TextStyle {
     /// a non-zero `letter_spacing` switches kerning off regardless — except
     /// under the RTL shaping exemption (issue #864).
     pub pair_kerning: Option<PairKerning>,
+    /// The ligature classes the source application draws in this run.
+    ///
+    /// `None` means the format states nothing, so the renderer's default
+    /// stands: XLSX never states it, and a PowerPoint slide switches standard
+    /// ligatures off for the whole document instead (issue #1058). DOCX always
+    /// resolves it, because Word's unstated answer is `Ligatures::NONE`
+    /// (issue #2205). A non-zero `letter_spacing` still switches every class
+    /// off (issue #684).
+    pub ligatures: Option<Ligatures>,
 }
 
 impl TextStyle {
@@ -466,6 +593,9 @@ impl TextStyle {
         }
         if other.pair_kerning.is_some() {
             self.pair_kerning = other.pair_kerning;
+        }
+        if other.ligatures.is_some() {
+            self.ligatures = other.ligatures;
         }
     }
 }

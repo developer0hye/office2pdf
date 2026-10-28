@@ -1,4 +1,5 @@
 use super::*;
+use crate::ir::NumberingPattern;
 use std::collections::BTreeMap;
 
 #[test]
@@ -180,7 +181,7 @@ fn test_generate_numbered_list() {
             0,
             ListLevelStyle {
                 kind: ListKind::Ordered,
-                numbering_pattern: Some("1.".to_string()),
+                numbering_pattern: Some(NumberingPattern::parse("1.")),
                 full_numbering: false,
                 marker_text: None,
                 marker_style: None,
@@ -239,7 +240,7 @@ fn test_generate_numbered_list_preserves_hanging_indent_columns() {
             0,
             ListLevelStyle {
                 kind: ListKind::Ordered,
-                numbering_pattern: Some("1.".to_string()),
+                numbering_pattern: Some(NumberingPattern::parse("1.")),
                 full_numbering: false,
                 marker_text: None,
                 marker_style: None,
@@ -443,7 +444,7 @@ fn test_generate_numbered_list_marker_inherits_common_text_font() {
             0,
             ListLevelStyle {
                 kind: ListKind::Ordered,
-                numbering_pattern: Some("1.".to_string()),
+                numbering_pattern: Some(NumberingPattern::parse("1.")),
                 full_numbering: false,
                 marker_text: None,
                 marker_style: None,
@@ -533,7 +534,7 @@ fn test_generate_numbered_list_emits_mid_list_restart() {
             0,
             ListLevelStyle {
                 kind: ListKind::Ordered,
-                numbering_pattern: Some("1.".to_string()),
+                numbering_pattern: Some(NumberingPattern::parse("1.")),
                 full_numbering: false,
                 marker_text: None,
                 marker_style: None,
@@ -603,7 +604,7 @@ fn test_generate_nested_list() {
                 0,
                 ListLevelStyle {
                     kind: ListKind::Ordered,
-                    numbering_pattern: Some("1.".to_string()),
+                    numbering_pattern: Some(NumberingPattern::parse("1.")),
                     full_numbering: false,
                     marker_text: None,
                     marker_style: None,
@@ -745,7 +746,7 @@ fn test_generate_nested_ordered_list_uses_full_numbering() {
                 0,
                 ListLevelStyle {
                     kind: ListKind::Ordered,
-                    numbering_pattern: Some("1.".to_string()),
+                    numbering_pattern: Some(NumberingPattern::parse("1.")),
                     full_numbering: false,
                     marker_text: None,
                     marker_style: None,
@@ -755,7 +756,7 @@ fn test_generate_nested_ordered_list_uses_full_numbering() {
                 1,
                 ListLevelStyle {
                     kind: ListKind::Ordered,
-                    numbering_pattern: Some("1.a.".to_string()),
+                    numbering_pattern: Some(NumberingPattern::parse("1.a.")),
                     full_numbering: true,
                     marker_text: None,
                     marker_style: None,
@@ -847,7 +848,7 @@ fn test_generate_ordered_list_with_custom_marker_style_uses_numbering_function()
             0,
             ListLevelStyle {
                 kind: ListKind::Ordered,
-                numbering_pattern: Some("1)".to_string()),
+                numbering_pattern: Some(NumberingPattern::parse("1)")),
                 full_numbering: false,
                 marker_text: None,
                 marker_style: Some(TextStyle {
@@ -1946,4 +1947,444 @@ pub(in crate::render) fn vertical_skips_pt(source: &str) -> Vec<f64> {
         .skip(1)
         .filter_map(|rest| rest.split("pt)").next()?.parse::<f64>().ok())
         .collect()
+}
+
+/// One ordered list level labelled by `pattern`, one item per body.
+fn ordered_list_with_pattern(pattern: NumberingPattern, bodies: &[&str]) -> crate::ir::List {
+    crate::ir::List {
+        kind: ListKind::Ordered,
+        items: bodies
+            .iter()
+            .enumerate()
+            .map(|(index, body)| ListItem {
+                content: vec![Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: body.to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                        inline_box: None,
+                    }],
+                }],
+                level: 0,
+                start_at: (index == 0).then_some(1),
+            })
+            .collect(),
+        level_styles: BTreeMap::from([(
+            0,
+            ListLevelStyle {
+                kind: ListKind::Ordered,
+                numbering_pattern: Some(pattern),
+                full_numbering: false,
+                marker_text: None,
+                marker_style: None,
+            },
+        )]),
+    }
+}
+
+/// The label painted before each body on its baseline.
+#[cfg(not(target_arch = "wasm32"))]
+fn painted_labels(source: &str, bodies: &[&str]) -> Vec<String> {
+    let runs = crate::render::pdf::compiled_text_runs(source, 0).unwrap();
+    bodies
+        .iter()
+        .map(|body| {
+            let body_run = runs
+                .iter()
+                .find(|run| run.text.contains(body))
+                .unwrap_or_else(|| panic!("{body:?} is not painted: {runs:?}"));
+            let mut label_runs: Vec<_> = runs
+                .iter()
+                .filter(|run| {
+                    (run.baseline_pt - body_run.baseline_pt).abs() < 0.5
+                        && run.left_pt < body_run.left_pt
+                })
+                .collect();
+            label_runs.sort_by(|left, right| left.left_pt.total_cmp(&right.left_pt));
+            let mut label: String = label_runs.iter().map(|run| run.text.as_str()).collect();
+            label.push_str(&body_run.text[..body_run.text.find(body).unwrap()]);
+            label.trim().to_string()
+        })
+        .collect()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn ordered_list_literal_counting_symbols_print_as_text() {
+    // Typst would read the `1` of `1.` and the `a` of `Chapter` as counters;
+    // every list path must print them as written (issue #2221).
+    let bodies = ["Alpha", "Beta"];
+    for (pattern, expected) in [
+        (
+            NumberingPattern {
+                pieces: vec![("1.".to_string(), '1')],
+                suffix: String::new(),
+            },
+            ["1.1", "1.2"],
+        ),
+        (
+            NumberingPattern {
+                pieces: vec![("Chapter ".to_string(), 'A')],
+                suffix: ":".to_string(),
+            },
+            ["Chapter A:", "Chapter B:"],
+        ),
+        (
+            NumberingPattern {
+                pieces: Vec::new(),
+                suffix: "1)".to_string(),
+            },
+            ["1)", "1)"],
+        ),
+    ] {
+        let list = ordered_list_with_pattern(pattern, &bodies);
+        let flow = generate_typst(&make_doc(vec![make_flow_page(vec![Block::List(
+            list.clone(),
+        )])]))
+        .unwrap();
+        assert_eq!(painted_labels(&flow.source, &bodies), expected, "flow list");
+
+        let text_box = FixedElement {
+            x: 20.0,
+            y: 20.0,
+            width: 300.0,
+            height: 100.0,
+            kind: FixedElementKind::TextBox(crate::ir::TextBoxData {
+                content: vec![Block::List(list)],
+                padding: Insets::default(),
+                vertical_align: crate::ir::TextBoxVerticalAlign::Top,
+                fill: None,
+                opacity: None,
+                stroke: None,
+                shape_kind: None,
+                no_wrap: false,
+                auto_fit: false,
+                text_rotation_deg: None,
+                shape_rotation_deg: None,
+            }),
+        };
+        let fixed = generate_typst(&make_doc(vec![make_fixed_page(
+            400.0,
+            200.0,
+            vec![text_box],
+        )]))
+        .unwrap();
+        assert_eq!(
+            painted_labels(&fixed.source, &bodies),
+            expected,
+            "text box list"
+        );
+    }
+}
+
+/// One flow list whose items each declare `(level, w:ind w:left,
+/// w:hanging)` in twips, as Word stores them, with a tab after each marker.
+#[cfg(not(target_arch = "wasm32"))]
+fn twip_indented_list(
+    kind: ListKind,
+    pattern: Option<&str>,
+    items: &[(u32, i32, i32, &str)],
+) -> crate::ir::List {
+    let twips = |value: i32| f64::from(value) / 20.0;
+    let level_style = |level: u32| {
+        (
+            level,
+            ListLevelStyle {
+                kind,
+                numbering_pattern: pattern.map(NumberingPattern::parse),
+                full_numbering: false,
+                marker_text: None,
+                marker_style: None,
+            },
+        )
+    };
+    crate::ir::List {
+        kind,
+        items: items
+            .iter()
+            .enumerate()
+            .map(|(index, (level, left, hanging, body))| ListItem {
+                content: vec![Paragraph {
+                    style: ParagraphStyle {
+                        indent_left: Some(twips(*left)),
+                        indent_first_line: Some(-twips(*hanging)),
+                        numbering_suffix: Some(crate::ir::ListMarkerSuffix::Tab),
+                        ..ParagraphStyle::default()
+                    },
+                    runs: vec![Run {
+                        text: body.to_string(),
+                        style: TextStyle::default(),
+                        href: None,
+                        footnote: None,
+                        inline_box: None,
+                    }],
+                }],
+                level: *level,
+                start_at: (index == 0 && kind == ListKind::Ordered).then_some(1),
+            })
+            .collect(),
+        level_styles: items
+            .iter()
+            .map(|(level, ..)| level_style(*level))
+            .collect(),
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn list_items_whose_indents_differ_by_a_few_twips_keep_their_word_columns() {
+    // Word stores indents in twips, and one level's items often disagree by
+    // a rounding step: 992 vs 993 twips, or 357 (0.63cm) vs 360 (0.25in).
+    // Requiring an exact match dropped the level's geometry, so the markers
+    // sat on the margin and the bodies at Typst's default indent (issue
+    // #2332). Each marker and body must stay where its own w:ind puts it.
+    let cases = [
+        (
+            ListKind::Ordered,
+            Some("a 1.)"),
+            vec![(0, 993, 567, "Alpha"), (0, 992, 567, "Bravo")],
+        ),
+        (
+            ListKind::Ordered,
+            Some("1."),
+            vec![
+                (0, 357, 357, "Alpha"),
+                (0, 360, 360, "Bravo"),
+                (0, 360, 360, "Charlie"),
+            ],
+        ),
+        (
+            ListKind::Unordered,
+            None,
+            vec![(0, 1440, 360, "Alpha"), (0, 1437, 357, "Bravo")],
+        ),
+        (
+            ListKind::Ordered,
+            Some("1."),
+            vec![
+                (0, 360, 360, "Alpha"),
+                (1, 1080, 360, "Bravo"),
+                (1, 1079, 359, "Charlie"),
+            ],
+        ),
+    ];
+    for (kind, pattern, items) in cases {
+        let list = twip_indented_list(kind, pattern, &items);
+        let output =
+            generate_typst(&make_doc(vec![make_flow_page(vec![Block::List(list)])])).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs(&output.source, 0).unwrap();
+        for (_, left, hanging, body) in &items {
+            let body_run = runs
+                .iter()
+                .find(|run| run.text.contains(body))
+                .unwrap_or_else(|| panic!("{body:?} is not painted: {runs:?}"));
+            let marker_left = runs
+                .iter()
+                .filter(|run| {
+                    (run.baseline_pt - body_run.baseline_pt).abs() < 0.5
+                        && run.left_pt < body_run.left_pt
+                })
+                .map(|run| run.left_pt)
+                .min_by(f64::total_cmp)
+                .unwrap_or_else(|| panic!("{body:?} has no marker: {runs:?}"));
+            let margin = crate::defaults::DEFAULT_MARGIN_PT;
+            let expected_body = margin + f64::from(*left) / 20.0;
+            let expected_marker = margin + f64::from(left - hanging) / 20.0;
+            assert!(
+                (body_run.left_pt - expected_body).abs() < 0.25,
+                "{kind:?} {body:?} body at {}pt, w:ind puts it at {expected_body}pt",
+                body_run.left_pt
+            );
+            assert!(
+                (marker_left - expected_marker).abs() < 0.25,
+                "{kind:?} {body:?} marker at {marker_left}pt, w:ind puts it at {expected_marker}pt",
+            );
+        }
+    }
+}
+
+/// Long enough to wrap onto at least three lines of a list body on A4.
+#[cfg(not(target_arch = "wasm32"))]
+const WRAPPING_LIST_BODY: &str = "The committee reviewed every provision of the earlier \
+    regulation and kept only those articles that still serve a purpose under the new \
+    statute, while the remaining clauses were either merged into broader sections or \
+    removed because later legislation already covers the same ground for all candidates.";
+
+/// One list item's `(level, w:jc)`.
+#[cfg(not(target_arch = "wasm32"))]
+type AlignedItem = (u32, Option<Alignment>);
+
+/// A two-level numbered Word list, `1.` then `a.`, whose items each declare
+/// `(level, w:jc)` and wrap [`WRAPPING_LIST_BODY`] after a tab suffix.
+#[cfg(not(target_arch = "wasm32"))]
+fn aligned_word_list(items: &[AlignedItem]) -> crate::ir::List {
+    let level_style = |pattern: &str| ListLevelStyle {
+        kind: ListKind::Ordered,
+        numbering_pattern: Some(NumberingPattern::parse(pattern)),
+        full_numbering: false,
+        marker_text: None,
+        marker_style: None,
+    };
+    crate::ir::List {
+        kind: ListKind::Ordered,
+        items: items
+            .iter()
+            .enumerate()
+            .map(|(index, (level, alignment))| ListItem {
+                content: vec![Paragraph {
+                    style: ParagraphStyle {
+                        alignment: *alignment,
+                        indent_left: Some(36.0 * f64::from(level + 1)),
+                        indent_first_line: Some(-18.0),
+                        numbering_suffix: Some(crate::ir::ListMarkerSuffix::Tab),
+                        ..ParagraphStyle::default()
+                    },
+                    runs: vec![Run {
+                        text: WRAPPING_LIST_BODY.to_string(),
+                        style: TextStyle {
+                            font_family: Some("Libertinus Serif".to_string()),
+                            font_size: Some(11.0),
+                            ..TextStyle::default()
+                        },
+                        href: None,
+                        footnote: None,
+                        inline_box: None,
+                    }],
+                }],
+                level: *level,
+                start_at: (index == 0).then_some(1),
+            })
+            .collect(),
+        level_styles: BTreeMap::from([(0, level_style("1.")), (1, level_style("a."))]),
+    }
+}
+
+/// The painted runs of a flow page holding just `list`.
+#[cfg(not(target_arch = "wasm32"))]
+fn painted_list_runs(list: crate::ir::List) -> Vec<crate::render::pdf::PlacedTextRun> {
+    let source = generate_typst(&make_doc(vec![make_flow_page(vec![Block::List(list)])]))
+        .unwrap()
+        .source;
+    let mut runs = crate::render::pdf::compiled_text_runs(&source, 0)
+        .unwrap_or_else(|error| panic!("compile failed: {error}\n{source}"));
+    runs.retain(|run| !run.text.trim().is_empty());
+    runs
+}
+
+/// Each item's lines top to bottom, as their text and where they end in
+/// points from the page's left edge; an item starts at the line that paints
+/// its marker.
+#[cfg(not(target_arch = "wasm32"))]
+fn list_item_lines(list: crate::ir::List, markers: &[&str]) -> Vec<Vec<(String, f64)>> {
+    let mut runs = painted_list_runs(list);
+    runs.sort_by(|left, right| {
+        left.baseline_pt
+            .total_cmp(&right.baseline_pt)
+            .then_with(|| left.left_pt.total_cmp(&right.left_pt))
+    });
+    let mut lines: Vec<(f64, String, f64)> = Vec::new();
+    for run in &runs {
+        match lines.last_mut() {
+            Some((baseline, text, end)) if (*baseline - run.baseline_pt).abs() < 0.1 => {
+                text.push_str(&run.text);
+                *end = end.max(run.ink_end_pt);
+            }
+            _ => lines.push((run.baseline_pt, run.text.clone(), run.ink_end_pt)),
+        }
+    }
+    let mut item_starts: Vec<f64> = markers
+        .iter()
+        .map(|marker| {
+            runs.iter()
+                .find(|run| run.text.trim() == *marker)
+                .unwrap_or_else(|| panic!("no {marker} marker in {runs:?}"))
+                .baseline_pt
+        })
+        .collect();
+    item_starts.push(f64::INFINITY);
+    item_starts
+        .windows(2)
+        .map(|bounds| {
+            lines
+                .iter()
+                .filter(|(baseline, ..)| *baseline > bounds[0] - 0.1 && *baseline < bounds[1] - 0.1)
+                .map(|(_, text, end)| (text.split_whitespace().collect::<Vec<_>>().join(" "), *end))
+                .collect()
+        })
+        .collect()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_justified_word_list_item_fills_every_line_but_its_last() {
+    // A Word list item is a paragraph like any other: its own w:jc="both"
+    // justifies every line but the last. docxide-pdf's scraped
+    // k4_regulations_synthesis_document sets it on every numbered
+    // ListParagraph, and Word ends item 1.'s first three lines within 0.7pt
+    // of the margin where the list path left them up to 40pt short (issue
+    // #2336). A nested item keeps its own alignment, not its parent's.
+    let right_margin = crate::defaults::A4_WIDTH_PT - crate::defaults::DEFAULT_MARGIN_PT;
+    let justify = Some(Alignment::Justify);
+    let left = Some(Alignment::Left);
+    let cases: [(&[AlignedItem], &[&str]); 4] = [
+        (&[(0, justify)], &["1."]),
+        (&[(0, left)], &["1."]),
+        (&[(0, justify), (1, left)], &["1.", "a."]),
+        (&[(0, left), (1, justify)], &["1.", "a."]),
+    ];
+    for (items, markers) in cases {
+        let lines = list_item_lines(aligned_word_list(items), markers);
+        for ((level, alignment), item_lines) in items.iter().zip(&lines) {
+            let ends: Vec<f64> = item_lines.iter().map(|(_, end)| *end).collect();
+            let (last, wrapped) = ends.split_last().unwrap();
+            assert!(
+                wrapped.len() >= 2,
+                "level {level} must wrap onto three lines: {lines:?}"
+            );
+            let shortfalls: Vec<f64> = wrapped.iter().map(|end| right_margin - end).collect();
+            assert!(
+                right_margin - last > 20.0,
+                "level {level}'s last line stays ragged: {lines:?}"
+            );
+            if *alignment == justify {
+                assert!(
+                    shortfalls.iter().all(|shortfall| shortfall.abs() < 0.5),
+                    "justified level {level} must end each wrapped line at the \
+                     {right_margin}pt margin, short by {shortfalls:?} in {items:?}"
+                );
+            } else {
+                assert!(
+                    shortfalls.iter().any(|shortfall| *shortfall > 2.0),
+                    "left-aligned level {level} stays ragged, short by {shortfalls:?} in {items:?}"
+                );
+            }
+        }
+    }
+    // Justifying moves no word to another line, and adds no space before the
+    // body. Typst's optimized breaker, which `justify` would otherwise bring,
+    // rewrapped 25 of the 48 lines on k4's page 1 away from Word's, where
+    // first-fit keeps Word's break on every numbered line (TODO(#2063): body
+    // paragraphs still use it).
+    let item_text = |alignment: Option<Alignment>| -> Vec<String> {
+        list_item_lines(aligned_word_list(&[(0, alignment)]), &["1."])[0]
+            .iter()
+            .map(|(text, _)| text.clone())
+            .collect()
+    };
+    assert_eq!(item_text(justify), item_text(left));
+    let body_start = |alignment: Option<Alignment>| {
+        painted_list_runs(aligned_word_list(&[(0, alignment)]))
+            .iter()
+            .find(|run| run.text.starts_with("The"))
+            .expect("the body's first line")
+            .left_pt
+    };
+    assert!(
+        (body_start(justify) - body_start(left)).abs() < 0.01,
+        "a justified body starts at {}pt, a left-aligned one at {}pt",
+        body_start(justify),
+        body_start(left)
+    );
 }

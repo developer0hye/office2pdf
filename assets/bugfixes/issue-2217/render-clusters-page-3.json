@@ -1,0 +1,3671 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 65.8944,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 118.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-a8bcbb12f2f7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 62.208,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 165.6
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-5599e5c22f7e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 62.208,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 213.6
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-ef0ff85edc9b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 62.208,
+      "bbox_pt": {
+        "height": 12.0,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 261.6
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-3eab4325df48",
+      "region": "left"
+    },
+    {
+      "area_pt2": 57.6,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 181.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-1ec6a347c039",
+      "region": "left"
+    },
+    {
+      "area_pt2": 57.6,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 197.76
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-3d14aad58b28",
+      "region": "left"
+    },
+    {
+      "area_pt2": 57.6,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 229.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-8337bb07f127",
+      "region": "left"
+    },
+    {
+      "area_pt2": 57.6,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 245.76
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-0a74c2fb30c4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 57.6,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 277.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-0a8d370b27d9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 57.6,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 293.76
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-d7a30408fd94",
+      "region": "left"
+    },
+    {
+      "area_pt2": 57.6,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 309.6
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-308dcd9fac54",
+      "region": "left"
+    },
+    {
+      "area_pt2": 57.6,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 325.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-9135acef64b5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 53.9136,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 6.24,
+        "x": 51.84,
+        "y": 120.48
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-c1ebbb25c7c0",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 52.7616,
+      "bbox_pt": {
+        "height": 15.84,
+        "width": 6.24,
+        "x": 58.56,
+        "y": 118.56
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-5f46aee18bf0",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 51.6096,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 6.72,
+        "x": 45.12,
+        "y": 120.48
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-b11509760d04",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 49.7664,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 168.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-7fb53d3c0975",
+      "region": "left"
+    },
+    {
+      "area_pt2": 49.7664,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 216.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-322e74ccb921",
+      "region": "left"
+    },
+    {
+      "area_pt2": 49.7664,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 264.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-4f9ea893a7be",
+      "region": "left"
+    },
+    {
+      "area_pt2": 49.536,
+      "bbox_pt": {
+        "height": 13.92,
+        "width": 6.72,
+        "x": 65.28,
+        "y": 120.48
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-c7a08df65b09",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 49.536,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 168.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-166c6ff1867c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 49.536,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 168.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-0f5b01dea5d0",
+      "region": "left"
+    },
+    {
+      "area_pt2": 49.536,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 216.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-371216069ac0",
+      "region": "left"
+    },
+    {
+      "area_pt2": 49.536,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 216.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-6cc2c50e1d03",
+      "region": "left"
+    },
+    {
+      "area_pt2": 49.536,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 264.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-3f429d7b4db6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 49.536,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 264.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-2800e9a76a57",
+      "region": "left"
+    },
+    {
+      "area_pt2": 47.0016,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 184.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-939f0c6e7cec",
+      "region": "left"
+    },
+    {
+      "area_pt2": 47.0016,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 200.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-536ea6527cef",
+      "region": "left"
+    },
+    {
+      "area_pt2": 47.0016,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 232.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-9189ade84fc0",
+      "region": "left"
+    },
+    {
+      "area_pt2": 47.0016,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 248.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-47cad7d0171c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 47.0016,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 280.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-4c56e7d94ab6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 47.0016,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 296.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-20a33f49f252",
+      "region": "left"
+    },
+    {
+      "area_pt2": 47.0016,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 312.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-2101e416c35d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 47.0016,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 328.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-d686b2811c62",
+      "region": "left"
+    },
+    {
+      "area_pt2": 46.5408,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 184.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-f5305c32ad93",
+      "region": "left"
+    },
+    {
+      "area_pt2": 46.5408,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 200.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-1350ce1daa87",
+      "region": "left"
+    },
+    {
+      "area_pt2": 46.5408,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 232.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-19c3bf152d62",
+      "region": "left"
+    },
+    {
+      "area_pt2": 46.5408,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 248.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-c36031de449e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 46.5408,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 280.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-19435077141f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 46.5408,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 296.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-1591c5132bf3",
+      "region": "left"
+    },
+    {
+      "area_pt2": 46.5408,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 312.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-225943d53da5",
+      "region": "left"
+    },
+    {
+      "area_pt2": 46.5408,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 328.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-c6705efd0956",
+      "region": "left"
+    },
+    {
+      "area_pt2": 39.3984,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 184.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-3373d87a78e6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 39.3984,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 200.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-0391782ffc45",
+      "region": "left"
+    },
+    {
+      "area_pt2": 39.3984,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 232.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-a7914384df78",
+      "region": "left"
+    },
+    {
+      "area_pt2": 39.3984,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 248.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-41cce4164506",
+      "region": "left"
+    },
+    {
+      "area_pt2": 39.3984,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 280.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-56dd523debf0",
+      "region": "left"
+    },
+    {
+      "area_pt2": 39.3984,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 296.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-37b1e3249a93",
+      "region": "left"
+    },
+    {
+      "area_pt2": 39.3984,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 312.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-2fe777e5f183",
+      "region": "left"
+    },
+    {
+      "area_pt2": 39.3984,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 328.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-50ac287cac9b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 182.4
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-dc09acf589d3",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 198.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-462d25b4b6b8",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 230.4
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-cf302ac6db37",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 246.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-4063f4cfcc71",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 278.4
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-8ff220ff57a4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 294.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-08b42c6dd12a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 310.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-f93292b6ca71",
+      "region": "left"
+    },
+    {
+      "area_pt2": 37.7856,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 326.4
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-a37544afa2e8",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 166.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-bffe2fc198df",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 168.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-10c0cc637271",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 214.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-603ef1a9cf20",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 216.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-8cf54a1c8b46",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 11.52,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 262.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-9df8060cd9ee",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.9424,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 264.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-13cdbfbfd909",
+      "region": "left"
+    },
+    {
+      "area_pt2": 34.56,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 120.96
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-27f84c3ded78",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 184.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-bae3f3e4bc98",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 200.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-d6a08919bc0a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 232.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-18b29e45a42c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 248.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-c8221e208fda",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 280.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-a43ed2143509",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 296.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-018bb2c405f3",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 312.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-aa1cc408d4b9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 328.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-7491ec0749f1",
+      "region": "left"
+    },
+    {
+      "area_pt2": 32.256,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 346.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-6e318c1b044f",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 32.256,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 361.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-e1468c1529ea",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 32.256,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 378.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-1af1bb5de5a3",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 32.256,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 394.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-aa0be76bb7fa",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 32.256,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-97c02e05f1ed",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 32.256,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 426.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-480b606331bb",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 32.256,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.72,
+        "x": 78.24,
+        "y": 442.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-843c168a8c9c",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 168.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-2335597feb27",
+      "region": "left"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 216.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-b9ef73f27c42",
+      "region": "left"
+    },
+    {
+      "area_pt2": 31.3344,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 264.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-c06b6e01e187",
+      "region": "left"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 78.24,
+        "y": 40.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-238498f347c3",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 78.24,
+        "y": 56.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-6ed03cf8dad5",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 78.24,
+        "y": 72.48
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-af8ca804e494",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 78.24,
+        "y": 88.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-934f8756503f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 78.24,
+        "y": 104.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-d5443c6d7f94",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 78.24,
+        "y": 120.48
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-a34d922b5e83",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 78.24,
+        "y": 136.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-3349ca8da732",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 78.24,
+        "y": 152.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-0f8e3c168132",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 37.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-99031c232dd7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 53.76
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-3845b1bcc4e9",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 70.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-8718ab35835e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 85.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-820e1e363b23",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 101.76
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-5fcfe1b0f971",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 133.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-20a43bda3e53",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.4128,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 149.76
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-530d8c31193f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 344.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-3e3a29294e30",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 360.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-5959a6828f6c",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 376.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-63f5bea023dc",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 392.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-10525fa7a169",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 408.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-3bf1b35f86d8",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 424.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-d501eead36f9",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.68,
+        "x": 36.96,
+        "y": 440.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-edc1db02d875",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 184.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-659ecf87e5aa",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 200.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-23e7ed7050b6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 232.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-36c916311806",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 248.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-05be042b9056",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 280.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-0a605462028e",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 296.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-b9b2c30071ea",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 312.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-68f15a1d8b26",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.8,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 328.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-d3e521ff8fb4",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.3392,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 168.48
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-21e72bc06ff9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.3392,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 216.48
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-5bf76098cdec",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.3392,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 264.48
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-699db3331f25",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 38.4
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-ae6b1c9e9d36",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 54.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-8445f0d6f6f2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 70.56
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-db876ad027a2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 86.4
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-adca2280daf9",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 102.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-7baecf24f46a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 118.56
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-5cb513209616",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 134.4
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-b0d0df14d459",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 84.48,
+        "y": 150.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-c171791d8e96",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 168.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-bd08138b6178",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 216.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-708f41fc33af",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.9568,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 264.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-5372f1f2e05a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 184.8
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-d1d303ed4265",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 200.64
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-63d913d7ab8a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 232.8
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-9ba8fa07c617",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 248.64
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-8fed1b9a4aa9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 280.8
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-ff6e43f220f8",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 296.64
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-731f7c64058a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 312.48
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-05572b810e5a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 328.8
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-3f2d564a9276",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 346.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-20824280ec57",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 361.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-413aed64254c",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 378.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-19870af04844",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 394.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-22b1b2338ff1",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-08b72811ee5c",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 426.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-b62295a45d43",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.8832,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 442.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-ff17a067e033",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 346.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-40730a792257",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 361.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-ffdee0ab4085",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 378.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-5523ea46f728",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 394.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-8d17c6346eec",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-9e822be555ea",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 426.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-0dc7753ed01a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 442.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-c6f52bc15d8c",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 40.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-884e48f3c219",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 40.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-d4283d225ce3",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 56.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-25b1b9aa557c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 56.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-b6c8b067bc9e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 72.48
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-b1f60ddf2acc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 72.48
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-c4e95e828675",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 88.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-f5deaa468778",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 88.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-e66ca6e7433f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 104.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-af193ff8c176",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 104.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-c277f0d20f63",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 136.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-bc876f024c82",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 136.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-3bfa81ae97ae",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 152.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-497e0fedeb31",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 152.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-de45bbeb40a8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 184.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-6846753741fd",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 200.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-3f0fb8ec0423",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 232.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-2f7825270f82",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 248.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-acb93829d4aa",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 280.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-1208dec9f0d9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 296.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-b33e13d9c858",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 312.0
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-b1791aa97cb9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 328.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-8407f98fe17a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 346.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-1180e72cec77",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 361.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-3e10d07d3455",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 378.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-cb3313185142",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 394.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-e5f8128f6f1a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-65515bbde9f1",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 426.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-022cfd2a452f",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 45.6,
+        "y": 442.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-d6e792350e8b",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 40.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-1adb34174631",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 56.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-97c45f273621",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 72.48
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-3c8046e61dda",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 88.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-65ea1319af08",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 104.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-b2393fe94b24",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 120.48
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-01b54dad4bc8",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 136.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-93bc6bb5ebbf",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 6.24,
+        "x": 90.72,
+        "y": 152.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-7bf1156c27ca",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 346.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-35ffdc84c2a2",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 361.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-096f8d34428e",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 378.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-f7eea9aa23fe",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 394.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-d256a095eaba",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-db46cd1b8f2f",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 426.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-5767cdf4564e",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 52.32,
+        "y": 442.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-3b9f2990e465",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 40.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-b26f451dccf7",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 40.8
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-7378730cdeca",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 56.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-85bfff6a829b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 56.64
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-c5aa4ab216cc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 72.48
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-4e6194f72871",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 72.96
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-10fc4840e9c6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 88.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-6fd23308daec",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 88.8
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-23525d56c611",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 104.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-3ec6ed4a65d6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 104.64
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-52b0646fe505",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 120.48
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-fcc09aa3f239",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 136.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-5149c0805076",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 136.8
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-195563961e0b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 97.92,
+        "y": 152.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-d25667a425aa",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.76,
+        "x": 71.52,
+        "y": 152.64
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-7fadcc90cfec",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 346.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-443d6f9700ab",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 97.92,
+        "y": 346.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-ad857993adf0",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 361.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-31e7b86940f7",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 97.92,
+        "y": 361.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-b72293cc1f7b",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 378.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-03f2ddf7b1e9",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 97.92,
+        "y": 378.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-d818f092457b",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 394.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-3efd51b1d2f4",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 97.92,
+        "y": 394.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-2d793c6a4701",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-d23196d63869",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 97.92,
+        "y": 409.92
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-d50f763ef38a",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 426.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-57e1c835b198",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 97.92,
+        "y": 426.24
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-bde6fb575644",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 442.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-e36b7124a213",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.888,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 97.92,
+        "y": 442.08
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-f29a4be02aa2",
+      "region": "bottom-left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 40.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-5b0cd06fb693",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 56.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-baa74a6ae0dc",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 72.48
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-68238ee8eb0c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 88.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-f2ca2b331a05",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 104.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-a67d160c36f6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 136.32
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-42ac363bd4e4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 65.28,
+        "y": 152.16
+      },
+      "disposition": {
+        "issue": "#2163",
+        "kind": "issue",
+        "note": "Inspected: office2pdf repeats the first-page header (`Header`) on continuation page 3 (#2163), so the continued row starts at 168.5pt instead of Word's 36.4pt top margin. 132pt less body room fits 18 of Word's 26 `Continuation` lines per page, so every line on this page sits at a different place than in Word and the row runs onto a fourth page. The row itself continues across pages as in Word; the offset comes from the repeated header alone."
+      },
+      "id": "p3-cda246ee35c0",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 3,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 228,
+    "duplicate": 0,
+    "total": 228,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

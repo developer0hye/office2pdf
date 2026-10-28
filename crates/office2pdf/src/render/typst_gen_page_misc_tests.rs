@@ -447,6 +447,7 @@ fn test_fixed_page_without_background_color() {
 fn test_fixed_page_table_element() {
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![
                 TableCell {
@@ -1316,6 +1317,7 @@ fn multiline_sheet_footer_keeps_text_clear_of_inline_picture() {
             fill_rect: None,
             shadow: None,
             paragraph_spacing: None,
+            paragraph_indent: None,
         }));
     let output = generate_typst(&make_doc(vec![page])).unwrap();
     let painted = compiled_paint_sequence(&output.source, &output.images, 0).unwrap();
@@ -5004,6 +5006,653 @@ fn an_exact_header_paragraph_reserves_each_line_it_takes() {
     );
 }
 
+/// One Arial paragraph in a table cell.
+#[cfg(not(target_arch = "wasm32"))]
+fn arial_cell_paragraph(text: &str, size_pt: f64) -> Block {
+    Block::Paragraph(Paragraph {
+        style: ParagraphStyle::default(),
+        runs: vec![Run {
+            text: text.to_string(),
+            style: arial(size_pt),
+            href: None,
+            footnote: None,
+            inline_box: None,
+        }],
+    })
+}
+
+/// A table cell holding these blocks.
+#[cfg(not(target_arch = "wasm32"))]
+fn header_table_cell(content: Vec<Block>) -> crate::ir::TableCell {
+    crate::ir::TableCell {
+        content,
+        ..crate::ir::TableCell::default()
+    }
+}
+
+/// A header table of these rows over `column_widths`, with Word's 43-twip
+/// top and bottom cell margins from the lesson plan in issue #2250, placed at
+/// `w:header` as the parser resolves it.
+#[cfg(not(target_arch = "wasm32"))]
+fn header_table(
+    rows: Vec<crate::ir::TableRow>,
+    column_widths: Vec<f64>,
+    header_distance_pt: f64,
+    flows_in_story: bool,
+) -> crate::ir::HeaderFooterShape {
+    use crate::ir::{
+        FrameAnchor, HeaderFooterFrame, HeaderFooterShape, HeaderFooterShapeContent, Insets,
+    };
+
+    let width_pt: f64 = column_widths.iter().sum();
+    HeaderFooterShape {
+        content: HeaderFooterShapeContent::Table(crate::ir::Table {
+            rows,
+            column_widths,
+            default_cell_padding: Some(Insets {
+                top: 2.15,
+                right: 2.15,
+                bottom: 2.15,
+                left: 2.15,
+            }),
+            ..crate::ir::Table::default()
+        }),
+        frame: HeaderFooterFrame {
+            x: Some(70.85),
+            y: Some(header_distance_pt),
+            width: Some(width_pt),
+            height: None,
+            horizontal_anchor: FrameAnchor::Page,
+            vertical_anchor: FrameAnchor::Page,
+            horizontal_align: None,
+            vertical_align: None,
+            inset_left: 0.0,
+            inset_top: 0.0,
+            bottom_offset: None,
+            wraps_text: true,
+        },
+        anchor_paragraph_index: None,
+        width: width_pt,
+        height: 0.0,
+        behind_text: true,
+        flows_in_story,
+    }
+}
+
+/// A table row of these cells with no declared height.
+#[cfg(not(target_arch = "wasm32"))]
+fn auto_header_table_row(cells: Vec<crate::ir::TableCell>) -> crate::ir::TableRow {
+    crate::ir::TableRow {
+        cells,
+        height: None,
+        minimum_height: None,
+        cant_split: false,
+    }
+}
+
+/// The top margin of a one-section page whose header holds this table above
+/// these paragraphs.
+#[cfg(not(target_arch = "wasm32"))]
+fn header_table_top_margin_pt(
+    header_distance_pt: f64,
+    top_margin_pt: f64,
+    table: crate::ir::HeaderFooterShape,
+    paragraphs: Vec<crate::ir::HeaderFooterParagraph>,
+    continuation_page: bool,
+) -> f64 {
+    let mut doc = doc_with_header(Some(header_distance_pt), top_margin_pt, paragraphs);
+    let Page::Flow(page) = &mut doc.pages[0] else {
+        panic!("the helper creates a flow page");
+    };
+    page.header
+        .as_mut()
+        .expect("the helper creates a header")
+        .shapes
+        .push(table);
+    flow_page_top_margin_pt(page, &page.size, None, continuation_page)
+}
+
+/// Word's natural line for Arial at this size, or `None` where the face is
+/// unavailable on the runner.
+#[cfg(not(target_arch = "wasm32"))]
+fn arial_natural_line_pt(size_pt: f64) -> Option<f64> {
+    crate::render::typst_gen::text::word_line_advance_pt(&[Run {
+        text: "Header".to_string(),
+        style: arial(size_pt),
+        href: None,
+        footnote: None,
+        inline_box: None,
+    }])
+}
+
+/// A table in a header's flow starts the body below its rows.
+///
+/// Word stacks a top-level header table with the story's paragraphs, so the
+/// body starts at `w:header` plus the table plus the paragraphs after it. A
+/// docxide-pdf lesson plan states `w:top` = `w:header` = 36pt and opens its
+/// header with a one-row table of 12pt lines and 43-twip cell margins; Word
+/// draws the row's bottom border 19.03pt below `w:header` and starts the body
+/// below it, where main started the body as if the table were not there
+/// (issue #2250). Each row takes its tallest cell's lines and margins.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_header_table_in_the_story_flow_starts_the_body_below_its_rows() {
+    let Some(line_pt) = arial_natural_line_pt(12.0) else {
+        return; // the face is unavailable on this runner
+    };
+    let row_pt: f64 = 2.15 + line_pt + 2.15;
+    let one_line_row = || {
+        auto_header_table_row(vec![
+            header_table_cell(vec![arial_cell_paragraph("District", 12.0)]),
+            header_table_cell(vec![arial_cell_paragraph("Isla", 12.0)]),
+        ])
+    };
+
+    let one_row_pt: f64 = header_table_top_margin_pt(
+        36.0,
+        36.0,
+        header_table(vec![one_line_row()], vec![100.0, 200.0], 36.0, true),
+        Vec::new(),
+        false,
+    );
+    assert!(
+        (one_row_pt - (36.0 + row_pt)).abs() < 0.001,
+        "a one-row table at a 36pt `w:header` must start the body at {}pt, got {one_row_pt}pt",
+        36.0 + row_pt
+    );
+
+    let two_rows_pt: f64 = header_table_top_margin_pt(
+        36.0,
+        36.0,
+        header_table(
+            vec![one_line_row(), one_line_row()],
+            vec![100.0, 200.0],
+            36.0,
+            true,
+        ),
+        Vec::new(),
+        false,
+    );
+    assert!(
+        (two_rows_pt - (36.0 + 2.0 * row_pt)).abs() < 0.001,
+        "two rows must start the body at {}pt, got {two_rows_pt}pt",
+        36.0 + 2.0 * row_pt
+    );
+
+    // The tallest cell sizes the row: two paragraphs beside one.
+    let two_paragraph_cell_pt: f64 = header_table_top_margin_pt(
+        36.0,
+        36.0,
+        header_table(
+            vec![auto_header_table_row(vec![
+                header_table_cell(vec![
+                    arial_cell_paragraph("Judgment", 12.0),
+                    arial_cell_paragraph("Application", 12.0),
+                ]),
+                header_table_cell(vec![arial_cell_paragraph("1", 12.0)]),
+            ])],
+            vec![200.0, 100.0],
+            36.0,
+            true,
+        ),
+        Vec::new(),
+        false,
+    );
+    assert!(
+        (two_paragraph_cell_pt - (36.0 + 4.3 + 2.0 * line_pt)).abs() < 0.001,
+        "a cell of two one-line paragraphs must start the body at {}pt, got \
+         {two_paragraph_cell_pt}pt",
+        36.0 + 4.3 + 2.0 * line_pt
+    );
+
+    // The paragraphs after the table follow it.
+    let table_then_line_pt: f64 = header_table_top_margin_pt(
+        36.0,
+        36.0,
+        header_table(vec![one_line_row()], vec![100.0, 200.0], 36.0, true),
+        vec![header_text_paragraph("Header", arial(12.0))],
+        false,
+    );
+    assert!(
+        (table_then_line_pt - (36.0 + row_pt + line_pt)).abs() < 0.001,
+        "a table over a 12pt line must start the body at {}pt, got {table_then_line_pt}pt",
+        36.0 + row_pt + line_pt
+    );
+}
+
+/// A cell paragraph that wraps takes a line for each line it wraps to.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_wrapping_header_table_cell_reserves_each_line() {
+    let Some(line_pt) = arial_natural_line_pt(12.0) else {
+        return; // the face is unavailable on this runner
+    };
+    let (Some(word_em), Some(space_em)) = (
+        crate::render::pdf::text_advance_em("Arial", false, "Header"),
+        crate::render::pdf::text_advance_em("Arial", false, " "),
+    ) else {
+        return;
+    };
+    // Two words and their space fit the cell's text width; a third does not,
+    // so six words take three lines.
+    let text_width_pt: f64 = (2.5 * word_em + 1.5 * space_em) * 12.0;
+    let margin_pt: f64 = header_table_top_margin_pt(
+        36.0,
+        36.0,
+        header_table(
+            vec![auto_header_table_row(vec![header_table_cell(vec![
+                arial_cell_paragraph(&["Header"; 6].join(" "), 12.0),
+            ])])],
+            vec![text_width_pt + 4.3],
+            36.0,
+            true,
+        ),
+        Vec::new(),
+        false,
+    );
+    assert!(
+        (margin_pt - (36.0 + 4.3 + 3.0 * line_pt)).abs() < 0.001,
+        "six words wrapping two to a line must start the body at {}pt, got {margin_pt}pt",
+        36.0 + 4.3 + 3.0 * line_pt
+    );
+}
+
+/// A page field in a header cell measures as a numeral, as a story
+/// paragraph's field does, so the cell still wraps where its words do. The
+/// field's marker has no glyph, and measuring it left the whole cell at one
+/// line (issue #2338).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_header_table_cell_measures_its_page_field_as_a_numeral() {
+    let Some(line_pt) = arial_natural_line_pt(12.0) else {
+        return; // the face is unavailable on this runner
+    };
+    let (Some(word_em), Some(space_em)) = (
+        crate::render::pdf::text_advance_em("Arial", false, "Header"),
+        crate::render::pdf::text_advance_em("Arial", false, " "),
+    ) else {
+        return;
+    };
+    let text_width_pt: f64 = (2.5 * word_em + 1.5 * space_em) * 12.0;
+    for marker in [
+        crate::ir::PAGE_NUMBER_FIELD_CHAR,
+        crate::ir::TOTAL_PAGES_FIELD_CHAR,
+    ] {
+        // Five words and the field: three lines, the last `Header 1`.
+        let text: String = format!("{} {marker}", ["Header"; 5].join(" "));
+        let margin_pt: f64 = header_table_top_margin_pt(
+            36.0,
+            36.0,
+            header_table(
+                vec![auto_header_table_row(vec![header_table_cell(vec![
+                    arial_cell_paragraph(&text, 12.0),
+                ])])],
+                vec![text_width_pt + 4.3],
+                36.0,
+                true,
+            ),
+            Vec::new(),
+            false,
+        );
+        assert!(
+            (margin_pt - (36.0 + 4.3 + 3.0 * line_pt)).abs() < 0.001,
+            "{text:?} must start the body at {}pt, got {margin_pt}pt",
+            36.0 + 4.3 + 3.0 * line_pt
+        );
+    }
+}
+
+/// A row's `w:trHeight` sizes it as Word does: an `atLeast` floor only when
+/// it is taller than the row's lines, an `exact` height always.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_header_table_row_takes_its_floor_or_its_exact_height() {
+    let Some(line_pt) = arial_natural_line_pt(12.0) else {
+        return; // the face is unavailable on this runner
+    };
+    let content_pt: f64 = 2.15 + line_pt + 2.15;
+    for (minimum_height, height, expected_row_pt) in [
+        (Some(40.0), None, 40.0),
+        (Some(5.0), None, content_pt),
+        (None, Some(8.0), 8.0),
+        (None, Some(30.0), 30.0),
+    ] {
+        let mut row = auto_header_table_row(vec![header_table_cell(vec![arial_cell_paragraph(
+            "District", 12.0,
+        )])]);
+        row.minimum_height = minimum_height;
+        row.height = height;
+        let margin_pt: f64 = header_table_top_margin_pt(
+            36.0,
+            36.0,
+            header_table(vec![row], vec![200.0], 36.0, true),
+            Vec::new(),
+            false,
+        );
+        assert!(
+            (margin_pt - (36.0 + expected_row_pt)).abs() < 0.001,
+            "a row with floor {minimum_height:?} and exact height {height:?} must start \
+             the body at {}pt, got {margin_pt}pt",
+            36.0 + expected_row_pt
+        );
+    }
+}
+
+/// A header table inside its band leaves `w:top` alone, and a table that
+/// `w:tblpPr` positions outside the flow reserves nothing in it.
+///
+/// docxide-pdf's `case105` header table fits its 43.65pt band, and Word and
+/// main start its body within 1pt of each other.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_header_table_inside_its_band_or_out_of_the_flow_leaves_the_margin() {
+    let row = || {
+        auto_header_table_row(vec![header_table_cell(vec![arial_cell_paragraph(
+            "District", 12.0,
+        )])])
+    };
+    let fitting_pt: f64 = header_table_top_margin_pt(
+        28.35,
+        72.0,
+        header_table(vec![row()], vec![200.0], 28.35, true),
+        Vec::new(),
+        false,
+    );
+    assert!(
+        (fitting_pt - 72.0).abs() < 0.001,
+        "a one-line table in a 43.65pt band must keep the 72pt margin, got {fitting_pt}pt"
+    );
+
+    let positioned_pt: f64 = header_table_top_margin_pt(
+        36.0,
+        36.0,
+        header_table(vec![row(), row()], vec![200.0], 36.0, false),
+        Vec::new(),
+        false,
+    );
+    assert!(
+        (positioned_pt - 36.0).abs() < 0.001,
+        "a positioned table must not grow the margin, got {positioned_pt}pt"
+    );
+}
+
+/// A `w:titlePg` section keeps its header tables out of the margin for now.
+///
+/// One margin serves the section's first page and the pages after it, and
+/// Word shows no default header on a first page whose section declares
+/// `w:titlePg`. Microsoft's Initials resume template puts a 147.6pt exact-row
+/// table in its default header and has no first-page story; reserving the
+/// table lowered the one-page resume's body and ran it to two pages.
+/// This waits on a per-page margin (issue #2216).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_title_page_section_does_not_reserve_its_default_header_table_yet() {
+    let mut row = auto_header_table_row(vec![header_table_cell(vec![arial_cell_paragraph(
+        "Banner", 12.0,
+    )])]);
+    row.height = Some(147.6);
+    let mut doc = doc_with_header(Some(28.8), 43.2, Vec::new());
+    let Page::Flow(page) = &mut doc.pages[0] else {
+        panic!("the helper creates a flow page");
+    };
+    page.header
+        .as_mut()
+        .expect("the helper creates a header")
+        .shapes
+        .push(header_table(vec![row], vec![200.0], 28.8, true));
+    page.first_header = Some(crate::ir::HeaderFooter {
+        paragraphs: Vec::new(),
+        distance_from_edge: Some(28.8),
+        sheet_print_scale: None,
+        shapes: Vec::new(),
+    });
+    let margin_pt: f64 = flow_page_top_margin_pt(page, &page.size, None, false);
+    assert!(
+        (margin_pt - 43.2).abs() < 0.001,
+        "a title-page section must keep its 43.2pt margin, got {margin_pt}pt"
+    );
+}
+
+/// A continuous section's later pages reserve a flow table the same way its
+/// first page does: as rows of the story, not as an overlay whose declared
+/// height crosses the margin (issue #1995's rule for positioned shapes).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_continuation_page_reserves_a_flow_header_table_as_the_first_page_does() {
+    let Some(line_pt) = arial_natural_line_pt(12.0) else {
+        return; // the face is unavailable on this runner
+    };
+    // The 14pt floor puts the declared table 24..38pt down, across the 36pt
+    // margin, while its line makes the row 2.15 + line + 2.15 tall.
+    let expected_pt: f64 = 24.0 + (2.15 + line_pt + 2.15) + line_pt;
+    let margins_pt: Vec<f64> = [false, true]
+        .into_iter()
+        .map(|continuation_page| {
+            let mut row =
+                auto_header_table_row(vec![header_table_cell(vec![arial_cell_paragraph(
+                    "District", 12.0,
+                )])]);
+            row.minimum_height = Some(14.0);
+            let mut table = header_table(vec![row], vec![200.0], 24.0, true);
+            table.height = 14.0;
+            header_table_top_margin_pt(
+                24.0,
+                36.0,
+                table,
+                vec![header_text_paragraph("Header", arial(12.0))],
+                continuation_page,
+            )
+        })
+        .collect();
+    for margin_pt in &margins_pt {
+        assert!(
+            (margin_pt - expected_pt).abs() < 0.001,
+            "a section's first and continuation pages must both start the body at \
+             {expected_pt}pt: {margins_pt:?}"
+        );
+    }
+}
+
+/// Word's baseline for an exact line, as a share of the line below its top.
+#[cfg(not(target_arch = "wasm32"))]
+const WORD_EXACT_LINE_BASELINE_SHARE: f64 = 0.8;
+
+/// An exact header line seats its baseline four fifths of the way down.
+///
+/// Word puts the baseline of a `w:lineRule="exact"` line 0.8 of the stated
+/// height below the line's top, whatever the face and whether the line is
+/// taller or shorter than the face's own. docxide-pdf's
+/// `first-header-no-minimum-control` and `first-header-small-control` set
+/// Aptos 12pt in a 160pt and a 12pt line, and Word seats it 128.08pt and
+/// 9.50pt below `w:header`; the 12pt line is shorter than Aptos's 14.65pt
+/// natural line. The drawn story gave the line no box and seated it one face
+/// ascent down, 12.83pt, whatever the height (issue #2214).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_exact_header_line_seats_its_baseline_at_four_fifths_of_the_line() {
+    for (distance_pt, line_pt, style) in [
+        (6.0, 160.0, arial(12.0)),
+        (6.0, 12.0, arial(12.0)),
+        (20.0, 40.0, arial(8.0)),
+        (10.0, 30.0, TextStyle::default()),
+    ] {
+        let doc = doc_with_header(
+            Some(distance_pt),
+            36.0,
+            vec![exact_header_paragraph("Header", style.clone(), line_pt)],
+        );
+        let baseline_pt: f64 = *baselines_of(&doc, "Header")
+            .first()
+            .expect("the header line is placed");
+        let expected_pt: f64 = distance_pt + WORD_EXACT_LINE_BASELINE_SHARE * line_pt;
+        assert!(
+            (baseline_pt - expected_pt).abs() < 0.05,
+            "a {line_pt}pt exact line {distance_pt}pt below the page top must seat \
+             its baseline at {expected_pt}pt, got {baseline_pt}pt for {style:?}"
+        );
+    }
+}
+
+/// Exact header lines advance by their stated heights, and a natural line
+/// beside them keeps Word's own ascent and advance.
+///
+/// Word stacks each line box under the one before it: an exact line is its
+/// stated height with the baseline at 0.8 of it, and an unstated line is the
+/// face's natural line with the baseline one line ascent down.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn exact_header_lines_advance_by_their_stated_heights() {
+    let Some(natural_line_pt) = natural_header_line_pt(arial(12.0)) else {
+        return; // the face is unavailable on this runner
+    };
+    let ascent_pt: f64 = 12.0 * arial_header_line_ascent_em();
+    let share: f64 = WORD_EXACT_LINE_BASELINE_SHARE;
+    // About ten "Header " words fit the 453.58pt column, so 25 take three
+    // lines; the expectations below count them.
+    let wrapping: String = "Header ".repeat(25);
+    let wrapped_lines = |top_pt: f64| -> Vec<f64> {
+        (0..3)
+            .map(|line| top_pt + 40.0 * line as f64 + share * 40.0)
+            .collect()
+    };
+    let mut centred = exact_header_paragraph("Second", arial(12.0), 20.0);
+    centred.style.alignment = Some(Alignment::Center);
+
+    type Expected = Vec<(&'static str, Vec<f64>)>;
+    let stories: [(&str, Vec<crate::ir::HeaderFooterParagraph>, Expected); 5] = [
+        (
+            "a wrapped exact paragraph",
+            vec![exact_header_paragraph(
+                wrapping.trim_end(),
+                arial(12.0),
+                40.0,
+            )],
+            vec![("Header", wrapped_lines(6.0))],
+        ),
+        (
+            "two exact paragraphs, the second centred",
+            vec![exact_header_paragraph("First", arial(12.0), 30.0), centred],
+            vec![
+                ("First", vec![6.0 + share * 30.0]),
+                ("Second", vec![36.0 + share * 20.0]),
+            ],
+        ),
+        (
+            "an exact line over a natural one",
+            vec![
+                exact_header_paragraph("Exact", arial(12.0), 100.0),
+                header_text_paragraph("Natural", arial(12.0)),
+            ],
+            vec![
+                ("Exact", vec![6.0 + share * 100.0]),
+                ("Natural", vec![106.0 + ascent_pt]),
+            ],
+        ),
+        (
+            "a natural line over an exact one",
+            vec![
+                header_text_paragraph("Natural", arial(12.0)),
+                exact_header_paragraph("Exact", arial(12.0), 50.0),
+            ],
+            vec![
+                ("Natural", vec![6.0 + ascent_pt]),
+                ("Exact", vec![6.0 + natural_line_pt + share * 50.0]),
+            ],
+        ),
+        (
+            "a natural line over a wrapped exact paragraph",
+            vec![
+                header_text_paragraph("Natural", arial(12.0)),
+                exact_header_paragraph(wrapping.trim_end(), arial(12.0), 40.0),
+            ],
+            vec![
+                ("Natural", vec![6.0 + ascent_pt]),
+                ("Header", wrapped_lines(6.0 + natural_line_pt)),
+            ],
+        ),
+    ];
+    for (label, paragraphs, expectations) in stories {
+        let doc = doc_with_header(Some(6.0), 36.0, paragraphs);
+        for (text, expected) in expectations {
+            let baselines: Vec<f64> = baselines_of(&doc, text);
+            assert!(
+                baselines.len() == expected.len()
+                    && baselines
+                        .iter()
+                        .zip(&expected)
+                        .all(|(baseline, expected)| (baseline - expected).abs() < 0.05),
+                "{label}: {text:?} must sit at {expected:?}, got {baselines:?}"
+            );
+        }
+    }
+}
+
+/// An at-least header line shorter than its face keeps the face's line.
+///
+/// `w:lineRule="atLeast"` states a minimum, so a 12pt floor under Arial's
+/// 13.8pt line changes nothing: the baseline stays one line ascent down, where
+/// the exact rule would put it at 9.6pt, whether or not an exact line elsewhere
+/// draws the story as line boxes.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_at_least_header_line_below_its_face_keeps_the_natural_seat() {
+    let ascent_pt: f64 = 12.0 * arial_header_line_ascent_em();
+    let at_least = |text: &str| {
+        let mut paragraph = header_text_paragraph(text, arial(12.0));
+        paragraph.style.line_spacing = Some(crate::ir::LineSpacing::AtLeast(12.0));
+        paragraph
+    };
+    for (label, paragraphs, expected_pt) in [
+        ("alone", vec![at_least("Floor")], 6.0 + ascent_pt),
+        (
+            "under an exact line",
+            vec![
+                exact_header_paragraph("Exact", arial(12.0), 30.0),
+                at_least("Floor"),
+            ],
+            36.0 + ascent_pt,
+        ),
+    ] {
+        let doc = doc_with_header(Some(6.0), 36.0, paragraphs);
+        let baseline_pt: f64 = *baselines_of(&doc, "Floor")
+            .first()
+            .expect("the at-least line is placed");
+        assert!(
+            (baseline_pt - expected_pt).abs() < 0.05,
+            "{label}: the 12pt at-least line must keep Arial's seat at {expected_pt}pt, \
+             got {baseline_pt}pt"
+        );
+    }
+}
+
+/// docxide-pdf `first-header-no-minimum-control` and
+/// `first-header-small-control`, unmodified: Word's references seat the
+/// first-page header's `Header` at 134.08pt and 15.50pt, 0.8 of its 160pt and
+/// 12pt exact line below the 6pt `w:header` (issue #2214).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn exact_first_page_header_lines_sit_on_words_baselines() {
+    let fixtures: [(&[u8], f64); 2] = [
+        (
+            include_bytes!("../../../../tests/fixtures/docx/docxide/first_header_exact_line.docx"),
+            134.08,
+        ),
+        (
+            include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/first_header_small_control.docx"
+            ),
+            15.50,
+        ),
+    ];
+    for (fixture, word_baseline_pt) in fixtures {
+        let baseline_pt: f64 = docx_fixture_baseline_pt(fixture, 0, "Header");
+        assert!(
+            (baseline_pt - word_baseline_pt).abs() < 0.15,
+            "`Header` must sit on Word's {word_baseline_pt}pt baseline, got {baseline_pt}pt"
+        );
+    }
+}
+
 /// A header paragraph with no content, whose paragraph mark resolves to `mark`.
 #[cfg(not(target_arch = "wasm32"))]
 fn empty_header_paragraph(mark: TextStyle) -> crate::ir::HeaderFooterParagraph {
@@ -5393,6 +6042,378 @@ fn header_and_body_tahoma_text_paints_in_a_sans_face() {
     }
 }
 
+/// The baseline of the first line on `page` whose text is `text`, in the
+/// generated layout of a committed DOCX fixture.
+#[cfg(not(target_arch = "wasm32"))]
+fn docx_fixture_baseline_pt(fixture: &[u8], page: usize, text: &str) -> f64 {
+    let (document, _warnings) = crate::parser::Parser::parse(
+        &crate::parser::docx::DocxParser,
+        fixture,
+        &crate::config::ConvertOptions::default(),
+    )
+    .expect("the fixture should parse");
+    let generated = generate_typst(&document).expect("the fixture should generate");
+    let runs: Vec<crate::render::pdf::PlacedTextRun> =
+        crate::render::pdf::compiled_text_runs(&generated.source, page)
+            .expect("the fixture's page should compile");
+    runs.iter()
+        .find(|run| run.text == text)
+        .unwrap_or_else(|| panic!("page {page} should contain {text:?}; got {runs:?}"))
+        .baseline_pt
+}
+
+/// docxide-pdf `empty-frame-control`, unmodified: an empty paragraph in a
+/// `w:framePr` frame, then "Following paragraph". Word lifts the frame out of
+/// the flow, so the following line keeps the first baseline, 85.03pt, where
+/// main gave the empty frame a 16.14pt line of its own (issue #2161).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_empty_frame_takes_no_line_before_the_first_body_text() {
+    let following: f64 = docx_fixture_baseline_pt(
+        include_bytes!("../../../../tests/fixtures/docx/docxide/empty_frame_control.docx"),
+        0,
+        "Following paragraph",
+    );
+    assert!(
+        (following - 85.03).abs() < 0.5,
+        "the first body line must sit on Word's 85.03pt baseline, got {following}pt"
+    );
+}
+
+/// docxide-pdf `empty-margin-frame-14-two-empty`, unmodified: a table, then
+/// three empty paragraphs sharing one `w:framePr`, the last ending the
+/// section, then "Public greeting". Word sets the greeting one 16pt line below
+/// the table's last line, at 201.80pt, as if the frame were absent; main gave
+/// each empty paragraph a line, 34.51pt lower (issue #2231).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_group_of_empty_frames_takes_no_lines_after_a_table() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/empty_frame_group.docx");
+    let greeting: f64 = docx_fixture_baseline_pt(fixture, 0, "Public greeting");
+    assert!(
+        (greeting - 201.80).abs() < 0.5,
+        "the greeting must sit on Word's 201.80pt baseline, got {greeting}pt"
+    );
+}
+
+/// docxide-pdf `empty-margin-frame-15-two-empty`, unmodified: the same table,
+/// empty frame group and greeting as `empty-margin-frame-14-two-empty`, in
+/// compatibility mode 15. There Word keeps the frame's box at the top margin,
+/// two 10pt Tahoma lines tall, and starts the table below it: "Public left"
+/// at 129.30pt and the greeting at 225.83pt, 24pt lower than in mode 14; main
+/// left both where mode 14 has them (issue #2231). The box's lines take the
+/// height of whichever face stands in for Tahoma, up to about 1.5pt short of
+/// Word's two.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_full_width_table_starts_below_an_empty_frames_box() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/empty_frame_box.docx");
+    for (text, word) in [("Public left", 129.30), ("Public greeting", 225.83)] {
+        let baseline: f64 = docx_fixture_baseline_pt(fixture, 0, text);
+        assert!(
+            (baseline - word).abs() < 1.5,
+            "{text:?} must sit near Word's {word}pt baseline, got {baseline}pt"
+        );
+    }
+}
+
+/// docxide-pdf `empty-margin-frame-long-prefix`, unmodified: the table of
+/// `empty-margin-frame-15-two-empty` with a cell long enough to carry its row
+/// onto page 2, where the empty frame group follows it. Word keeps the box at
+/// page 2's top margin and starts the carried part of the row below it, at
+/// 129.30pt, and the greeting at 644.70pt, while page 1 starts at the top
+/// margin, 105.28pt; main started page 2 at the top margin too, 24pt high
+/// (issue #2231). The same Tahoma substitute tolerance applies.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn table_rows_carried_onto_an_empty_frames_box_page_start_below_it() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/empty_frame_box_carried_rows.docx");
+    for (page, text, word) in [
+        (0, "Public left", 105.28),
+        (1, "Public recipient", 129.30),
+        (1, "Public greeting", 644.70),
+    ] {
+        let baseline: f64 = docx_fixture_baseline_pt(fixture, page, text);
+        assert!(
+            (baseline - word).abs() < 1.5,
+            "{text:?} on page {page} must sit near Word's {word}pt baseline, got {baseline}pt"
+        );
+    }
+}
+
+/// docxide-pdf `cont-first-first-fits`, unmodified: 38 exact 16pt lines, an
+/// empty framed paragraph ending the section, and a continuous section whose
+/// first paragraph states 24pt before an exact 16pt line. Word puts its
+/// baseline 40pt below the last filler line, at 716.95pt; main gave the
+/// frame a 16.10pt line and dropped the 24pt, 7.88pt short (issue #2161).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_continuous_section_after_an_empty_framed_mark_keeps_its_space_before() {
+    let fixture: &[u8] = include_bytes!(
+        "../../../../tests/fixtures/docx/docxide/continuous_framed_section_mark.docx"
+    );
+    let last_filler: f64 = docx_fixture_baseline_pt(fixture, 0, "Line 38");
+    let continued: f64 = docx_fixture_baseline_pt(fixture, 0, "Continued text");
+    assert!(
+        (continued - last_filler - 40.0).abs() < 0.05,
+        "the continuation must advance Word's 40pt from the last filler line, got {}pt",
+        continued - last_filler
+    );
+    assert!(
+        (continued - 716.95).abs() < 0.5,
+        "the continuation must sit on Word's 716.95pt baseline, got {continued}pt"
+    );
+}
+
+/// docxide-pdf `cont-first-empty-overflow`, unmodified: 43 exact 16pt lines
+/// end 9.9pt above page 1's bottom margin, followed by an empty framed section
+/// mark, an empty single-spaced Times New Roman 14pt paragraph and, in a
+/// continuous section, "Continued text" on an exact 16pt line. The empty
+/// paragraph's line does not fit, so Word opens page 2 with it and sets the
+/// text one line below the first baseline, at 100.78pt; main lost the line at
+/// page 1's bottom and set the text at about the first baseline, 84.97pt
+/// (issue #2253).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_empty_paragraph_overflowing_a_page_opens_the_next_one() {
+    let fixture: &[u8] = include_bytes!(
+        "../../../../tests/fixtures/docx/docxide/continuous_empty_paragraph_overflow.docx"
+    );
+    let first_line: f64 = docx_fixture_baseline_pt(fixture, 0, "Line 1");
+    let last_filler: f64 = docx_fixture_baseline_pt(fixture, 0, "Line 43");
+    let continued: f64 = docx_fixture_baseline_pt(fixture, 1, "Continued text");
+    assert!(
+        (last_filler - 756.98).abs() < 0.5,
+        "the last filler line must stay on Word's 756.98pt baseline, got {last_filler}pt"
+    );
+    assert!(
+        (continued - first_line - 16.0).abs() < 0.5,
+        "the continuation must sit one empty line, Word's 16pt, below the first baseline, got {}pt",
+        continued - first_line
+    );
+    assert!(
+        (continued - 100.78).abs() < 0.5,
+        "the continuation must sit on Word's 100.78pt baseline, got {continued}pt"
+    );
+}
+
+/// docxide-pdf `cont-first-text-overflow`, unmodified: 42 exact 16pt lines,
+/// an empty framed section mark, and a continuous section opening with
+/// "Continued text", 24pt before an exact 16pt line, which no longer fits on
+/// page one. Word opens page two with it 24pt below the first baseline, at
+/// 108.78pt (its page one's "Line 1" sits at 84.78pt); main dropped the gap
+/// at the page top and set it at 84.97pt (issue #2255).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_continuous_section_opening_the_next_page_keeps_its_space_before() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/continuous_text_overflow.docx");
+    let first_line: f64 = docx_fixture_baseline_pt(fixture, 0, "Line 1");
+    let continued: f64 = docx_fixture_baseline_pt(fixture, 1, "Continued text");
+    assert!(
+        (continued - first_line - 24.0).abs() < 0.05,
+        "the continuation must sit its 24pt before below the first baseline, got {}pt",
+        continued - first_line
+    );
+    assert!(
+        (continued - 108.78).abs() < 0.5,
+        "the continuation must sit on Word's 108.78pt baseline, got {continued}pt"
+    );
+}
+
+/// docxide-pdf `cont-first-text-overflow` and `cont-first-empty-overflow`,
+/// unmodified, against the `cont-first-first-fits` control. Each continuous
+/// second section states `w:titlePg` and links section one's "FIRST HEADER"
+/// and "DEFAULT HEADER". In the first two its opening paragraph, "Continued
+/// text" or an empty line, no longer fits on page one, and Word's page two
+/// shows "FIRST HEADER". In the control it fits, so page one is that
+/// section's first page and Word's page two shows "DEFAULT HEADER". Main
+/// printed "DEFAULT HEADER" on all three (issue #2254).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_continuous_section_opening_the_next_page_shows_its_first_page_header_there() {
+    let page_two_text = |fixture: &[u8]| -> Vec<String> {
+        let (document, _warnings) = crate::parser::Parser::parse(
+            &crate::parser::docx::DocxParser,
+            fixture,
+            &crate::config::ConvertOptions::default(),
+        )
+        .expect("the fixture should parse");
+        let generated = generate_typst(&document).expect("the fixture should generate");
+        crate::render::pdf::compiled_text_runs(&generated.source, 1)
+            .expect("the fixture's page two should compile")
+            .into_iter()
+            .map(|run| run.text)
+            .collect()
+    };
+    for (name, fixture) in [
+        (
+            "continuous_text_overflow",
+            &include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/continuous_text_overflow.docx"
+            )[..],
+        ),
+        (
+            "continuous_empty_paragraph_overflow",
+            &include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/continuous_empty_paragraph_overflow.docx"
+            )[..],
+        ),
+    ] {
+        let page_two: Vec<String> = page_two_text(fixture);
+        assert!(
+            page_two.iter().any(|text| text == "FIRST HEADER")
+                && page_two.iter().any(|text| text == "Continued text")
+                && !page_two.iter().any(|text| text == "DEFAULT HEADER"),
+            "{name}: Word's page two shows the first-page header, got {page_two:?}"
+        );
+    }
+    let control: Vec<String> = page_two_text(include_bytes!(
+        "../../../../tests/fixtures/docx/docxide/continuous_framed_section_mark.docx"
+    ));
+    assert!(
+        control.iter().any(|text| text == "DEFAULT HEADER")
+            && !control.iter().any(|text| text == "FIRST HEADER"),
+        "the control's page two shows the default header, got {control:?}"
+    );
+}
+
+/// docxide-pdf `page-header-ordinary-marker`, unmodified: the first section
+/// is one bare section mark, and a continuous section holds "Following
+/// section". The mark is the first block of its section, so Word lays it out
+/// as a Tahoma 10 line (12.07pt) and sets the text's baseline at 94.03pt,
+/// where main dropped the mark and set it at 81.38pt (issue #2232). A sans
+/// stand-in's own 10pt line is up to about 1.2pt shorter than Tahoma's.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_empty_section_mark_opening_its_section_takes_a_line() {
+    let following: f64 = docx_fixture_baseline_pt(
+        include_bytes!("../../../../tests/fixtures/docx/docxide/page_header_ordinary_marker.docx"),
+        0,
+        "Following section",
+    );
+    assert!(
+        (following - 94.03).abs() < 1.5,
+        "the text after the mark's line must sit near Word's 94.03pt baseline, got {following}pt"
+    );
+}
+
+/// docxide-pdf `paragraph-offset-frame-no-frame`, unmodified: the second
+/// section holds an empty paragraph with 12pt before, an empty paragraph and
+/// an empty Times New Roman 14pt section mark with 4pt after; a continuous
+/// section then opens with an empty paragraph and "Dear recipient". Word
+/// gives the mark no height and sets "Dear recipient" at 162.30pt, where main
+/// kept the mark's 16.1pt line and its 4pt after (issue #2232).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_empty_section_mark_after_other_blocks_takes_no_line() {
+    let dear: f64 = docx_fixture_baseline_pt(
+        include_bytes!("../../../../tests/fixtures/docx/docxide/spaced_section_mark.docx"),
+        0,
+        "Dear recipient",
+    );
+    assert!(
+        (dear - 162.30).abs() < 0.5,
+        "the text after the mark must sit on Word's 162.30pt baseline, got {dear}pt"
+    );
+}
+
+/// docxide-pdf `section-mark-after-table-inline-compat15` and `-compat14`,
+/// unmodified: an inline two-line table, an empty 1.5-line section mark, and
+/// a continuous section opening with "Public greeting". In compatibility mode
+/// 15, Word keeps the mark's line and sets the greeting at 141.30pt; in mode
+/// 14 it drops the line and sets the greeting right below the table, at
+/// 117.28pt, where main kept the line (issue #2232).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_empty_section_mark_after_an_inline_table_takes_a_line_only_in_mode_15() {
+    let cases: [(&str, &[u8], f64); 2] = [
+        (
+            "mode 15",
+            include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/section_mark_after_inline_table.docx"
+            ),
+            141.30,
+        ),
+        (
+            "mode 14",
+            include_bytes!(
+                "../../../../tests/fixtures/docx/docxide/section_mark_after_inline_table_compat14.docx"
+            ),
+            117.28,
+        ),
+    ];
+    for (mode, fixture, word_baseline) in cases {
+        let greeting: f64 = docx_fixture_baseline_pt(fixture, 0, "Public greeting");
+        assert!(
+            (greeting - word_baseline).abs() < 0.5,
+            "in {mode}, the greeting must sit on Word's {word_baseline}pt baseline, got {greeting}pt"
+        );
+    }
+}
+
+/// docxide-pdf `section-mark-after-table-float-compat15`, unmodified: the
+/// inline-table case with a full-width `w:tblpPr` table. Word drops the
+/// mark's line, and the table still keeps the next section's text off its
+/// extent: "Public greeting" sits right below it at 117.28pt. Main kept the
+/// line, below the table, and set the greeting at 141.47pt; dropping the line
+/// alone painted the greeting over the table (issues #2232, #2369).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_continuous_section_after_a_floating_table_starts_below_it() {
+    let greeting: f64 = docx_fixture_baseline_pt(
+        include_bytes!(
+            "../../../../tests/fixtures/docx/docxide/section_mark_after_floating_table.docx"
+        ),
+        0,
+        "Public greeting",
+    );
+    assert!(
+        (greeting - 117.28).abs() < 0.5,
+        "the greeting must sit on Word's 117.28pt baseline below the table, got {greeting}pt"
+    );
+}
+
+/// `page_header_ordinary_marker.docx`, docxide-pdf's
+/// `page-header-ordinary-marker`, sets two Tahoma 10 lines where Word puts
+/// them: `HEADER 1` at 38.25pt and `Following section` at 94.03pt below the
+/// page top, read with `mutool draw -F stext` from the Microsoft Word export
+/// docxide-pdf ships as the case's `reference.pdf`. A host without Tahoma paints them in Liberation
+/// Sans, and laying them out on Liberation Sans's metrics too put them 0.52pt
+/// and 1.15pt high (issue #2247). The tolerance is half a pixel at 150 DPI,
+/// which still separates the substitute's seat.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn header_and_body_tahoma_lines_sit_on_words_baselines() {
+    const WORD_BASELINES_PT: [(&str, f64); 2] = [("HEADER", 38.25), ("Following", 94.03)];
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/page_header_ordinary_marker.docx");
+    let (document, _warnings) = crate::parser::Parser::parse(
+        &crate::parser::docx::DocxParser,
+        fixture,
+        &crate::config::ConvertOptions::default(),
+    )
+    .expect("the header marker fixture should parse");
+    let generated = generate_typst(&document).expect("the fixture should generate");
+    let runs: Vec<crate::render::pdf::PlacedTextRun> =
+        crate::render::pdf::compiled_text_runs(&generated.source, 0)
+            .expect("the fixture's first page should compile");
+    for (text, word_baseline_pt) in WORD_BASELINES_PT {
+        let run: &crate::render::pdf::PlacedTextRun = runs
+            .iter()
+            .find(|run| run.text.starts_with(text))
+            .unwrap_or_else(|| panic!("the first page should contain {text:?}"));
+        assert!(
+            (run.baseline_pt - word_baseline_pt).abs() <= 0.24,
+            "{text:?} must sit on Word's {word_baseline_pt}pt baseline, got {}pt",
+            run.baseline_pt
+        );
+    }
+}
+
 /// docxide-pdf's `first-header-small-control` and
 /// `first-header-no-minimum-control`, unmodified: packages with no styles
 /// part, whose three Arial 12pt body paragraphs state `w:after="0"` but no
@@ -5539,6 +6560,7 @@ fn a_page_anchored_header_shape_reserves_space_without_measurable_text_metrics()
             width: 100.0,
             height: 72.16,
             behind_text: true,
+            flows_in_story: false,
         });
 
     let top_margin_pt: f64 = flow_page_top_margin_pt(page, &page.size, None, true);
@@ -5606,10 +6628,9 @@ fn a_taller_first_page_header_also_grows_the_margin() {
 ///
 /// Regression for #735. The story carried no leading, so its lines took the
 /// 0.65em default on top of Typst's cap-height edge — 10.9305pt for 8pt Arial
-/// against Word's 9.1992pt. The leading is stated once for the story, which is
-/// a single Typst paragraph joined by `\\` line breaks; stating it per
-/// paragraph would make each one a block and Typst would put `par(spacing:)`
-/// between them instead.
+/// against Word's 9.1992pt. The leading is stated once for the story; a story
+/// of several paragraphs also states it as `par(spacing:)`, so a paragraph
+/// break advances by the same pitch (issue #2222).
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn a_header_line_advances_by_words_pitch() {
@@ -5647,6 +6668,342 @@ fn a_header_line_advances_by_words_pitch() {
         "8pt Arial leading tops the cap-height edge up to Word's 9.1992pt \
          advance, got {expected}pt"
     );
+}
+
+/// A bottom edge deeper than Word's line leaves the story no leading at all.
+///
+/// A pinned footer band takes its edge from the last paragraph, and the leading
+/// from the first. Malgun Gothic's 1.3x line box puts 0.4412em under a Korean
+/// last line, where an Arial first line leaves only 0.4336em of its pitch below
+/// its cap-height edge. No leading shrinks that line's advance to Word's, and
+/// none comes closest: answering `None` instead dropped the story to Typst's
+/// 0.65em default leading and paragraph spacing (issue #2326).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_bottom_edge_deeper_than_words_line_leaves_no_leading() {
+    let runs = [Run {
+        text: "Footer".to_string(),
+        style: arial(11.0),
+        href: None,
+        footnote: None,
+        inline_box: None,
+    }];
+    let Some(baseline_leading) =
+        crate::render::typst_gen::text::word_hf_line_leading_pt(&runs, 0.0)
+    else {
+        return; // the face is unavailable on this runner
+    };
+    let remainder_em: f64 = baseline_leading / 11.0;
+
+    let half: Option<f64> =
+        crate::render::typst_gen::text::word_hf_line_leading_pt(&runs, remainder_em / 2.0);
+    assert!(
+        half.is_some_and(|leading| (leading - baseline_leading / 2.0).abs() < 1e-9),
+        "half the remainder taken by the bottom edge leaves half the leading, got {half:?}"
+    );
+    assert_eq!(
+        crate::render::typst_gen::text::word_hf_line_leading_pt(&runs, remainder_em + 0.01),
+        Some(0.0),
+        "an edge deeper than the remainder leaves no leading"
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Build a one-section document whose footer is pinned 36pt from the page
+/// edge and holds `paragraphs`.
+fn doc_with_footer(paragraphs: Vec<crate::ir::HeaderFooterParagraph>) -> Document {
+    use crate::ir::HeaderFooter;
+
+    let mut doc = doc_with_header(None, 72.0, Vec::new());
+    let Some(Page::Flow(page)) = doc.pages.first_mut() else {
+        panic!("the fixture is a flow page");
+    };
+    page.header = None;
+    page.margins.bottom = 57.6;
+    page.footer = Some(HeaderFooter {
+        shapes: Vec::new(),
+        distance_from_edge: Some(36.0),
+        sheet_print_scale: None,
+        paragraphs,
+    });
+    doc
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// A footer paragraph of 11pt Arial runs; each `"\t"` is a `<w:tab/>`.
+fn footer_paragraph(
+    style: ParagraphStyle,
+    elements: Vec<crate::ir::HFInline>,
+) -> crate::ir::HeaderFooterParagraph {
+    crate::ir::HeaderFooterParagraph {
+        style,
+        elements,
+        border: None,
+        border_space: None,
+        sheet_section_is_rich: false,
+        frame: None,
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn arial_11_run(text: &str) -> crate::ir::HFInline {
+    crate::ir::HFInline::Run(Run {
+        text: text.to_string(),
+        style: arial(11.0),
+        href: None,
+        footnote: None,
+        inline_box: None,
+    })
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// The baseline-to-baseline advance from the footer's `Upper` line to its
+/// `Lower` line.
+fn footer_pitch(
+    upper: crate::ir::HeaderFooterParagraph,
+    lower: crate::ir::HeaderFooterParagraph,
+) -> f64 {
+    let doc = doc_with_footer(vec![upper, lower]);
+    let upper_baseline: f64 = *baselines_of(&doc, "Upper")
+        .first()
+        .expect("the upper footer line is placed");
+    let lower_baseline: f64 = *baselines_of(&doc, "Lower")
+        .first()
+        .expect("the lower footer line is placed");
+    lower_baseline - upper_baseline
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Consecutive footer paragraphs advance by one line pitch whatever wraps
+/// each one, just as Word advances them.
+///
+/// A stated `w:jc`, a stop-placed `<w:tab/>`, an indent or a right `w:ptab`
+/// each wraps its paragraph in a block-level element, and a story joined by
+/// `\` line breaks then split around it: the break became an empty paragraph
+/// of its own with the default paragraph gap on both sides. Two `jc="both"`
+/// tabbed footer lines that Word draws 13.52pt apart came out 46.6pt apart,
+/// the upper one over the last body line (issue #2222).
+///
+/// The 21.6pt band is that document's, and two lines overflow it upward as
+/// they do in Word. A breakable block squeezed the gap to fit the band, so
+/// the indent and `w:ptab` pairs advanced 11.70pt.
+#[test]
+fn footer_paragraphs_advance_by_one_pitch_whatever_wraps_them() {
+    use crate::ir::{
+        Alignment, HFInline, PositionedTab, PositionedTabAlignment, PositionedTabRelativeTo,
+        TabAlignment, TabLeader, TabStop,
+    };
+
+    if crate::render::typst_gen::text::word_hf_line_leading_pt(
+        &[Run {
+            text: "Upper".to_string(),
+            style: arial(11.0),
+            href: None,
+            footnote: None,
+            inline_box: None,
+        }],
+        0.0,
+    )
+    .is_none()
+    {
+        return; // the face is unavailable on this runner
+    }
+    let plain = |text: &str| footer_paragraph(ParagraphStyle::default(), vec![arial_11_run(text)]);
+    let plain_pitch: f64 = footer_pitch(plain("Upper"), plain("Lower"));
+    assert!(
+        (11.0..1.5 * 11.0).contains(&plain_pitch),
+        "two plain 11pt footer lines advance by about one line, got {plain_pitch}pt"
+    );
+
+    let aligned = |alignment: Alignment, text: &str| {
+        footer_paragraph(
+            ParagraphStyle {
+                alignment: Some(alignment),
+                ..ParagraphStyle::default()
+            },
+            vec![arial_11_run(text)],
+        )
+    };
+    let stop = |position: f64, alignment: TabAlignment| TabStop {
+        position,
+        alignment,
+        leader: TabLeader::None,
+    };
+    // Centre and right stops inside the 453.58pt measure, where Word's
+    // footer style puts them: at half of it and at its end.
+    let tabbed_justified = |segments: &[&str]| {
+        let mut elements: Vec<HFInline> = Vec::new();
+        for segment in segments {
+            elements.push(arial_11_run("\t"));
+            elements.push(arial_11_run(segment));
+        }
+        footer_paragraph(
+            ParagraphStyle {
+                alignment: Some(Alignment::Justify),
+                tab_stops: Some(vec![
+                    stop(216.0, TabAlignment::Center),
+                    stop(432.0, TabAlignment::Right),
+                ]),
+                ..ParagraphStyle::default()
+            },
+            elements,
+        )
+    };
+    let indented = |text: &str| {
+        footer_paragraph(
+            ParagraphStyle {
+                indent_left: Some(18.0),
+                ..ParagraphStyle::default()
+            },
+            vec![arial_11_run(text)],
+        )
+    };
+    let right_ptab = |text: &str| {
+        footer_paragraph(
+            ParagraphStyle::default(),
+            vec![
+                arial_11_run(text),
+                HFInline::PositionedTab(PositionedTab {
+                    alignment: PositionedTabAlignment::Right,
+                    relative_to: PositionedTabRelativeTo::Margin,
+                    leader: TabLeader::None,
+                }),
+                arial_11_run("Page"),
+            ],
+        )
+    };
+    let cases = vec![
+        (
+            "jc=both with centre and right stops",
+            tabbed_justified(&["Upper 1 of 3", "Quality"]),
+            tabbed_justified(&["", "Lower"]),
+        ),
+        (
+            "jc=center",
+            aligned(Alignment::Center, "Upper"),
+            aligned(Alignment::Center, "Lower"),
+        ),
+        (
+            "jc=left over jc=right",
+            aligned(Alignment::Left, "Upper"),
+            aligned(Alignment::Right, "Lower"),
+        ),
+        (
+            "plain over jc=right",
+            plain("Upper"),
+            aligned(Alignment::Right, "Lower"),
+        ),
+        ("left indent", indented("Upper"), indented("Lower")),
+        (
+            "right margin ptab",
+            right_ptab("Upper"),
+            right_ptab("Lower"),
+        ),
+    ];
+    for (label, upper, lower) in cases {
+        let pitch: f64 = footer_pitch(upper, lower);
+        assert!(
+            (pitch - plain_pitch).abs() < 0.01,
+            "{label}: the footer lines advance {pitch}pt, not the plain story's \
+             {plain_pitch}pt"
+        );
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// A footer pinned to `w:pgMar/@w:footer` advances each further line by
+/// Word's natural line, whether a paragraph break or a wrap starts it.
+///
+/// The band sets `text(bottom-edge:)` to the last line's descent, so that
+/// line's descender lands on the footer distance. Typst advances a line by
+/// `top-edge + bottom-edge + leading`, and the leading was computed for the
+/// baseline edge, so every further line advanced one descent too far: two
+/// 11pt Arial paragraphs 14.98pt against Word's 12.65pt, and a Word
+/// document's two-paragraph Calibri footer drew its upper line 3.06pt high
+/// (issue #2326). The faces and sizes differ in their descent share, so an
+/// excess of any one of them would show.
+///
+/// The band anchors the last line, so the fix must leave it where a story of
+/// that line alone puts it.
+#[test]
+fn a_pinned_footer_line_advances_by_words_pitch() {
+    let run = |text: &str, style: &TextStyle| {
+        crate::ir::HFInline::Run(Run {
+            text: text.to_string(),
+            style: style.clone(),
+            href: None,
+            footnote: None,
+            inline_box: None,
+        })
+    };
+    let paragraph = |text: &str, style: &TextStyle| {
+        footer_paragraph(ParagraphStyle::default(), vec![run(text, style)])
+    };
+    for style in [arial(11.0), arial(8.0), times(12.0)] {
+        let label: String = format!(
+            "{} {}pt",
+            style.font_family.as_deref().unwrap_or_default(),
+            style.font_size.unwrap_or_default()
+        );
+        let Some(word_pitch) = crate::render::typst_gen::text::word_line_advance_pt(&[Run {
+            text: "Upper".to_string(),
+            style: style.clone(),
+            href: None,
+            footnote: None,
+            inline_box: None,
+        }]) else {
+            continue; // the face is unavailable on this runner
+        };
+
+        let pitch: f64 = footer_pitch(paragraph("Upper", &style), paragraph("Lower", &style));
+        assert!(
+            (pitch - word_pitch).abs() < 0.01,
+            "{label}: two pinned footer paragraphs advance {pitch}pt, not Word's \
+             {word_pitch}pt"
+        );
+
+        let doc = doc_with_footer(vec![
+            paragraph("First", &style),
+            paragraph("Second", &style),
+            paragraph("Third", &style),
+        ]);
+        let baselines: Vec<f64> = ["First", "Second", "Third"]
+            .iter()
+            .map(|text| baselines_of(&doc, text)[0])
+            .collect();
+        for pair in baselines.windows(2) {
+            let pitch: f64 = pair[1] - pair[0];
+            assert!(
+                (pitch - word_pitch).abs() < 0.01,
+                "{label}: three pinned footer paragraphs advance {pitch}pt, not \
+                 Word's {word_pitch}pt ({baselines:?})"
+            );
+        }
+        let alone: f64 =
+            baselines_of(&doc_with_footer(vec![paragraph("Third", &style)]), "Third")[0];
+        assert!(
+            (baselines[2] - alone).abs() < 0.01,
+            "{label}: the last footer line moved from {alone}pt to {}pt",
+            baselines[2]
+        );
+
+        let wrapped: Vec<f64> = baselines_of(
+            &doc_with_footer(vec![paragraph(&"Wrapped ".repeat(80), &style)]),
+            "Wrapped",
+        );
+        assert!(
+            wrapped.len() >= 2,
+            "{label}: the long footer paragraph must wrap, got {wrapped:?}"
+        );
+        for pair in wrapped.windows(2) {
+            let pitch: f64 = pair[1] - pair[0];
+            assert!(
+                (pitch - word_pitch).abs() < 0.01,
+                "{label}: a wrapped pinned footer line advances {pitch}pt, not \
+                 Word's {word_pitch}pt ({wrapped:?})"
+            );
+        }
+    }
 }
 
 /// A header story's banner carries no text, so it never reaches the paragraph
@@ -5709,6 +7066,7 @@ fn a_behind_text_header_banner_is_drawn_on_the_background_layer() {
         },
         anchor_paragraph_index: None,
         behind_text: true,
+        flows_in_story: false,
     };
 
     let doc = make_doc(vec![Page::Flow(FlowPage {
@@ -6058,6 +7416,7 @@ fn centered_sheet_page(centers: bool, column_widths: Vec<f64>) -> Page {
         },
         table: Table {
             rows: vec![TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: column_widths.iter().map(|_| TableCell::default()).collect(),
                 height: None,
@@ -6341,6 +7700,7 @@ fn sheet_with_a_picture_over_a_filled_panel() -> Page {
     ];
 
     let panel_row = |height_pt: f64| TableRow {
+        cant_split: false,
         minimum_height: None,
         height: Some(height_pt),
         cells: vec![TableCell {
@@ -6383,6 +7743,7 @@ fn sheet_with_a_picture_over_a_filled_panel() -> Page {
                 fill_rect: None,
                 shadow: None,
                 paragraph_spacing: None,
+                paragraph_indent: None,
             },
         }],
         text_boxes: Vec::new(),
@@ -6549,6 +7910,7 @@ fn gift_drawing_origin_probe_with_chart(
     };
     sheet.table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             cells: vec![TableCell::default()],
             height: Some(20.0),
             minimum_height: None,

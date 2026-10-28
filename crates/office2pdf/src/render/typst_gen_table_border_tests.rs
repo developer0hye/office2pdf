@@ -47,6 +47,7 @@ fn test_table_all_borders() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -106,6 +107,7 @@ fn test_table_dashed_border_codegen() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -173,11 +175,13 @@ fn test_table_double_borders_render_two_oriented_rules() {
     let table = Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![TableCell::default(), TableCell::default()],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![TableCell::default(), cell],
                 height: None,
@@ -373,6 +377,7 @@ fn test_solid_border_no_dash_param() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -444,6 +449,7 @@ fn boundary_band_table(rows: Vec<TableRow>, column_widths: Vec<f64>) -> Table {
 /// is known at codegen and a vertical band can be a single concrete line.
 fn fixed_row(cells: Vec<TableCell>) -> TableRow {
     TableRow {
+        cant_split: false,
         minimum_height: None,
         cells,
         height: Some(20.0),
@@ -880,6 +886,7 @@ fn test_unflagged_table_keeps_centred_strokes_byte_identically() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![bordered_text_cell("Word", border)],
             height: None,
@@ -939,6 +946,7 @@ fn test_borderless_word_cells_share_the_writer_x_origin_seat() {
         .collect();
         let table = Table {
             rows: vec![TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells,
                 height: Some(24.0),
@@ -991,7 +999,9 @@ fn test_borderless_word_cells_share_the_writer_x_origin_seat() {
     }
 
     assert_eq!(
-        word_source.matches("#move(dx: 0.1pt, dy: 0pt)[").count(),
+        word_source
+            .matches("#pad(left: 0.1pt, right: -0.1pt, top: 0pt, bottom: 0pt)[")
+            .count(),
         3,
         "each Word cell gets the same visual seat: {word_source}"
     );
@@ -1000,6 +1010,438 @@ fn test_borderless_word_cells_share_the_writer_x_origin_seat() {
             && word_source.contains("inset: (top: 0pt, right: 5.4pt, bottom: 0pt, left: 5.4pt)"),
         "the seat must not rewrite table width or cell margins: {word_source}"
     );
+}
+
+/// Every text run of every page of a compiled document, page by page.
+#[cfg(not(target_arch = "wasm32"))]
+fn compiled_pages(source: &str) -> Vec<Vec<crate::render::pdf::PlacedTextRun>> {
+    let mut pages = Vec::new();
+    while let Ok(runs) = crate::render::pdf::compiled_text_runs(source, pages.len()) {
+        pages.push(runs);
+    }
+    pages
+}
+
+/// The words painted in a page's runs; Typst shapes a line as one run, so a
+/// word is the unit a page holds.
+#[cfg(not(target_arch = "wasm32"))]
+fn painted_words(runs: &[crate::render::pdf::PlacedTextRun]) -> Vec<&str> {
+    runs.iter()
+        .flat_map(|run| run.text.split_whitespace())
+        .collect()
+}
+
+/// A short page: 228pt of body between 36pt margins.
+#[cfg(not(target_arch = "wasm32"))]
+const SHORT_PAGE_HEIGHT_PT: f64 = 300.0;
+#[cfg(not(target_arch = "wasm32"))]
+const SHORT_PAGE_MARGIN_PT: f64 = 36.0;
+
+/// `content` on one short flow page.
+#[cfg(not(target_arch = "wasm32"))]
+fn short_flow_page(content: Vec<Block>) -> Page {
+    let Page::Flow(mut page) = make_flow_page(content) else {
+        unreachable!("make_flow_page builds a flow page");
+    };
+    page.size = PageSize {
+        width: 300.0,
+        height: SHORT_PAGE_HEIGHT_PT,
+    };
+    page.margins = Margins {
+        top: SHORT_PAGE_MARGIN_PT,
+        bottom: SHORT_PAGE_MARGIN_PT,
+        left: SHORT_PAGE_MARGIN_PT,
+        right: SHORT_PAGE_MARGIN_PT,
+    };
+    Page::Flow(page)
+}
+
+/// `count` one-line paragraphs labelled `{prefix}1`.. Like a DOCX
+/// paragraph, each states its spacing and a face with known metrics, so each
+/// is its own fixed-line-box block, as in the issue's 62-paragraph cell.
+#[cfg(not(target_arch = "wasm32"))]
+fn numbered_lines(prefix: &str, count: usize) -> Vec<Block> {
+    (1..=count)
+        .map(|line| {
+            Block::Paragraph(Paragraph {
+                style: ParagraphStyle {
+                    space_before: Some(0.0),
+                    space_after: Some(0.0),
+                    ..ParagraphStyle::default()
+                },
+                runs: vec![Run {
+                    text: format!("{prefix}{line}"),
+                    style: TextStyle {
+                        font_family: Some("Libertinus Serif".to_string()),
+                        font_size: Some(11.0),
+                        ..TextStyle::default()
+                    },
+                    href: None,
+                    footnote: None,
+                    inline_box: None,
+                }],
+            })
+        })
+        .collect()
+}
+
+fn auto_row(cells: Vec<TableCell>) -> TableRow {
+    TableRow {
+        cant_split: false,
+        minimum_height: None,
+        cells,
+        height: None,
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn lines_cell(prefix: &str, count: usize) -> TableCell {
+    TableCell {
+        content: numbered_lines(prefix, count),
+        ..TableCell::default()
+    }
+}
+
+fn seated_table(model: TableBorderPaintModel, rows: Vec<TableRow>, columns: usize) -> Table {
+    Table {
+        rows,
+        column_widths: vec![100.0; columns],
+        default_cell_padding: Some(Insets {
+            top: 0.0,
+            right: 5.4,
+            bottom: 0.0,
+            left: 5.4,
+        }),
+        border_paint_model: model,
+        ..Table::default()
+    }
+}
+
+/// The page index of every painted `{prefix}N` line, in label order.
+#[cfg(not(target_arch = "wasm32"))]
+fn line_pages(
+    pages: &[Vec<crate::render::pdf::PlacedTextRun>],
+    prefix: &str,
+    count: usize,
+) -> Vec<Vec<usize>> {
+    (1..=count)
+        .map(|line| {
+            let label = format!("{prefix}{line}");
+            pages
+                .iter()
+                .enumerate()
+                .flat_map(|(index, runs)| {
+                    painted_words(runs)
+                        .into_iter()
+                        .filter(|word| *word == label)
+                        .map(move |_| index)
+                        .collect::<Vec<usize>>()
+                })
+                .collect()
+        })
+        .collect()
+}
+
+/// Writer's cell seat is a translation of laid-out content, so it must not
+/// change where a page breaks an auto-height row. A row without `w:cantSplit`
+/// that is taller than the space left on the page starts there and continues
+/// on the next page in Word. Wrapping the seated cell in Typst's single-frame
+/// `move` made every DOCX row unbreakable: the row moved whole to the next
+/// page and the lines past its bottom margin were lost (issue #2217).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn test_word_cell_seat_keeps_an_oversized_row_breakable() {
+    const LINE_COUNT: usize = 40;
+    let source = |model: TableBorderPaintModel, rows: Vec<TableRow>, columns: usize| {
+        let table = seated_table(model, rows, columns);
+        let page = short_flow_page(vec![make_paragraph("Before"), Block::Table(table)]);
+        generate_typst(&make_doc(vec![page])).unwrap().source
+    };
+    let cases: Vec<(&str, Vec<TableRow>, usize)> = vec![
+        (
+            "one oversized cell",
+            vec![auto_row(vec![lines_cell("Line", LINE_COUNT)])],
+            1,
+        ),
+        (
+            "an oversized cell beside a short one, then another row",
+            vec![
+                auto_row(vec![
+                    make_text_cell("Short"),
+                    lines_cell("Line", LINE_COUNT),
+                ]),
+                auto_row(vec![make_text_cell("After"), make_text_cell("Row")]),
+            ],
+            2,
+        ),
+    ];
+
+    for (case, rows, columns) in cases {
+        let neutral_source = source(TableBorderPaintModel::CenteredStroke, rows.clone(), columns);
+        let word_source = source(TableBorderPaintModel::WordPositiveAxisBands, rows, columns);
+        let neutral_pages = compiled_pages(&neutral_source);
+        let word_pages = compiled_pages(&word_source);
+
+        assert!(
+            neutral_pages.len() >= 2,
+            "{case}: the neutral row must continue onto a second page: {neutral_pages:?}"
+        );
+        assert_eq!(
+            word_pages.len(),
+            neutral_pages.len(),
+            "{case}: the Writer seat must not change the page count\n{word_source}"
+        );
+        assert!(
+            painted_words(&word_pages[0]).contains(&"Line1"),
+            "{case}: the row must start on the page that has room for its first line: {:?}",
+            word_pages[0]
+        );
+        for (page_index, (word, neutral)) in word_pages.iter().zip(&neutral_pages).enumerate() {
+            let word_texts: Vec<&str> = word.iter().map(|run| run.text.as_str()).collect();
+            let neutral_texts: Vec<&str> = neutral.iter().map(|run| run.text.as_str()).collect();
+            assert_eq!(
+                word_texts, neutral_texts,
+                "{case}: page {page_index} must hold the same lines in both models"
+            );
+            for (word_run, neutral_run) in word.iter().zip(neutral) {
+                // The body paragraph above the table takes no cell seat.
+                let seat_dx: f64 = if word_run.text == "Before" { 0.0 } else { 0.1 };
+                assert!(
+                    (word_run.left_pt - neutral_run.left_pt - seat_dx).abs() < 0.001
+                        && (word_run.baseline_pt - neutral_run.baseline_pt).abs() < 0.001,
+                    "{case}: page {page_index} {:?} must only move {seat_dx}pt right: \
+                     neutral=({}, {}), Word=({}, {})",
+                    word_run.text,
+                    neutral_run.left_pt,
+                    neutral_run.baseline_pt,
+                    word_run.left_pt,
+                    word_run.baseline_pt,
+                );
+                assert!(
+                    word_run.baseline_pt <= SHORT_PAGE_HEIGHT_PT - SHORT_PAGE_MARGIN_PT,
+                    "{case}: page {page_index} {:?} is painted past the bottom margin at {}",
+                    word_run.text,
+                    word_run.baseline_pt,
+                );
+            }
+        }
+        for (index, pages) in line_pages(&word_pages, "Line", LINE_COUNT)
+            .iter()
+            .enumerate()
+        {
+            assert_eq!(
+                pages.len(),
+                1,
+                "{case}: Line{} must be painted exactly once",
+                index + 1
+            );
+        }
+    }
+}
+
+/// `w:cantSplit` keeps a row whole: one that fits a page but not the space
+/// left on this one moves to the next page as a unit, while the same row
+/// without the flag starts here and continues there (issue #2217).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn test_word_cant_split_row_moves_whole_to_the_next_page() {
+    const LINE_COUNT: usize = 14;
+    let page_of_each_line = |cant_split: bool| {
+        let rows = vec![
+            auto_row(vec![make_text_cell("Short")]),
+            TableRow {
+                cant_split,
+                ..auto_row(vec![lines_cell("Kept", LINE_COUNT)])
+            },
+        ];
+        let table = seated_table(TableBorderPaintModel::WordPositiveAxisBands, rows, 1);
+        let mut content: Vec<Block> = numbered_lines("Filler", 8);
+        content.push(Block::Table(table));
+        let source = generate_typst(&make_doc(vec![short_flow_page(content)]))
+            .unwrap()
+            .source;
+        let pages = compiled_pages(&source);
+        line_pages(&pages, "Kept", LINE_COUNT)
+            .into_iter()
+            .map(|pages| {
+                assert_eq!(pages.len(), 1, "each line is painted once: {source}");
+                pages[0]
+            })
+            .collect::<Vec<usize>>()
+    };
+
+    let split = page_of_each_line(false);
+    assert!(
+        split.first() == Some(&0) && split.last() == Some(&1),
+        "without the flag the row starts on the first page and continues: {split:?}"
+    );
+    let kept = page_of_each_line(true);
+    assert_eq!(
+        kept,
+        vec![1; LINE_COUNT],
+        "a cantSplit row that fits a page moves to it whole"
+    );
+}
+
+/// A row continues on the next page only in a table written straight into
+/// the page flow. Placed, nested and continuous-frame tables sit in one
+/// frame that cannot continue there, so their rows keep the single-frame seat
+/// they had before: a breakable row piles the rest of its lines onto one
+/// baseline at that frame's bottom (issue #2217).
+#[test]
+fn test_word_rows_stay_whole_inside_single_frame_containers() {
+    const WHOLE_SEAT: &str = "#move(dx: 0.1pt, dy: 0pt)[";
+    const SPLITTABLE_SEAT: &str = "#pad(left: 0.1pt, right: -0.1pt, top: 0pt, bottom: 0pt)[";
+    let one_cell_table = |text: &str| {
+        seated_table(
+            TableBorderPaintModel::WordPositiveAxisBands,
+            vec![auto_row(vec![make_text_cell(text)])],
+            1,
+        )
+    };
+    let seat_before = |source: &str, text: &str| -> &'static str {
+        let end = source
+            .find(text)
+            .unwrap_or_else(|| panic!("{text} is missing: {source}"));
+        let head = &source[..end];
+        match (head.rfind(WHOLE_SEAT), head.rfind(SPLITTABLE_SEAT)) {
+            (Some(whole), Some(split)) if whole > split => "whole",
+            (Some(_), None) => "whole",
+            (_, Some(_)) => "splittable",
+            (None, None) => panic!("{text} has no seat: {source}"),
+        }
+    };
+
+    let floating = Block::FloatingTable(Box::new(crate::ir::FloatingTable {
+        table: one_cell_table("Floating"),
+        frame: crate::ir::FloatingTableFrame {
+            x: Some(0.0),
+            y: Some(0.0),
+            horizontal_anchor: FrameAnchor::Text,
+            vertical_anchor: FrameAnchor::Text,
+            horizontal_align: None,
+            vertical_align: None,
+            left_from_text: 0.0,
+            right_from_text: 0.0,
+            top_from_text: 0.0,
+            bottom_from_text: 0.0,
+            anchored_to_text: false,
+        },
+    }));
+    let outer = seated_table(
+        TableBorderPaintModel::WordPositiveAxisBands,
+        vec![auto_row(vec![TableCell {
+            content: vec![
+                make_paragraph("Outer"),
+                Block::Table(one_cell_table("Nested")),
+            ],
+            ..TableCell::default()
+        }])],
+        1,
+    );
+    let Page::Flow(mut shifted) = make_flow_page(vec![Block::Table(one_cell_table("Continuous"))])
+    else {
+        unreachable!("make_flow_page builds a flow page");
+    };
+    // A continuous section with its own side margins is written inside a
+    // `#move` frame on the page the previous section opened.
+    shifted.margins.left += 30.0;
+    let source = generate_typst(&make_doc(vec![
+        make_flow_page(vec![floating, Block::Table(outer)]),
+        Page::FlowContinuous(shifted),
+    ]))
+    .unwrap()
+    .source;
+
+    assert_eq!(seat_before(&source, "Outer"), "splittable", "{source}");
+    for text in ["Floating", "Nested", "Continuous"] {
+        assert_eq!(
+            seat_before(&source, text),
+            "whole",
+            "{text} cannot continue on the next page: {source}"
+        );
+    }
+}
+
+/// A row with a `w:trHeight` floor stays whole: its strut is one frame, and
+/// a breakable row whose strut is taller than the page body leaves a blank
+/// page before Typst lays it out anyway (issue #2217).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn test_word_floored_row_taller_than_a_page_leaves_no_blank_page() {
+    const LINE_COUNT: usize = 40;
+    let table = seated_table(
+        TableBorderPaintModel::WordPositiveAxisBands,
+        vec![TableRow {
+            minimum_height: Some(SHORT_PAGE_HEIGHT_PT - SHORT_PAGE_MARGIN_PT),
+            ..auto_row(vec![lines_cell("Line", LINE_COUNT)])
+        }],
+        1,
+    );
+    let source = generate_typst(&make_doc(vec![short_flow_page(vec![
+        make_paragraph("Before"),
+        Block::Table(table),
+    ])]))
+    .unwrap()
+    .source;
+    let pages = compiled_pages(&source);
+    for (page_index, runs) in pages.iter().enumerate() {
+        assert!(
+            !runs.is_empty(),
+            "page {page_index} must not be left blank\n{source}"
+        );
+    }
+}
+
+/// docxide-pdf `first-header-no-minimum-overflow`, unmodified. Native Word
+/// starts the oversized row on page 1 below `Before` and continues it over
+/// three pages. Main moved it whole to page 2 and piled the 43 lines that did
+/// not fit there onto one baseline below the bottom margin (issue #2217).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn an_oversized_fixture_row_continues_on_the_following_pages() {
+    const PAGE_HEIGHT_PT: f64 = 500.0;
+    const BOTTOM_MARGIN_PT: f64 = 36.0;
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/first_header_row_overflow.docx");
+    let (document, _warnings) = crate::parser::Parser::parse(
+        &crate::parser::docx::DocxParser,
+        fixture,
+        &crate::config::ConvertOptions::default(),
+    )
+    .expect("the overflow fixture should parse");
+    let generated = generate_typst(&document).expect("the fixture should generate");
+    let pages = compiled_pages(&generated.source);
+
+    let first_page: Vec<&str> = painted_words(&pages[0]);
+    for word in ["Before", "Minimum", "Second", "Continuation"] {
+        assert!(
+            first_page.contains(&word),
+            "page 1 must hold {word:?}, as in Word: {first_page:?}"
+        );
+    }
+    let continuations: usize = pages
+        .iter()
+        .flat_map(|runs| painted_words(runs))
+        .filter(|word| *word == "Continuation")
+        .count();
+    assert_eq!(continuations, 60, "every continuation line must be painted");
+    for (page_index, runs) in pages.iter().enumerate() {
+        for run in runs {
+            assert!(
+                run.baseline_pt <= PAGE_HEIGHT_PT - BOTTOM_MARGIN_PT,
+                "page {page_index} {:?} is painted past the bottom margin at {}",
+                run.text,
+                run.baseline_pt
+            );
+        }
+        let mut baselines: Vec<f64> = runs.iter().map(|run| run.baseline_pt).collect();
+        baselines.sort_by(f64::total_cmp);
+        assert!(
+            baselines.windows(2).all(|pair| pair[1] - pair[0] > 1.0),
+            "page {page_index} must not pile lines onto one baseline: {baselines:?}"
+        );
+    }
 }
 
 #[test]
@@ -1048,7 +1490,7 @@ fn test_word_bands_quantize_and_paint_on_the_positive_axis() {
         "the right band must start at the boundary and paint right: {result}"
     );
     assert!(
-        result.contains("#move(dx: 0.34pt, dy: 0.48pt)[Word]"),
+        result.contains("#pad(left: 0.34pt, right: -0.34pt, top: 0.48pt, bottom: -0.48pt)[Word]"),
         "Writer's borderless 0.10pt x seat composes with half a painted left \
          border inward and one painted top border down without changing row \
          or column layout: {result}"
@@ -1110,6 +1552,7 @@ fn test_word_auto_row_bottom_twin_anchors_at_the_cell_boundary() {
     );
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -1177,6 +1620,7 @@ fn test_word_auto_row_vertical_bands_use_blank_paragraph_mark_metrics() {
     };
     let table: Table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell.clone()],
             height: None,
@@ -1235,7 +1679,7 @@ fn test_word_repeating_header_boundary_starts_inside_the_body_row() {
 
     assert!(
         result.contains(
-            "#place(top + left, dx: -5pt, dy: -5.25pt, rect(width: 100% + 10pt, height: 0.48pt, fill: rgb(0, 0, 0), stroke: none))#move(dx: 0.1pt, dy: 0.48pt)[Body]"
+            "#place(top + left, dx: -5pt, dy: -5.25pt, rect(width: 100% + 10pt, height: 0.48pt, fill: rgb(0, 0, 0), stroke: none))#pad(left: 0.1pt, right: -0.1pt, top: 0.48pt, bottom: -0.48pt)[Body]"
         ),
         "the Word body row must own the repeated-header boundary and seat its \
          content below that band: {result}"
@@ -1307,6 +1751,7 @@ fn test_boundary_band_auto_row_verticals_paint_concrete_twin_bands() {
     };
     let table = boundary_band_table(
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -1352,6 +1797,7 @@ fn test_boundary_band_auto_row_verticals_em_fallback_without_metrics() {
     );
     let table = boundary_band_table(
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -1602,11 +2048,13 @@ fn test_boundary_band_auto_row_frame_estimate_computed_once_per_row() {
     let table = boundary_band_table(
         vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: cells.clone(),
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells,
                 height: None,
@@ -1946,11 +2394,13 @@ fn test_print_heading_boundary_keeps_both_coincident_bands() {
     let table = |prints_headings: bool| Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![cell("1")],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![cell("2")],
                 height: None,
@@ -2162,6 +2612,7 @@ fn later_cell_fills_own_shared_boundaries_without_losing_outer_extensions() {
                 ..TableCell::default()
             };
             let row = |cells| TableRow {
+                cant_split: false,
                 cells,
                 height: Some(30.0 * scale),
                 minimum_height: None,
@@ -2462,6 +2913,7 @@ fn automatic_row_fill_has_continuous_single_alpha_coverage() {
     };
     let table = boundary_band_table(
         vec![TableRow {
+            cant_split: false,
             cells: vec![cell],
             height: None,
             minimum_height: None,
@@ -2637,6 +3089,7 @@ fn page_fills_lose_one_sheet_point_on_the_top_and_left_grid_edges() {
             let sheet_page = || {
                 let rows: Vec<TableRow> = (0..2)
                     .map(|index| TableRow {
+                        cant_split: false,
                         cells: vec![cell(if index == 0 { pale } else { rose }), cell(rose)],
                         height: Some(height),
                         minimum_height: None,

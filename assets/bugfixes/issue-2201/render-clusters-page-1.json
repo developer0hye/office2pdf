@@ -1,0 +1,39 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 43.3152,
+      "bbox_pt": {
+        "height": 90.24,
+        "width": 0.48,
+        "x": 107.04,
+        "y": 72.0
+      },
+      "disposition": {
+        "class": "shape-edge-antialiasing",
+        "kind": "accepted-rendering",
+        "note": "One-pixel column on the picture's left edge at 107.45pt. A 600 DPI crop starts the picture in the same device column on both sides; Word clips the image with a path that antialiases that column to about 65% coverage, while the unclipped image paints it solid. Position, size and fill match."
+      },
+      "id": "p1-2b10d9a9d4ba",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 1,
+    "duplicate": 0,
+    "total": 1,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

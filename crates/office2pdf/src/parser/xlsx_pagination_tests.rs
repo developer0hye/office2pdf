@@ -156,6 +156,7 @@ fn test_narrow_sheet_stays_single_page() {
     let page = make_page(
         vec![150.0, 150.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("A"), cell("B")],
             height: None,
@@ -171,6 +172,7 @@ fn test_wide_sheet_splits_into_column_groups() {
     let page = make_page(
         vec![150.0; 5],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("A"), cell("B"), cell("C"), cell("D"), cell("E")],
             height: None,
@@ -198,6 +200,7 @@ fn test_merge_straddling_boundary_truncates_and_blanks_continuation() {
     let page = make_page(
         vec![150.0, 150.0, 150.0, 150.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("A"), merged, cell("D")],
             height: None,
@@ -232,6 +235,7 @@ fn test_merge_spill_width_is_clamped_to_the_column_group() {
     let page = make_page(
         vec![150.0, 150.0, 150.0, 150.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![merged],
             height: None,
@@ -257,6 +261,7 @@ fn test_unmerged_spill_width_is_clamped_to_the_remaining_group_width() {
     let page = make_page(
         vec![150.0, 150.0, 150.0, 150.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![spilling, cell("B"), cell("C"), cell("D")],
             height: None,
@@ -283,6 +288,7 @@ fn test_spill_crossing_the_group_boundary_continues_on_the_next_page_column() {
     let page = make_page(
         vec![150.0, 150.0, 150.0, 150.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("A"), spilling, cell(""), cell("")],
             height: None,
@@ -320,11 +326,13 @@ fn test_spill_ending_before_the_group_boundary_leaves_the_next_page_column_blank
         vec![150.0, 150.0, 150.0, 150.0],
         vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![cell("A"), spilling, cell(""), cell("")],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![cell(""), cell(""), cell(""), cell("D")],
                 height: None,
@@ -352,6 +360,7 @@ fn test_spill_spanning_three_page_columns_continues_on_each() {
     let page = make_page(
         vec![150.0; 6],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![spilling, cell(""), cell(""), cell(""), cell(""), cell("")],
             height: None,
@@ -385,6 +394,7 @@ fn test_a_populated_cell_on_the_next_page_column_is_never_overwritten_by_a_conti
     let page = make_page(
         vec![150.0, 150.0, 150.0, 150.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![spilling, cell(""), cell("C"), cell("")],
             height: None,
@@ -425,6 +435,7 @@ fn two_page_column_sheet() -> SheetPage {
     make_page(
         vec![300.0, 300.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("A"), cell("B")],
             height: None,
@@ -517,6 +528,7 @@ fn test_an_unsplit_sheet_leaves_its_chart_unclipped() {
     let mut page = make_page(
         vec![100.0, 100.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("A"), cell("B")],
             height: None,
@@ -562,6 +574,7 @@ fn test_a_last_page_column_carrying_only_a_chart_continuation_is_printed() {
     let mut page = make_page(
         vec![300.0, 300.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("A"), TableCell::default()],
             height: None,
@@ -585,6 +598,7 @@ fn test_pathologically_wide_sheet_is_capped() {
     let page = make_page(
         vec![150.0; 100],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells,
             height: None,
@@ -604,6 +618,7 @@ fn test_fit_to_width_scales_columns_onto_one_page() {
     let page = make_page(
         vec![400.0, 400.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("left"), cell("right")],
             height: Some(20.0),
@@ -623,6 +638,7 @@ fn test_fit_to_width_scales_an_anchored_chart_with_the_grid() {
     let mut page = make_page(
         vec![400.0, 400.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("left"), cell("right")],
             height: Some(20.0),
@@ -665,6 +681,7 @@ fn test_fit_to_width_records_the_print_scale_on_an_anchored_chart() {
     let mut page = make_page(
         vec![400.0, 400.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("left"), cell("right")],
             height: Some(20.0),
@@ -707,6 +724,7 @@ fn test_fit_to_width_scales_an_anchored_picture_with_the_grid() {
     let mut page = make_page(
         vec![400.0, 400.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("left"), cell("right")],
             height: Some(20.0),
@@ -737,6 +755,7 @@ fn test_fit_to_width_scales_an_anchored_line_shape_with_the_grid() {
     let mut page = make_page(
         vec![400.0, 400.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("left"), cell("right")],
             height: Some(20.0),
@@ -799,6 +818,7 @@ fn test_fit_to_width_scales_an_anchored_line_shape_with_the_grid() {
 #[test]
 fn test_fit_to_width_truncates_scale_to_whole_percent() {
     let mut row = TableRow {
+        cant_split: false,
         minimum_height: None,
         cells: vec![cell("wide")],
         height: None,
@@ -822,6 +842,7 @@ fn test_fit_to_width_does_not_upscale_a_sheet_that_already_fits() {
     let page = make_page(
         vec![100.0, 100.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("a"), cell("b")],
             height: Some(20.0),
@@ -840,6 +861,7 @@ fn test_fit_to_width_two_pages_scales_then_splits() {
     let page = make_page(
         vec![400.0, 400.0, 400.0, 400.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("a"), cell("b"), cell("c"), cell("d")],
             height: None,
@@ -860,6 +882,7 @@ fn test_fit_to_height_scales_rows_onto_one_page() {
     let page = make_page(
         vec![100.0, 100.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("left"), cell("right")],
             height: Some(20.0),
@@ -894,6 +917,7 @@ fn test_fit_to_page_takes_the_tighter_of_the_two_bounds() {
         make_page(
             vec![200.0, 200.0],
             vec![TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![cell("left"), cell("right")],
                 height: Some(20.0),
@@ -918,6 +942,7 @@ fn test_fit_to_page_takes_the_tighter_of_the_two_bounds() {
         make_page(
             vec![400.0, 400.0],
             vec![TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![cell("left"), cell("right")],
                 height: Some(20.0),
@@ -940,6 +965,7 @@ fn test_an_unbounded_fit_to_height_leaves_the_rows_alone() {
     let page = make_page(
         vec![100.0, 100.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("left"), cell("right")],
             height: Some(20.0),
@@ -964,6 +990,7 @@ fn test_fit_to_height_truncates_scale_to_whole_percent() {
     let page = make_page(
         vec![100.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("only")],
             height: Some(100.0),
@@ -985,6 +1012,7 @@ fn test_fit_to_height_counts_the_pages_it_is_given() {
     let page = make_page(
         vec![100.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("only")],
             height: Some(40.0),
@@ -1005,6 +1033,7 @@ fn test_fit_to_height_does_not_upscale_a_short_sheet() {
     let page = make_page(
         vec![100.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("only")],
             height: Some(20.0),
@@ -1034,6 +1063,7 @@ fn test_fit_to_width_scales_cell_padding() {
     let page = make_page(
         vec![400.0, 400.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![left, cell("right")],
             height: Some(20.0),
@@ -1059,11 +1089,13 @@ fn test_width_split_repeats_the_heading_gutter_and_keeps_the_flag() {
         vec![23.0, 150.0, 150.0, 150.0],
         vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![cell(""), cell("A"), cell("B"), cell("C")],
                 height: Some(13.0),
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![cell("1"), cell("a1"), cell("b1"), cell("c1")],
                 height: Some(13.0),
@@ -1097,6 +1129,7 @@ fn test_first_group_packs_against_the_full_printable_width() {
     let page = make_page(
         vec![23.0, 180.0, 190.0, 200.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell(""), cell("A"), cell("B"), cell("C")],
             height: None,
@@ -1151,6 +1184,7 @@ fn a_scaled_sheet_scales_its_footer_with_it() {
     let mut page = make_page(
         vec![400.0, 400.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("left"), cell("right")],
             height: Some(20.0),
@@ -1205,6 +1239,7 @@ fn a_scaled_sheet_that_opts_out_leaves_its_footer_coordinate_box_alone() {
     let mut page = make_page(
         vec![400.0, 400.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("left"), cell("right")],
             height: Some(20.0),
@@ -1241,6 +1276,7 @@ fn an_unscaled_sheet_leaves_its_footer_alone() {
     let mut page = make_page(
         vec![100.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell("narrow")],
             height: Some(20.0),
@@ -1282,6 +1318,7 @@ fn sheet_image(x: f64, width: f64) -> crate::ir::SheetImage {
             fill_rect: None,
             shadow: None,
             paragraph_spacing: None,
+            paragraph_indent: None,
             flip_h: false,
             flip_v: false,
         },
@@ -1364,6 +1401,7 @@ fn row_with_first_cell(text: &str, spill_width: Option<f64>, columns: usize) -> 
     }];
     cells.extend((1..columns).map(|_| cell("")));
     TableRow {
+        cant_split: false,
         minimum_height: None,
         cells,
         height: None,
@@ -1565,11 +1603,13 @@ fn test_a_line_ending_before_the_boundary_is_not_ink_despite_its_reach() {
         vec![75.0, 75.0, 75.0],
         vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![long_line, cell(""), cell("")],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![short_line, cell(""), cell("")],
                 height: None,
@@ -1600,6 +1640,7 @@ fn test_a_line_ending_before_the_boundary_is_not_ink_despite_its_reach() {
     let mut page = make_page(
         vec![75.0, 75.0, 75.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![near_line, cell(""), cell("")],
             height: None,
@@ -1632,6 +1673,7 @@ fn test_a_measured_line_is_continued_only_past_the_boundary() {
     };
     let rows = vec![
         TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![
                 measured("Legacy Solutions Developer", 152.0),
@@ -1641,6 +1683,7 @@ fn test_a_measured_line_is_continued_only_past_the_boundary() {
             height: None,
         },
         TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![
                 measured("Customer Group Developer", 150.0),
@@ -1650,6 +1693,7 @@ fn test_a_measured_line_is_continued_only_past_the_boundary() {
             height: None,
         },
         TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![
                 measured("Regional Intranet Associate", 148.0),
@@ -1659,6 +1703,7 @@ fn test_a_measured_line_is_continued_only_past_the_boundary() {
             height: None,
         },
         TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![
                 measured("Corporate Data Orchestrator", 163.0),
@@ -1702,6 +1747,7 @@ fn test_the_measured_boundary_moves_with_the_page_column() {
             let mut page = make_page(
                 vec![75.0; 3],
                 vec![TableRow {
+                    cant_split: false,
                     minimum_height: None,
                     cells: vec![
                         TableCell {
@@ -1752,6 +1798,7 @@ fn print_scale_page() -> SheetPage {
     make_page(
         vec![100.0, 100.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![sized_cell("left", 11.0), sized_cell("right", 11.0)],
             height: Some(20.0),
@@ -1845,6 +1892,7 @@ fn test_fit_to_page_scales_table_default_cell_padding() {
     let mut page: SheetPage = make_page(
         vec![300.0, 300.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![sized_cell("left", 11.0), sized_cell("right", 11.0)],
             height: Some(20.0),

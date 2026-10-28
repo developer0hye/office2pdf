@@ -1,0 +1,87 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 96.768,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 19.2,
+        "x": 107.04,
+        "y": 78.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"est marker\" sits 1.05-1.07pt right of Word: Word kerns the T-e pair (e at 88.03pt against our 89.10pt) in this package without a styles part, while the run states no w:kern. The 150 DPI crop shows the same glyphs, outlines and weight, offset by one pair kern; \"T\" matches at 80.55pt against 80.525pt. Sub-material, recorded under #1874."
+      },
+      "id": "p1-bab31bb1f25c",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 90.5472,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 16.32,
+        "x": 88.32,
+        "y": 76.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"est marker\" sits 1.05-1.07pt right of Word: Word kerns the T-e pair (e at 88.03pt against our 89.10pt) in this package without a styles part, while the run states no w:kern. The 150 DPI crop shows the same glyphs, outlines and weight, offset by one pair kern; \"T\" matches at 80.55pt against 80.525pt. Sub-material, recorded under #1874."
+      },
+      "id": "p1-fdf16f925882",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 55.5264,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 11.52,
+        "x": 136.32,
+        "y": 78.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"est marker\" sits 1.05-1.07pt right of Word: Word kerns the T-e pair (e at 88.03pt against our 89.10pt) in this package without a styles part, while the run states no w:kern. The 150 DPI crop shows the same glyphs, outlines and weight, offset by one pair kern; \"T\" matches at 80.55pt against 80.525pt. Sub-material, recorded under #1874."
+      },
+      "id": "p1-56013fea6996",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 54.3744,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 10.08,
+        "x": 126.72,
+        "y": 74.88
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "\"est marker\" sits 1.05-1.07pt right of Word: Word kerns the T-e pair (e at 88.03pt against our 89.10pt) in this package without a styles part, while the run states no w:kern. The 150 DPI crop shows the same glyphs, outlines and weight, offset by one pair kern; \"T\" matches at 80.55pt against 80.525pt. Sub-material, recorded under #1874."
+      },
+      "id": "p1-cdf915b18a72",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 4,
+    "duplicate": 0,
+    "total": 4,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

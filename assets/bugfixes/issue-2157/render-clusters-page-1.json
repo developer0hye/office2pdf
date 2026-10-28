@@ -1,0 +1,247 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 42.8544,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 10.56,
+        "x": 230.88,
+        "y": 100.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Glyph-sized one-pixel edge outlines on lines 0, 1 and 4 of shape 3. The glyphs, face, size and weight match the GT in the 4x crops; the outlines come from sub-material baseline residuals of -0.46 to +0.31pt (our pitch 29.0pt against the Windows GT's 28.78-28.85pt), which sit within 0.12pt of a native PowerPoint 16.114 for Mac export of the same deck. Recorded under #1874."
+      },
+      "id": "p1-678bdb075f44",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 41.7024,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 9.6,
+        "x": 238.08,
+        "y": 129.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Glyph-sized one-pixel edge outlines on lines 0, 1 and 4 of shape 3. The glyphs, face, size and weight match the GT in the 4x crops; the outlines come from sub-material baseline residuals of -0.46 to +0.31pt (our pitch 29.0pt against the Windows GT's 28.78-28.85pt), which sit within 0.12pt of a native PowerPoint 16.114 for Mac export of the same deck. Recorded under #1874."
+      },
+      "id": "p1-1377766e9a53",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 7.2,
+        "x": 303.36,
+        "y": 216.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Glyph-sized one-pixel edge outlines on lines 0, 1 and 4 of shape 3. The glyphs, face, size and weight match the GT in the 4x crops; the outlines come from sub-material baseline residuals of -0.46 to +0.31pt (our pitch 29.0pt against the Windows GT's 28.78-28.85pt), which sit within 0.12pt of a native PowerPoint 16.114 for Mac export of the same deck. Recorded under #1874."
+      },
+      "id": "p1-f16cf220a0dd",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 7.2,
+        "x": 200.16,
+        "y": 216.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Glyph-sized one-pixel edge outlines on lines 0, 1 and 4 of shape 3. The glyphs, face, size and weight match the GT in the 4x crops; the outlines come from sub-material baseline residuals of -0.46 to +0.31pt (our pitch 29.0pt against the Windows GT's 28.78-28.85pt), which sit within 0.12pt of a native PowerPoint 16.114 for Mac export of the same deck. Recorded under #1874."
+      },
+      "id": "p1-31061483274c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 35.4816,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 7.2,
+        "x": 276.96,
+        "y": 216.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Glyph-sized one-pixel edge outlines on lines 0, 1 and 4 of shape 3. The glyphs, face, size and weight match the GT in the 4x crops; the outlines come from sub-material baseline residuals of -0.46 to +0.31pt (our pitch 29.0pt against the Windows GT's 28.78-28.85pt), which sit within 0.12pt of a native PowerPoint 16.114 for Mac export of the same deck. Recorded under #1874."
+      },
+      "id": "p1-02244ef60864",
+      "region": "left"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 2.88,
+        "x": 195.84,
+        "y": 95.52
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Glyph-sized one-pixel edge outlines on lines 0, 1 and 4 of shape 3. The glyphs, face, size and weight match the GT in the 4x crops; the outlines come from sub-material baseline residuals of -0.46 to +0.31pt (our pitch 29.0pt against the Windows GT's 28.78-28.85pt), which sit within 0.12pt of a native PowerPoint 16.114 for Mac export of the same deck. Recorded under #1874."
+      },
+      "id": "p1-bc75c3875772",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 11.52,
+        "x": 252.48,
+        "y": 213.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Glyph-sized one-pixel edge outlines on lines 0, 1 and 4 of shape 3. The glyphs, face, size and weight match the GT in the 4x crops; the outlines come from sub-material baseline residuals of -0.46 to +0.31pt (our pitch 29.0pt against the Windows GT's 28.78-28.85pt), which sit within 0.12pt of a native PowerPoint 16.114 for Mac export of the same deck. Recorded under #1874."
+      },
+      "id": "p1-9d1b6df3022a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 28.1088,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 6.72,
+        "x": 250.08,
+        "y": 129.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Glyph-sized one-pixel edge outlines on lines 0, 1 and 4 of shape 3. The glyphs, face, size and weight match the GT in the 4x crops; the outlines come from sub-material baseline residuals of -0.46 to +0.31pt (our pitch 29.0pt against the Windows GT's 28.78-28.85pt), which sit within 0.12pt of a native PowerPoint 16.114 for Mac export of the same deck. Recorded under #1874."
+      },
+      "id": "p1-240795e26628",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 26.2656,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 7.68,
+        "x": 176.16,
+        "y": 130.08
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Glyph-sized one-pixel edge outlines on lines 0, 1 and 4 of shape 3. The glyphs, face, size and weight match the GT in the 4x crops; the outlines come from sub-material baseline residuals of -0.46 to +0.31pt (our pitch 29.0pt against the Windows GT's 28.78-28.85pt), which sit within 0.12pt of a native PowerPoint 16.114 for Mac export of the same deck. Recorded under #1874."
+      },
+      "id": "p1-f36960b5919d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 2.88,
+        "x": 334.08,
+        "y": 216.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Glyph-sized one-pixel edge outlines on lines 0, 1 and 4 of shape 3. The glyphs, face, size and weight match the GT in the 4x crops; the outlines come from sub-material baseline residuals of -0.46 to +0.31pt (our pitch 29.0pt against the Windows GT's 28.78-28.85pt), which sit within 0.12pt of a native PowerPoint 16.114 for Mac export of the same deck. Recorded under #1874."
+      },
+      "id": "p1-76752a2acf0b",
+      "region": "center"
+    },
+    {
+      "area_pt2": 23.7312,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 2.88,
+        "x": 283.68,
+        "y": 129.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Glyph-sized one-pixel edge outlines on lines 0, 1 and 4 of shape 3. The glyphs, face, size and weight match the GT in the 4x crops; the outlines come from sub-material baseline residuals of -0.46 to +0.31pt (our pitch 29.0pt against the Windows GT's 28.78-28.85pt), which sit within 0.12pt of a native PowerPoint 16.114 for Mac export of the same deck. Recorded under #1874."
+      },
+      "id": "p1-49a43dc576a2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 16.32,
+        "width": 3.36,
+        "x": 176.16,
+        "y": 216.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Glyph-sized one-pixel edge outlines on lines 0, 1 and 4 of shape 3. The glyphs, face, size and weight match the GT in the 4x crops; the outlines come from sub-material baseline residuals of -0.46 to +0.31pt (our pitch 29.0pt against the Windows GT's 28.78-28.85pt), which sit within 0.12pt of a native PowerPoint 16.114 for Mac export of the same deck. Recorded under #1874."
+      },
+      "id": "p1-7f10c2ff65b9",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 12.96,
+        "width": 8.16,
+        "x": 223.68,
+        "y": 213.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Glyph-sized one-pixel edge outlines on lines 0, 1 and 4 of shape 3. The glyphs, face, size and weight match the GT in the 4x crops; the outlines come from sub-material baseline residuals of -0.46 to +0.31pt (our pitch 29.0pt against the Windows GT's 28.78-28.85pt), which sit within 0.12pt of a native PowerPoint 16.114 for Mac export of the same deck. Recorded under #1874."
+      },
+      "id": "p1-5a3dc02f89ca",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.1184,
+      "bbox_pt": {
+        "height": 12.48,
+        "width": 3.36,
+        "x": 256.8,
+        "y": 129.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Glyph-sized one-pixel edge outlines on lines 0, 1 and 4 of shape 3. The glyphs, face, size and weight match the GT in the 4x crops; the outlines come from sub-material baseline residuals of -0.46 to +0.31pt (our pitch 29.0pt against the Windows GT's 28.78-28.85pt), which sit within 0.12pt of a native PowerPoint 16.114 for Mac export of the same deck. Recorded under #1874."
+      },
+      "id": "p1-5fe3b12fa284",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 14,
+    "duplicate": 0,
+    "total": 14,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

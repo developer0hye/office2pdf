@@ -84,6 +84,7 @@ fn text_style_merge_from_all_none_source_preserves_target() {
         small_caps: Some(false),
         letter_spacing: Some(1.5),
         pair_kerning: Some(PairKerning::Never),
+        ligatures: Some(Ligatures::NONE),
     };
     let original: TextStyle = target.clone();
     let source = TextStyle::default();
@@ -116,6 +117,7 @@ fn text_style_merge_from_all_some_source_overwrites_target() {
         small_caps: Some(true),
         letter_spacing: Some(1.5),
         pair_kerning: Some(PairKerning::Never),
+        ligatures: Some(Ligatures::NONE),
     };
     let source = TextStyle {
         line_box: Some(LineBox {
@@ -138,6 +140,11 @@ fn text_style_merge_from_all_some_source_overwrites_target() {
         small_caps: Some(false),
         letter_spacing: Some(3.0),
         pair_kerning: Some(PairKerning::AtOrAbovePt(16.0)),
+        ligatures: Some(Ligatures {
+            standard: true,
+            contextual: true,
+            ..Ligatures::NONE
+        }),
     };
 
     target.merge_from(&source);
@@ -204,6 +211,7 @@ fn paragraph_style_merge_from_all_none_source_preserves_target() {
         indent_right: Some(5.0),
         indent_first_line: Some(20.0),
         starts_after_layout_break: false,
+        clearing_breaks: Box::default(),
         has_inline_list_number: false,
         numbering_suffix: None,
         line_spacing: Some(LineSpacing::Proportional(1.5)),
@@ -213,6 +221,8 @@ fn paragraph_style_merge_from_all_none_source_preserves_target() {
         }),
         space_before: Some(6.0),
         space_after: Some(12.0),
+        section_mark_after: None,
+        keeps_space_before_at_page_top: false,
         decoration_before_spacing: None,
         space_before_percent: None,
         space_after_percent: None,
@@ -227,8 +237,11 @@ fn paragraph_style_merge_from_all_none_source_preserves_target() {
         background: Some(Color::new(0xEE, 0xEE, 0xEE)),
         border: None,
         border_space: None,
+        horizontal_rule: None,
+        holds_anchored_drawing: false,
         paragraph_mark_font_family: None,
         paragraph_mark_text_style: None,
+        numbering_label_style: None,
         sheet_number_format_reserved_glyphs: None,
         sheet_number_format_accounting_leading_reserved_glyphs: None,
     };
@@ -265,6 +278,7 @@ fn paragraph_style_merge_from_all_some_source_overwrites_target() {
         indent_right: Some(15.0),
         indent_first_line: Some(30.0),
         starts_after_layout_break: false,
+        clearing_breaks: Box::default(),
         has_inline_list_number: false,
         numbering_suffix: None,
         line_spacing: Some(LineSpacing::Exact(14.0)),
@@ -274,6 +288,8 @@ fn paragraph_style_merge_from_all_some_source_overwrites_target() {
         }),
         space_before: Some(8.0),
         space_after: Some(16.0),
+        section_mark_after: None,
+        keeps_space_before_at_page_top: false,
         decoration_before_spacing: None,
         space_before_percent: None,
         space_after_percent: None,
@@ -282,8 +298,11 @@ fn paragraph_style_merge_from_all_some_source_overwrites_target() {
         background: Some(Color::new(0xF4, 0xF4, 0xF4)),
         border: None,
         border_space: None,
+        horizontal_rule: None,
+        holds_anchored_drawing: false,
         paragraph_mark_font_family: None,
         paragraph_mark_text_style: None,
+        numbering_label_style: None,
         sheet_number_format_reserved_glyphs: None,
         sheet_number_format_accounting_leading_reserved_glyphs: None,
         tab_stops: Some(vec![TabStop {

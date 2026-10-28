@@ -87,11 +87,13 @@ fn test_augment_prepends_gutter_column_and_letter_strip_at_measured_geometry() {
         vec![120.0, 110.0],
         vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![text_cell("x"), text_cell("y")],
                 height: Some(13.0),
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![text_cell("z"), text_cell("w")],
                 height: Some(13.0),
@@ -129,6 +131,7 @@ fn test_heading_rules_use_measured_colors() {
     let mut page = make_page(
         vec![120.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![text_cell("x")],
             height: Some(13.0),
@@ -174,6 +177,7 @@ fn test_heading_cells_pin_the_descender_seat() {
     let mut page = make_page(
         vec![120.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![text_cell("x")],
             height: Some(12.0),
@@ -210,6 +214,7 @@ fn test_heading_text_uses_the_workbook_normal_font_and_center_alignment() {
     let mut page = make_page(
         vec![120.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![text_cell("x")],
             height: Some(13.0),
@@ -249,6 +254,7 @@ fn test_heading_cells_paint_in_the_resolved_normal_face() {
     let mut page = make_page(
         vec![80.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![text_cell("x")],
             height: Some(18.0),
@@ -284,16 +290,19 @@ fn test_augment_uses_sheet_row_numbers_and_first_column_for_pagination_slices() 
         vec![120.0, 110.0],
         vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![text_cell("a"), text_cell("b")],
                 height: Some(13.0),
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![text_cell("c"), text_cell("d")],
                 height: Some(13.0),
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![text_cell("e"), text_cell("f")],
                 height: Some(13.0),
@@ -320,6 +329,7 @@ fn test_merged_cell_spans_stay_on_their_data_columns() {
     let mut page = make_page(
         vec![120.0, 110.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![merged],
             height: Some(13.0),
@@ -342,6 +352,7 @@ fn test_drawings_shift_with_the_inset_grid() {
     let mut page = make_page(
         vec![120.0],
         vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![text_cell("x")],
             height: Some(13.0),
@@ -368,6 +379,7 @@ fn test_drawings_shift_with_the_inset_grid() {
             fill_rect: None,
             shadow: None,
             paragraph_spacing: None,
+            paragraph_indent: None,
         },
     });
     page.text_boxes.push(SheetTextBox {

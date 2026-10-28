@@ -29,6 +29,7 @@ fn test_table_cell_with_multiple_paragraphs() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![multi_para_cell],
             height: None,
@@ -76,6 +77,7 @@ fn word_table_cell_line_spacing_advances_between_paragraphs() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![TableCell {
                 content: vec![
@@ -156,6 +158,7 @@ fn test_table_cell_simple_list_uses_compact_fixed_text_layout() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -223,6 +226,7 @@ fn test_table_cell_simple_list_treats_default_and_explicit_left_as_same_style() 
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -297,6 +301,7 @@ fn test_table_cell_compact_list_adds_inter_item_spacing_from_line_spacing() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -362,6 +367,7 @@ fn test_east_asian_table_cell_snaps_to_the_document_grid() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -426,6 +432,7 @@ fn east_asian_table_cell_leaves_the_faces_line_gap_out_of_its_box() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -483,6 +490,7 @@ fn test_latin_table_cell_uses_natural_line_height() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -553,11 +561,13 @@ fn powerpoint_table_auto_rows_use_the_native_proportional_line_box() {
         let table = Table {
             rows: vec![
                 TableRow {
+                    cant_split: false,
                     minimum_height: None,
                     cells: vec![make_cell("Row 1 Col 1")],
                     height: None,
                 },
                 TableRow {
+                    cant_split: false,
                     minimum_height: None,
                     cells: vec![make_cell("Row 2 Col 1")],
                     height: None,
@@ -652,6 +662,7 @@ fn mixed_script_row_shares_one_line_box() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             // A Korean month label beside a numeric column, as in the research
             // report fixture.
@@ -714,6 +725,7 @@ fn latin_only_row_under_a_grid_keeps_the_font_line() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![make_cell("Aug 3"), make_cell("380")],
             height: None,
@@ -781,6 +793,7 @@ fn latin_only_row_in_east_asian_face_keeps_the_east_asian_line_box() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![make_cell("2025-01"), make_cell("464")],
             height: None,
@@ -839,6 +852,7 @@ fn latin_only_row_in_east_asian_face_does_not_snap_to_the_grid() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![make_cell("2025-01"), make_cell("464")],
             height: None,
@@ -952,6 +966,7 @@ fn latin_only_spreadsheet_row_in_east_asian_face_keeps_the_hhea_line_box() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: Some(20.0),
@@ -1088,6 +1103,7 @@ fn spreadsheet_rows_share_one_line_box_whatever_script() {
         };
         let table = Table {
             rows: vec![TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![cell],
                 // Tall enough that the track keeps per-cell alignment, so the
@@ -1225,6 +1241,7 @@ fn grid_cell_absorbs_space_after_into_the_line_box() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -1281,6 +1298,7 @@ fn ungridded_cell_still_emits_space_after() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -1342,6 +1360,7 @@ fn cell_border_width_joins_the_inset() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -1415,6 +1434,7 @@ fn bottom_aligned_spreadsheet_cell_seats_its_line_box_on_the_descender() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             // Tall enough to hold visibly more than the 10pt line. Centered
@@ -1497,6 +1517,7 @@ fn center_aligned_spreadsheet_cell_keeps_the_symmetric_line_box() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: Some(20.0),
@@ -1577,6 +1598,7 @@ fn bottom_aligned_spreadsheet_cell_in_auto_height_row_keeps_the_symmetric_line_b
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -1782,6 +1804,7 @@ fn compressed_word_table_cell_source(
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: Some(240.0),
@@ -1843,6 +1866,7 @@ fn expanded_word_bottom_cell_uses_the_native_quarter_point_last_line_seat() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: Some(86.4),
@@ -1919,6 +1943,7 @@ fn stacked_cell_paragraphs_zero_the_default_block_spacing() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -1977,6 +2002,7 @@ fn stacked_cell_paragraphs_without_w_after_stack_flush() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -2038,6 +2064,7 @@ fn single_paragraph_cell_emission_is_unchanged() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -2104,6 +2131,7 @@ fn line_spaced_stacked_cell_paragraphs_take_a_scaled_line_box() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -2183,6 +2211,7 @@ fn an_empty_cell_paragraph_holds_one_full_line_box() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -2240,6 +2269,7 @@ fn cell_paragraph_carries_its_left_indent() {
     });
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![TableCell {
                 content: vec![indented, flush],
@@ -2275,6 +2305,7 @@ fn cell_paragraph_carries_its_left_indent() {
 fn cell_paragraph_carries_its_right_indent() {
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![TableCell {
                 content: vec![Block::Paragraph(Paragraph {
@@ -2334,6 +2365,7 @@ fn powerpoint_table_cell_applies_signed_first_line_indent() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![TableCell {
                 content: vec![
@@ -2444,6 +2476,7 @@ fn a_line_spaced_cell_paragraph_scales_its_line_box() {
     let render = |line_spacing: Option<LineSpacing>| -> String {
         let table = Table {
             rows: vec![TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_cell(line_spacing)],
                 height: None,
@@ -2509,6 +2542,7 @@ fn an_exactly_spaced_cell_paragraph_takes_the_stated_advance() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![TableCell {
                 content: vec![make_paragraph("First"), make_paragraph("Second")],
@@ -2581,6 +2615,7 @@ fn exact_line_spacing_moves_only_top_anchored_text_box_cell_text() {
     let baseline_for_exact_height = |line_height_pt: f64, in_text_box: bool| -> f64 {
         let table = Table {
             rows: vec![TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![TableCell {
                     content: vec![Block::Paragraph(Paragraph {
@@ -2691,6 +2726,7 @@ fn a_grid_snapped_line_spaced_cell_emits_its_space_after_once() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -2743,6 +2779,7 @@ fn mixed_alignment_tight_sheet_row_preserves_default_and_explicit_alignment() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             // A number-format column beside a centred text column, as in the
             // expense report's data rows.
@@ -2806,6 +2843,7 @@ fn tight_sheet_row_resolves_one_metric_family_for_centered_cells() {
         ..TableCell::default()
     };
     let make_row = |cells: Vec<TableCell>| TableRow {
+        cant_split: false,
         minimum_height: None,
         cells,
         height: Some(14.0),
@@ -2884,6 +2922,7 @@ fn row_spanning_cell_keeps_its_declared_alignment_in_a_tight_row() {
     let table = Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![
                     make_cell("Merged", 2, Some(CellVerticalAlign::Bottom)),
@@ -2892,6 +2931,7 @@ fn row_spanning_cell_keeps_its_declared_alignment_in_a_tight_row() {
                 height: Some(14.0),
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_cell("B", 1, Some(CellVerticalAlign::Center))],
                 height: Some(14.0),
@@ -2980,6 +3020,7 @@ fn boundary_rule_does_not_make_a_roomy_sheet_row_tight() {
         ..TableCell::default()
     };
     let make_row = |ruled: bool| TableRow {
+        cant_split: false,
         minimum_height: None,
         cells: vec![make_cell("Item", ruled), make_cell("Quantity", ruled)],
         height: Some(track_pt),
@@ -3031,6 +3072,7 @@ fn boundary_rule_leaves_a_tight_sheet_row_tight() {
     let track_pt: f64 = pitch_em * font_size + padding.top + padding.bottom + 0.25;
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![TableCell {
                 content: vec![Block::Paragraph(Paragraph {
@@ -3284,6 +3326,7 @@ fn horizontal_sheet_merge_selects_the_lower_odd_centering_half() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![TableCell {
                 content: vec![Block::Paragraph(Paragraph {
@@ -3421,6 +3464,7 @@ fn centered_two_row_sheet_merge_uses_the_full_fixed_track_seat() {
     let table = Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![TableCell {
                     content: vec![Block::Paragraph(Paragraph {
@@ -3445,6 +3489,7 @@ fn centered_two_row_sheet_merge_uses_the_full_fixed_track_seat() {
                 height: Some(printed_row_height_pt),
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![],
                 height: Some(printed_row_height_pt),
@@ -3542,6 +3587,7 @@ fn sheet_cell_line_box_uses_the_face_that_paints_korean_fallback_text() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![TableCell {
                 content: vec![Block::Paragraph(Paragraph {
@@ -3636,6 +3682,7 @@ fn bottom_aligned_merged_sheet_cell_uses_the_native_five_point_floor() {
     let source_for_col_span = |col_span: u32| -> String {
         let table = Table {
             rows: vec![TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![TableCell {
                     content: vec![Block::Paragraph(Paragraph {
@@ -3725,6 +3772,7 @@ fn fixed_track_sheet_cell_seats_its_centred_line_on_the_track() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![TableCell {
                 content: vec![Block::Paragraph(Paragraph {
@@ -3800,6 +3848,7 @@ fn bottom_aligned_sheet_cell_rests_its_descender_on_the_row_boundary() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![TableCell {
                 content: vec![Block::Paragraph(Paragraph {
@@ -4198,6 +4247,7 @@ fn a_thick_bottom_row_prints_its_baseline_one_sheet_point_above_an_unflagged_twi
 
     for scale in [1.0, 0.78] {
         let row = |row_has_thick_bottom: bool| TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![TableCell {
                 content: vec![Block::Paragraph(Paragraph {
@@ -4268,6 +4318,7 @@ fn a_descender_seat_inside_the_border_inset_still_lands_on_the_row_boundary() {
     const FONT_SIZE_PT: f64 = 10.0;
 
     let row = |border: Option<CellBorder>| TableRow {
+        cant_split: false,
         minimum_height: None,
         cells: vec![TableCell {
             content: vec![Block::Paragraph(Paragraph {
@@ -4404,6 +4455,7 @@ fn a_floored_sheet_cell_ends_its_box_on_excel_minimum_gap() {
     let sheet_source = |bottom_aligned_descent_floor_pt: f64| -> String {
         let table = Table {
             rows: vec![TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![TableCell {
                     content: vec![Block::Paragraph(Paragraph {
@@ -4742,6 +4794,7 @@ fn centered_fixed_sheet_rows_share_one_center_across_two_and_three_wrapped_lines
     let table = Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![wrapped_cell(
                     "Additional instructions have been provided in column A in GIFT BUDGET AND \
@@ -4752,6 +4805,7 @@ fn centered_fixed_sheet_rows_share_one_center_across_two_and_three_wrapped_lines
                 height: Some(39.75),
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![wrapped_cell(
                     "To learn more about table, press SHIFT and then F10 within a table, select the \
@@ -4889,6 +4943,7 @@ fn wrapping_cell_source(family: &str, font_size_pt: f64, in_sheet: bool) -> Stri
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             // Far taller than one line, so per-cell alignment and metrics
@@ -5006,6 +5061,7 @@ fn top_aligned_fixed_track_sheet_cell_starts_on_the_native_seat() {
         let inset_top_pt: f64 = 1.0 * factor;
         let table = Table {
             rows: vec![TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![TableCell {
                     content: vec![Block::Paragraph(Paragraph {
@@ -5129,6 +5185,7 @@ fn hangul_bold_run(text: &str, font_family: &str) -> Run {
 fn sheet_cell_from_runs(runs: Vec<Run>) -> Table {
     Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![TableCell {
                 content: vec![Block::Paragraph(Paragraph {
@@ -5264,6 +5321,7 @@ fn test_generic_table_cell_hangul_run_keeps_bold_when_font_needs_substitution() 
     // rewritten just because it shares the same run shape.
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![TableCell {
                 content: vec![Block::Paragraph(Paragraph {
@@ -5456,6 +5514,7 @@ fn a_blank_row_takes_the_same_line_as_a_text_row() {
     };
     let font_size: f64 = 11.0;
     let text_row = TableRow {
+        cant_split: false,
         minimum_height: None,
         cells: vec![TableCell {
             content: vec![Block::Paragraph(Paragraph {
@@ -5553,6 +5612,7 @@ fn a_blank_cell_paragraph_with_a_preceding_sibling_still_borrows_it() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -5623,6 +5683,7 @@ fn a_leading_blank_cell_paragraph_uses_its_own_mark_before_following_text() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -5728,7 +5789,7 @@ fn perturb_header_footer_marks(story: &mut Option<HeaderFooter>) -> usize {
                     HeaderFooterShapeContent::Table(table) => {
                         perturb_header_story_table_marks(table)
                     }
-                    HeaderFooterShapeContent::Shape(_) => 0,
+                    HeaderFooterShapeContent::Shape(_) | HeaderFooterShapeContent::Picture(_) => 0,
                 })
                 .sum()
         })
@@ -5859,6 +5920,7 @@ fn a_blank_cell_mark_does_not_reseat_a_paragraph_anchored_picture() {
 fn a_blank_cell_without_a_resolved_mark_emits_no_strut() {
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![TableCell {
                 content: vec![Block::Paragraph(Paragraph {
@@ -5885,6 +5947,7 @@ fn a_blank_cell_without_a_resolved_mark_emits_no_strut() {
 /// mark resolves to `family` at `font_size`.
 fn blank_mark_row(family: &str, font_size: f64) -> TableRow {
     TableRow {
+        cant_split: false,
         minimum_height: None,
         cells: vec![TableCell {
             content: vec![Block::Paragraph(Paragraph {
@@ -5929,7 +5992,7 @@ fn explicit_sheet_print_percentage_scales_cell_origins() {
             let mut entry = archive.by_index(index).unwrap();
             let mut bytes: Vec<u8> = Vec::new();
             entry.read_to_end(&mut bytes).unwrap();
-            if entry.name() == "xl/worksheets/sheet1.xml" {
+            if entry.name().expect("entry name should decode") == "xl/worksheets/sheet1.xml" {
                 let xml = std::str::from_utf8(&bytes).unwrap();
                 assert_eq!(xml.matches("scale=\"85\"").count(), 1);
                 let mut rewritten = xml.replace("scale=\"85\"", &format!("scale=\"{percentage}\""));
@@ -5946,7 +6009,10 @@ fn explicit_sheet_print_percentage_scales_cell_origins() {
                 bytes = rewritten.into_bytes();
             }
             writer
-                .start_file(entry.name(), zip::write::FileOptions::default())
+                .start_file(
+                    entry.name().expect("entry name should decode").into_owned(),
+                    zip::write::SimpleFileOptions::default(),
+                )
                 .unwrap();
             writer.write_all(&bytes).unwrap();
         }

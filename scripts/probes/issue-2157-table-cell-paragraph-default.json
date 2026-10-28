@@ -1,0 +1,30 @@
+{
+  "name": "issue-2157-table-cell-paragraph-default",
+  "base": "../../tests/fixtures/pptx/issue_1838_table_run_typeface.pptx",
+  "part": "ppt/slides/slide1.xml",
+  "factor": "a table cell paragraph's own <a:pPr>/<a:defRPr>, read by the second cell's run",
+  "page": 1,
+  "variants": [
+    {
+      "value": "run-size-removed",
+      "find": "<a:pPr algn=\"l\"/><a:r><a:rPr lang=\"en-US\" sz=\"2400\">(<a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill></a:rPr><a:t>Run names nothing)",
+      "replace": "<a:pPr algn=\"l\"/><a:r><a:rPr lang=\"en-US\">\\1",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "run-size-removed-pdefrpr-1200",
+      "find": "<a:pPr algn=\"l\"/><a:r><a:rPr lang=\"en-US\" sz=\"2400\">(<a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill></a:rPr><a:t>Run names nothing)",
+      "replace": "<a:pPr algn=\"l\"><a:defRPr sz=\"1200\"/></a:pPr><a:r><a:rPr lang=\"en-US\">\\1",
+      "regex": true,
+      "count": 1
+    },
+    {
+      "value": "pdefrpr-latin-arial",
+      "find": "<a:pPr algn=\"l\"/>(<a:r><a:rPr lang=\"en-US\" sz=\"2400\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill></a:rPr><a:t>Run names nothing)",
+      "replace": "<a:pPr algn=\"l\"><a:defRPr><a:latin typeface=\"Arial\"/></a:defRPr></a:pPr>\\1",
+      "regex": true,
+      "count": 1
+    }
+  ]
+}

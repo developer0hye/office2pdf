@@ -493,7 +493,7 @@ fn test_parse_simple_numbered_list() {
         lists[0].level_styles.get(&0),
         Some(&ListLevelStyle {
             kind: ListKind::Ordered,
-            numbering_pattern: Some("1.".to_string()),
+            numbering_pattern: Some(NumberingPattern::parse("1.")),
             full_numbering: false,
             marker_text: None,
             marker_style: None,
@@ -983,7 +983,7 @@ fn test_parse_numbered_list_start_override() {
         list.level_styles.get(&0),
         Some(&ListLevelStyle {
             kind: ListKind::Ordered,
-            numbering_pattern: Some("1.".to_string()),
+            numbering_pattern: Some(NumberingPattern::parse("1.")),
             full_numbering: false,
             marker_text: None,
             marker_style: None,
@@ -1046,7 +1046,7 @@ fn test_parse_mixed_ordered_and_bulleted_levels() {
                 0,
                 ListLevelStyle {
                     kind: ListKind::Ordered,
-                    numbering_pattern: Some("1.".to_string()),
+                    numbering_pattern: Some(NumberingPattern::parse("1.")),
                     full_numbering: false,
                     marker_text: None,
                     marker_style: None,
@@ -1399,7 +1399,7 @@ mod notes_textbox_tests;
 /// Build a DOCX ZIP with a custom document.xml containing OMML math.
 fn build_docx_with_math(document_xml: &str) -> Vec<u8> {
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
 
     // [Content_Types].xml
     zip.start_file("[Content_Types].xml", options).unwrap();
@@ -1452,7 +1452,7 @@ fn build_docx_with_columns(document_xml: &str) -> Vec<u8> {
 /// `footnotes.xml`.
 fn build_docx_with_notes_xml(document_xml: &str, styles_xml: &str, footnotes_xml: &str) -> Vec<u8> {
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
 
     zip.start_file("[Content_Types].xml", options).unwrap();
     std::io::Write::write_all(
@@ -1510,7 +1510,7 @@ fn build_docx_with_notes_xml(document_xml: &str, styles_xml: &str, footnotes_xml
 /// the part itself.
 fn build_docx_with_styles_xml(document_xml: &str, styles_xml: &str) -> Vec<u8> {
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    let options = zip::write::FileOptions::default();
+    let options = zip::write::SimpleFileOptions::default();
 
     zip.start_file("[Content_Types].xml", options).unwrap();
     std::io::Write::write_all(
@@ -1555,14 +1555,37 @@ fn build_docx_with_styles_xml(document_xml: &str, styles_xml: &str) -> Vec<u8> {
     zip.finish().unwrap().into_inner()
 }
 
+#[path = "docx_clearing_break_tests.rs"]
+mod clearing_break_tests;
 #[path = "docx_contextual_spacing_tests.rs"]
 mod contextual_spacing_tests;
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "docx_floating_table_anchor_tests.rs"]
+mod floating_table_anchor_tests;
+#[path = "docx_floating_table_wrap_tests.rs"]
+mod floating_table_wrap_tests;
+#[path = "docx_hf_table_field_tests.rs"]
+mod hf_table_field_tests;
+#[path = "docx_hidden_drawing_tests.rs"]
+mod hidden_drawing_tests;
+#[path = "docx_horizontal_rule_tests.rs"]
+mod horizontal_rule_tests;
 #[path = "docx_layout_rtl_tests.rs"]
 mod layout_rtl_tests;
+#[path = "docx_list_label_tests.rs"]
+mod list_label_tests;
 #[path = "docx_math_chart_metadata_tests.rs"]
 mod math_chart_metadata_tests;
 #[path = "docx_paragraph_cursor_tests.rs"]
 mod paragraph_cursor_tests;
+#[path = "docx_paragraph_tab_tests.rs"]
+mod paragraph_tab_tests;
+#[path = "docx_section_mark_tests.rs"]
+mod section_mark_tests;
+#[path = "docx_story_picture_tests.rs"]
+mod story_picture_tests;
+#[path = "docx_text_frame_tests.rs"]
+mod text_frame_tests;
 #[path = "docx_tracked_paragraph_mark_tests.rs"]
 mod tracked_paragraph_mark_tests;
 
@@ -1751,6 +1774,339 @@ fn test_zero_indent_numbering_renders_inline_number_with_tab() {
     );
 }
 
+/// A numbering level with a hanging indent, as Word writes list levels.
+fn hanging_list_level(
+    level: usize,
+    number_format: &str,
+    level_text: &str,
+    left_twips: i32,
+    hanging_twips: i32,
+) -> docx_rs::Level {
+    docx_rs::Level::new(
+        level,
+        docx_rs::Start::new(1),
+        docx_rs::NumberFormat::new(number_format),
+        docx_rs::LevelText::new(level_text),
+        docx_rs::LevelJc::new("left"),
+    )
+    .indent(
+        Some(left_twips),
+        Some(docx_rs::SpecialIndentType::Hanging(hanging_twips)),
+        None,
+        None,
+    )
+}
+
+/// Compiles a DOCX and returns, for each body text, the label painted before
+/// it on its baseline and the left edge of the run that paints the body.
+#[cfg(not(target_arch = "wasm32"))]
+fn painted_list_labels(data: &[u8], bodies: &[&str]) -> Vec<(String, f64)> {
+    let (doc, _warnings) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let source = crate::render::typst_gen::generate_typst(&doc).unwrap();
+    let runs = crate::render::pdf::compiled_text_runs(&source.source, 0).unwrap();
+    bodies
+        .iter()
+        .map(|body| {
+            let body_run = runs
+                .iter()
+                .find(|run| run.text.contains(body))
+                .unwrap_or_else(|| panic!("{body:?} is not painted: {runs:?}"));
+            let mut label_runs: Vec<_> = runs
+                .iter()
+                .filter(|run| {
+                    (run.baseline_pt - body_run.baseline_pt).abs() < 0.5
+                        && run.left_pt < body_run.left_pt
+                })
+                .collect();
+            label_runs.sort_by(|left, right| left.left_pt.total_cmp(&right.left_pt));
+            let mut label: String = label_runs.iter().map(|run| run.text.as_str()).collect();
+            label.push_str(&body_run.text[..body_run.text.find(body).unwrap()]);
+            (label.trim().to_string(), body_run.left_pt)
+        })
+        .collect()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn docx_level_text_literal_text_prints_as_written() {
+    // Typst reads every `1`, `a`, `A`, `i`, `I`, `*`, ... in a numbering
+    // pattern as a counter, but Word prints lvlText's literal text as written:
+    // `1.%1` is `1.1`, `1.2`, never `1`, `2` (issue #2221).
+    let bodies = ["Alpha", "Beta", "Gamma"];
+    let mut body_lefts: BTreeMap<&str, Vec<f64>> = BTreeMap::new();
+    // A 9pt hanging indent is narrower than `1.1`, so the body's tab follows
+    // the label's measured width. A label with a space gets room for itself
+    // (issue #2322).
+    for (level_text, number_format, hanging_twips, expected) in [
+        ("1.%1", "decimal", 180, ["1.1", "1.2", "1.3"]),
+        // `9` is no counting symbol, so this control already prints right.
+        ("9.%1", "decimal", 180, ["9.1", "9.2", "9.3"]),
+        (
+            "Article %1",
+            "upperRoman",
+            1440,
+            ["Article I", "Article II", "Article III"],
+        ),
+        ("*%1)", "lowerLetter", 180, ["*a)", "*b)", "*c)"]),
+        // Without a placeholder, lvlText is static text on every item.
+        ("1)", "decimal", 180, ["1)", "1)", "1)"]),
+        ("*", "lowerLetter", 180, ["*", "*", "*"]),
+        ("", "decimal", 180, ["", "", ""]),
+        ("", "none", 180, ["", "", ""]),
+    ] {
+        let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(hanging_list_level(
+            0,
+            number_format,
+            level_text,
+            1440,
+            hanging_twips,
+        ));
+        let data = build_docx_with_numbering(
+            vec![abstract_num],
+            vec![docx_rs::Numbering::new(1, 0)],
+            bodies
+                .iter()
+                .map(|body| {
+                    docx_rs::Paragraph::new()
+                        .add_run(docx_rs::Run::new().add_text(*body))
+                        .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0))
+                })
+                .collect(),
+        );
+        let painted = painted_list_labels(&data, &bodies);
+        let labels: Vec<&str> = painted.iter().map(|(label, _)| label.as_str()).collect();
+        assert_eq!(labels, expected, "lvlText {level_text:?}");
+        body_lefts.insert(level_text, painted.iter().map(|(_, left)| *left).collect());
+    }
+    // `1.1` and `9.1` are equally wide, so their bodies tab to the same stop.
+    for (literal, control) in body_lefts["1.%1"].iter().zip(&body_lefts["9.%1"]) {
+        assert!(
+            (literal - control).abs() < 0.01,
+            "body after `1.N` at {literal}pt, after `9.N` at {control}pt"
+        );
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn docx_level_text_literal_text_survives_parent_numbers() {
+    let abstract_num = docx_rs::AbstractNumbering::new(0)
+        .add_level(hanging_list_level(0, "decimal", "1.%1", 720, 360))
+        .add_level(hanging_list_level(1, "lowerLetter", "1.%1.%2", 1440, 360));
+    let items = [
+        (0, "Alpha"),
+        (1, "Child one"),
+        (1, "Child two"),
+        (0, "Beta"),
+    ];
+    let data = build_docx_with_numbering(
+        vec![abstract_num],
+        vec![docx_rs::Numbering::new(1, 0)],
+        items
+            .iter()
+            .map(|(level, body)| {
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text(*body))
+                    .numbering(
+                        docx_rs::NumberingId::new(1),
+                        docx_rs::IndentLevel::new(*level),
+                    )
+            })
+            .collect(),
+    );
+    let bodies: Vec<&str> = items.iter().map(|(_, body)| *body).collect();
+    let labels: Vec<String> = painted_list_labels(&data, &bodies)
+        .into_iter()
+        .map(|(label, _)| label)
+        .collect();
+    assert_eq!(labels, ["1.1", "1.1.a", "1.1.b", "1.2"]);
+}
+
+/// Word lets a list paragraph hang into the margin like any other paragraph:
+/// its marker starts at the margin plus the signed `w:ind w:left` minus the
+/// hanging span, and its body lines start at the margin plus the signed left
+/// indent, even when either lies left of the margin (issue #2233). Main
+/// clamped both at the margin.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn docx_list_marker_and_body_hang_into_the_margin_at_their_signed_indent() {
+    let body: String = "Hanging list item ".repeat(14);
+    // Level format and text, then the left indent and hanging span in twips.
+    // Each marker is narrower than its hanging span, so the body starts at
+    // the left indent.
+    let cases: [(&str, &str, i32, i32); 4] = [
+        ("decimal", "%1.", -720, 360),
+        ("decimal", "%1.", 200, 720),
+        ("bullet", "\u{2022}", -360, 360),
+        ("decimal", "%1.", 720, 360),
+    ];
+    for (number_format, level_text, left_twips, hanging_twips) in cases {
+        let abstract_num = docx_rs::AbstractNumbering::new(0).add_level(hanging_list_level(
+            0,
+            number_format,
+            level_text,
+            left_twips,
+            hanging_twips,
+        ));
+        let data = build_docx_with_numbering(
+            vec![abstract_num],
+            vec![docx_rs::Numbering::new(1, 0)],
+            vec![
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Margin")),
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text(&body))
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+            ],
+        );
+        let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        let source = crate::render::typst_gen::generate_typst(&document).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs(&source.source, 0).unwrap();
+        let margin: f64 = runs
+            .iter()
+            .find(|run| run.text == "Margin")
+            .expect("the margin reference should be placed")
+            .left_pt;
+        let first_line = runs
+            .iter()
+            .find(|run| run.text.starts_with("Hanging"))
+            .expect("the list body should be placed");
+        let marker = runs
+            .iter()
+            .find(|run| {
+                (run.baseline_pt - first_line.baseline_pt).abs() < 0.01
+                    && run.left_pt < first_line.left_pt
+            })
+            .unwrap_or_else(|| panic!("no marker beside the body: {runs:?}"));
+        let continuations: Vec<f64> = runs
+            .iter()
+            .filter(|run| run.baseline_pt > first_line.baseline_pt + 1.0)
+            .map(|run| run.left_pt)
+            .collect();
+        let left: f64 = f64::from(left_twips) / 20.0;
+        let hanging: f64 = f64::from(hanging_twips) / 20.0;
+        let case = format!("{number_format} left {left}pt, hanging {hanging}pt");
+        assert!(
+            (marker.left_pt - (margin + left - hanging)).abs() < 0.05,
+            "{case}: the marker must start at {}pt, got {}pt",
+            margin + left - hanging,
+            marker.left_pt
+        );
+        assert!(
+            (first_line.left_pt - (margin + left)).abs() < 0.05,
+            "{case}: the body must start at {}pt, got {}pt",
+            margin + left,
+            first_line.left_pt
+        );
+        assert!(
+            !continuations.is_empty()
+                && continuations
+                    .iter()
+                    .all(|start| (start - (margin + left)).abs() < 0.05),
+            "{case}: wrapped lines must start at {}pt, got {continuations:?}",
+            margin + left
+        );
+    }
+}
+
+/// The gate `TODO(#2383)` in `group_into_lists` sets: under a direct
+/// `w:numPr`, a paragraph style's `w:ind` still stands in for the level's,
+/// so such a list keeps its marker at the margin instead of hanging the style
+/// chain's indent into it (issue #2233). Word draws these markers at the
+/// level's indent, margin + left − hanging (docxide-pdf
+/// `slovak_fuel_pricing_report`); delete this test with the gate.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn docx_style_indent_under_direct_numbering_keeps_the_marker_at_the_margin() {
+    // The style's left indent and hanging span in twips, and where the body
+    // starts from the margin, in points.
+    let cases: [(i32, Option<i32>, f64); 2] = [(0, None, 0.0), (720, Some(1021), 36.0)];
+    for (style_left, style_hanging, body_start) in cases {
+        let abstract_num = docx_rs::AbstractNumbering::new(0)
+            .add_level(hanging_list_level(0, "decimal", "%1.", 720, 360));
+        let numberings = docx_rs::Numberings::new()
+            .add_abstract_numbering(abstract_num)
+            .add_numbering(docx_rs::Numbering::new(1, 0));
+        let style = docx_rs::Style::new("Indented", docx_rs::StyleType::Paragraph).indent(
+            Some(style_left),
+            style_hanging.map(docx_rs::SpecialIndentType::Hanging),
+            None,
+            None,
+        );
+        let docx = docx_rs::Docx::new()
+            .numberings(numberings)
+            .add_style(style)
+            .add_paragraph(
+                docx_rs::Paragraph::new().add_run(docx_rs::Run::new().add_text("Margin")),
+            )
+            .add_paragraph(
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("Styled item"))
+                    .style("Indented")
+                    .numbering(docx_rs::NumberingId::new(1), docx_rs::IndentLevel::new(0)),
+            );
+        let mut cursor = Cursor::new(Vec::new());
+        docx.build().pack(&mut cursor).unwrap();
+        let data = cursor.into_inner();
+        let (document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        let source = crate::render::typst_gen::generate_typst(&document).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs(&source.source, 0).unwrap();
+        let margin: f64 = runs
+            .iter()
+            .find(|run| run.text == "Margin")
+            .unwrap()
+            .left_pt;
+        let body = runs
+            .iter()
+            .find(|run| run.text.contains("Styled item"))
+            .unwrap_or_else(|| panic!("the item should be placed: {runs:?}"));
+        let marker_left: f64 = runs
+            .iter()
+            .filter(|run| (run.baseline_pt - body.baseline_pt).abs() < 0.01)
+            .map(|run| run.left_pt)
+            .fold(f64::INFINITY, f64::min);
+        assert!(
+            (marker_left - margin).abs() < 0.05,
+            "style left {style_left}: the marker must stay at the {margin}pt margin, got {marker_left}pt"
+        );
+        if body_start > 0.0 {
+            assert!(
+                (body.left_pt - (margin + body_start)).abs() < 0.05,
+                "style left {style_left}: the body must start at {}pt, got {}pt",
+                margin + body_start,
+                body.left_pt
+            );
+        }
+    }
+}
+
+/// docxide-pdf `case97` (`numbering_negative_indent.docx`), unmodified: a
+/// numbered paragraph with `w:ind w:left="-100" w:hanging="5"` and a left tab
+/// at 171 twips. Word draws "1." at 66.775pt, by the 72pt − 5pt − 0.25pt
+/// origin, and tabs the body to 80.525pt, by the 8.55pt stop; main drew them
+/// at 72pt and 88pt (issue #2233).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn docx_list_hanging_into_the_margin_starts_where_word_starts_it() {
+    let data =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/numbering_negative_indent.docx");
+    let (document, _) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let source = crate::render::typst_gen::generate_typst(&document).unwrap();
+    let runs = crate::render::pdf::compiled_text_runs(&source.source, 0).unwrap();
+    let start = |text: &str| -> f64 {
+        runs.iter()
+            .find(|run| run.text.starts_with(text))
+            .unwrap_or_else(|| panic!("{text:?} is not painted: {runs:?}"))
+            .left_pt
+    };
+    for (text, word_start) in [("1.", 66.775), ("Test", 80.525)] {
+        let placed: f64 = start(text);
+        assert!(
+            (placed - word_start).abs() < 0.25,
+            "Word starts {text:?} at {word_start}pt, got {placed}pt"
+        );
+    }
+}
+
 /// Rewrites `word/settings.xml` inside a DOCX, replacing the
 /// `w:defaultTabStop` element with `replacement` (empty string removes it).
 fn rewrite_settings_default_tab_stop(docx_bytes: &[u8], replacement: &str) -> Vec<u8> {
@@ -1759,7 +2115,7 @@ fn rewrite_settings_default_tab_stop(docx_bytes: &[u8], replacement: &str) -> Ve
     let mut out = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
     for i in 0..archive.len() {
         let mut file = archive.by_index(i).expect("zip entry");
-        let name: String = file.name().to_string();
+        let name: String = file.name().expect("entry name should decode").into_owned();
         let mut content: Vec<u8> = Vec::new();
         std::io::Read::read_to_end(&mut file, &mut content).expect("read entry");
         if name == "word/settings.xml" {
@@ -1773,7 +2129,7 @@ fn rewrite_settings_default_tab_stop(docx_bytes: &[u8], replacement: &str) -> Ve
             };
             content = rewritten.into_bytes();
         }
-        out.start_file(name, zip::write::FileOptions::default())
+        out.start_file(name, zip::write::SimpleFileOptions::default())
             .expect("start entry");
         std::io::Write::write_all(&mut out, &content).expect("write entry");
     }
@@ -1902,7 +2258,7 @@ fn rewrite_settings_compat(docx_bytes: &[u8], replacement: &str) -> Vec<u8> {
     let mut out = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
     for i in 0..archive.len() {
         let mut file = archive.by_index(i).expect("zip entry");
-        let name: String = file.name().to_string();
+        let name: String = file.name().expect("entry name should decode").into_owned();
         let mut content: Vec<u8> = Vec::new();
         std::io::Read::read_to_end(&mut file, &mut content).expect("read entry");
         if name == "word/settings.xml" {
@@ -1911,7 +2267,7 @@ fn rewrite_settings_compat(docx_bytes: &[u8], replacement: &str) -> Vec<u8> {
             let end: usize = xml.find("</w:compat>").expect("closing tag") + "</w:compat>".len();
             content = format!("{}{}{}", &xml[..start], replacement, &xml[end..]).into_bytes();
         }
-        out.start_file(name, zip::write::FileOptions::default())
+        out.start_file(name, zip::write::SimpleFileOptions::default())
             .expect("start entry");
         std::io::Write::write_all(&mut out, &content).expect("write entry");
     }
@@ -2295,6 +2651,7 @@ fn test_docx_page_borders_back_layer_stays_behind_header_artwork() {
             width: 80.0,
             height: 80.0,
             behind_text: true,
+            flows_in_story: false,
         }],
     });
     let output = crate::render::typst_gen::generate_typst(&document).unwrap();
@@ -2859,14 +3216,14 @@ fn rewrite_docx_part(data: &[u8], part: &str, edit: impl FnOnce(&str) -> String)
     let mut edit = Some(edit);
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).unwrap();
-        let name = entry.name().to_string();
+        let name = entry.name().expect("entry name should decode").into_owned();
         let mut content = Vec::new();
         std::io::Read::read_to_end(&mut entry, &mut content).unwrap();
         if name == part {
             content = edit.take().unwrap()(&String::from_utf8(content).unwrap()).into_bytes();
         }
         output
-            .start_file(name, zip::write::FileOptions::default())
+            .start_file(name, zip::write::SimpleFileOptions::default())
             .unwrap();
         std::io::Write::write_all(&mut output, &content).unwrap();
     }
@@ -3261,7 +3618,7 @@ fn docx_skipped_list_subtrees_handle_returns_to_shallower_child_levels() {
             })
             .unwrap();
         let mut deepest = list.level_styles[&2].clone();
-        deepest.numbering_pattern = Some("[1]".to_string());
+        deepest.numbering_pattern = Some(NumberingPattern::parse("[1]"));
         deepest.marker_style = Some(TextStyle {
             font_size: Some(11.0),
             ..TextStyle::default()
@@ -3807,6 +4164,255 @@ fn docx_wide_numbering_tab_keeps_continuation_lines_at_declared_indent() {
     assert!(continuations.len() >= 2, "{continuations:?}");
     for line in continuations {
         assert!((line.left_pt - 126.0).abs() < 0.01, "{line:?}");
+    }
+}
+
+/// The level-1 geometry and tab grid a list-body tab probe runs on, in points
+/// from the 90pt left margin, and the level's `w:suff`.
+#[cfg(not(target_arch = "wasm32"))]
+struct ListBodyTabGrid<'a> {
+    body_origin: f64,
+    hanging: f64,
+    interval: f64,
+    stops: &'a [f64],
+    suffix: &'a str,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl ListBodyTabGrid<'_> {
+    /// Word's next stop strictly past `pen`: the first custom stop ahead of
+    /// it, otherwise the next multiple of the default interval.
+    fn next_stop(&self, pen: f64) -> f64 {
+        self.stops
+            .iter()
+            .copied()
+            .find(|stop| *stop > pen + 0.01)
+            .unwrap_or_else(|| {
+                ((pen + 0.01) / self.interval).floor() * self.interval + self.interval
+            })
+    }
+}
+
+/// Every `(n)` item's body begins with `leading_tabs` tabs, then `first`;
+/// `second` follows one more tab when given. Word counts tab stops from the
+/// margin, so the pen starts at the body origin, or where a wide marker's
+/// suffix tab already left it, and each tab moves it to the next stop.
+#[cfg(not(target_arch = "wasm32"))]
+fn assert_list_body_tabs(
+    data: &[u8],
+    grid: &ListBodyTabGrid<'_>,
+    leading_tabs: usize,
+    first: &str,
+    second: Option<&str>,
+) {
+    const MARGIN: f64 = 90.0;
+    let (document, _) = DocxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let source = crate::render::typst_gen::generate_typst(&document).unwrap();
+    let text = crate::render::pdf::compiled_text_runs(&source.source, 0).unwrap();
+    let glyphs = crate::render::pdf::compiled_glyph_runs(&source.source, 0, true).unwrap();
+    let width = |label: &str| {
+        glyphs
+            .iter()
+            .find(|run| run.text == label)
+            .unwrap_or_else(|| panic!("no glyph run {label:?} in {glyphs:?}"))
+            .width_pt()
+    };
+    let mut checked = 0;
+    for marker in text.iter().filter(|run| run.text.starts_with('(')) {
+        let on_marker_line = |label: &str| {
+            text.iter()
+                .find(|run| {
+                    run.text.starts_with(label)
+                        && (run.baseline_pt - marker.baseline_pt).abs() < 0.01
+                })
+                .unwrap_or_else(|| panic!("no {label:?} beside {}: {text:?}", marker.text))
+        };
+        let marker_end = marker.left_pt + width(&marker.text) - MARGIN;
+        let mut pen = match grid.suffix {
+            "space" => marker_end + compiled_numbering_separator_width(marker.font_size_pt),
+            "nothing" => marker_end,
+            _ if marker_end < grid.body_origin - 0.01 => grid.body_origin,
+            _ => grid.next_stop(marker_end),
+        };
+        for _ in 0..leading_tabs {
+            pen = grid.next_stop(pen);
+        }
+        let body = on_marker_line(first);
+        assert!(
+            (body.left_pt - (MARGIN + pen)).abs() < 0.01,
+            "{} ends at {marker_end}; {first:?} at {}, expected {}: {text:?}",
+            marker.text,
+            body.left_pt,
+            MARGIN + pen
+        );
+        if let Some(second) = second {
+            let expected = MARGIN + grid.next_stop(body.left_pt + width(first) - MARGIN);
+            let after = on_marker_line(second);
+            assert!(
+                (after.left_pt - expected).abs() < 0.01,
+                "{}: {second:?} at {}, expected {expected}",
+                marker.text,
+                after.left_pt
+            );
+        }
+        let marker_origin = MARGIN + grid.body_origin - grid.hanging;
+        assert!((marker.left_pt - marker_origin).abs() < 0.01, "{marker:?}");
+        checked += 1;
+    }
+    assert_eq!(checked, 4);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn docx_list_body_tabs_advance_from_the_body_origin_on_margin_stops() {
+    let base =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/numbering_wide_markers.docx");
+    let level_one = |data: &[u8], edit: &dyn Fn(&str) -> String| {
+        rewrite_numbering_part(data, |xml| {
+            let (prefix, child) = xml.split_once("<w:lvl w:ilvl=\"1\">").unwrap();
+            format!("{prefix}<w:lvl w:ilvl=\"1\">{}", edit(child))
+        })
+    };
+    let with_body = |data: &[u8], body: &str| {
+        rewrite_docx_part(data, "word/document.xml", |xml| {
+            xml.replace("<w:t>Continuous item</w:t>", body)
+        })
+    };
+    let on_grid = ListBodyTabGrid {
+        body_origin: 36.0,
+        hanging: 18.0,
+        interval: 36.0,
+        stops: &[],
+        suffix: "tab",
+    };
+    for start in [7, 998] {
+        let data = rewrite_numbering_part(base, |xml| {
+            xml.replace(
+                "<w:start w:val=\"7\"/>",
+                &format!("<w:start w:val=\"{start}\"/>"),
+            )
+        });
+        let one = with_body(&data, "<w:tab/><w:t>Continuous item</w:t>");
+        assert_list_body_tabs(&one, &on_grid, 1, "Continuous item", None);
+        let two = with_body(&data, "<w:tab/><w:tab/><w:t>Continuous item</w:t>");
+        assert_list_body_tabs(&two, &on_grid, 2, "Continuous item", None);
+        let shorter = rewrite_docx_part(&one, "word/settings.xml", |xml| {
+            xml.replace(
+                "<w:defaultTabStop w:val=\"720\"/>",
+                "<w:defaultTabStop w:val=\"480\"/>",
+            )
+        });
+        let shorter_grid = ListBodyTabGrid {
+            interval: 24.0,
+            ..on_grid
+        };
+        assert_list_body_tabs(&shorter, &shorter_grid, 1, "Continuous item", None);
+        // A custom stop ahead of the pen wins over the default grid.
+        let custom = level_one(&one, &|child| {
+            child.replacen(
+                "<w:pPr>",
+                "<w:pPr><w:tabs><w:tab w:val=\"left\" w:pos=\"1260\"/></w:tabs>",
+                1,
+            )
+        });
+        let custom_grid = ListBodyTabGrid {
+            stops: &[63.0],
+            ..on_grid
+        };
+        assert_list_body_tabs(&custom, &custom_grid, 1, "Continuous item", None);
+        // A body origin off the default grid, with a custom stop the pen has
+        // already reached there: the tab skips it for the next default stop.
+        let off_grid = level_one(&one, &|child| {
+            child.replacen(
+                "<w:pPr><w:ind w:left=\"720\" w:hanging=\"360\"/>",
+                "<w:pPr><w:tabs><w:tab w:val=\"left\" w:pos=\"1152\"/></w:tabs><w:ind w:left=\"1152\" w:hanging=\"432\"/>",
+                1,
+            )
+        });
+        let off_grid_geometry = ListBodyTabGrid {
+            body_origin: 57.6,
+            hanging: 21.6,
+            interval: 36.0,
+            stops: &[57.6],
+            suffix: "tab",
+        };
+        assert_list_body_tabs(&off_grid, &off_grid_geometry, 1, "Continuous item", None);
+        // A space or no separator leaves the pen just past the marker, on
+        // either side of the body origin, and the tab measures from there.
+        for suffix in ["space", "nothing"] {
+            let suffixed = level_one(&one, &|child| {
+                child.replacen(
+                    "<w:lvlText",
+                    &format!("<w:suff w:val=\"{suffix}\"/><w:lvlText"),
+                    1,
+                )
+            });
+            let suffixed_grid = ListBodyTabGrid { suffix, ..on_grid };
+            assert_list_body_tabs(&suffixed, &suffixed_grid, 1, "Continuous item", None);
+        }
+        // A tab inside the body measures the text before it from the same
+        // origin.
+        let inner = with_body(&data, "<w:t>Continuous</w:t><w:tab/><w:t>item</w:t>");
+        assert_list_body_tabs(&inner, &on_grid, 0, "Continuous", Some("item"));
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn docx_list_body_tab_keeps_continuation_lines_at_declared_indent() {
+    let base =
+        include_bytes!("../../../../tests/fixtures/docx/docxide/numbering_wide_markers.docx");
+    // Every item starts with one tab; the last one's body also wraps.
+    let data = rewrite_docx_part(base, "word/document.xml", |xml| {
+        let (prefix, suffix) = xml.rsplit_once("<w:t>Continuous item</w:t>").unwrap();
+        format!(
+            "{prefix}<w:t>Continuous item with a long explanation after a leading tab about the final wide numbering marker and the paragraph continuation origin. This sentence continues across several physical lines to test wrapping at the declared left margin.</w:t>{suffix}"
+        )
+        .replace("<w:t>Continuous item", "<w:tab/><w:t>Continuous item")
+    });
+    let grid = ListBodyTabGrid {
+        body_origin: 36.0,
+        hanging: 18.0,
+        interval: 36.0,
+        stops: &[],
+        suffix: "tab",
+    };
+    assert_list_body_tabs(&data, &grid, 1, "Continuous item", None);
+    // Check the requested face and the narrower CI fallback, which fits more
+    // of the body on each line.
+    for family in [None, Some("Libertinus Serif")] {
+        let (mut document, _) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        if let Some(family) = family {
+            for page in &mut document.pages {
+                if let crate::ir::Page::Flow(flow) = page {
+                    for block in &mut flow.content {
+                        if let Block::List(list) = block {
+                            for item in &mut list.items {
+                                for paragraph in &mut item.content {
+                                    for run in &mut paragraph.runs {
+                                        run.style.font_family = Some(family.to_string());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        let source = crate::render::typst_gen::generate_typst(&document).unwrap();
+        let runs = crate::render::pdf::compiled_text_runs(&source.source, 0).unwrap();
+        let first = runs
+            .iter()
+            .find(|run| run.text.starts_with("Continuous item with"))
+            .unwrap();
+        let continuations: Vec<_> = runs
+            .iter()
+            .filter(|run| run.baseline_pt > first.baseline_pt + 1.0)
+            .collect();
+        assert!(continuations.len() >= 2, "{family:?}: {continuations:?}");
+        for line in continuations {
+            assert!((line.left_pt - 126.0).abs() < 0.01, "{family:?}: {line:?}");
+        }
     }
 }
 

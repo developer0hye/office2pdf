@@ -1,0 +1,167 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 183.168,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 32.64,
+        "x": 44.64,
+        "y": 124.8
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Header now sits on Word's baseline (134.00pt against 134.08pt); the remaining ink is the Noto Sans stand-in for unembedded Aptos, whose glyphs are taller and about 8.5% wider than Word's Aptos."
+      },
+      "id": "p1-146d20084e76",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 38.2464,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 44.64,
+        "y": 202.08
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Before and Second: outline-only differences between Word's ArialMT and this host's metric-compatible Liberation Sans in the 600 DPI difference crop; baselines within 0.13pt and unchanged by this fix."
+      },
+      "id": "p1-d4f3c9d1c228",
+      "region": "left"
+    },
+    {
+      "area_pt2": 31.104,
+      "bbox_pt": {
+        "height": 10.08,
+        "width": 5.76,
+        "x": 71.04,
+        "y": 199.68
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Before and Second: outline-only differences between Word's ArialMT and this host's metric-compatible Liberation Sans in the 600 DPI difference crop; baselines within 0.13pt and unchanged by this fix."
+      },
+      "id": "p1-08000db4f070",
+      "region": "left"
+    },
+    {
+      "area_pt2": 29.0304,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.2,
+        "x": 36.96,
+        "y": 125.28
+      },
+      "disposition": {
+        "issue": "#2237",
+        "kind": "issue",
+        "note": "Header now sits on Word's baseline (134.00pt against 134.08pt); the remaining ink is the Noto Sans stand-in for unembedded Aptos, whose glyphs are taller and about 8.5% wider than Word's Aptos."
+      },
+      "id": "p1-797dab6715d2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 28.5696,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 6.72,
+        "x": 36.48,
+        "y": 168.48
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Before and Second: outline-only differences between Word's ArialMT and this host's metric-compatible Liberation Sans in the 600 DPI difference crop; baselines within 0.13pt and unchanged by this fix."
+      },
+      "id": "p1-e389e5f5739a",
+      "region": "left"
+    },
+    {
+      "area_pt2": 26.496,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 57.6,
+        "y": 202.08
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Before and Second: outline-only differences between Word's ArialMT and this host's metric-compatible Liberation Sans in the 600 DPI difference crop; baselines within 0.13pt and unchanged by this fix."
+      },
+      "id": "p1-50bddd107e31",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 7.2,
+        "x": 36.96,
+        "y": 200.16
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Before and Second: outline-only differences between Word's ArialMT and this host's metric-compatible Liberation Sans in the 600 DPI difference crop; baselines within 0.13pt and unchanged by this fix."
+      },
+      "id": "p1-cd80fdb36a45",
+      "region": "left"
+    },
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 5.76,
+        "x": 64.32,
+        "y": 202.08
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Before and Second: outline-only differences between Word's ArialMT and this host's metric-compatible Liberation Sans in the 600 DPI difference crop; baselines within 0.13pt and unchanged by this fix."
+      },
+      "id": "p1-de7bf7610e0d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 51.36,
+        "y": 202.08
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Before and Second: outline-only differences between Word's ArialMT and this host's metric-compatible Liberation Sans in the 600 DPI difference crop; baselines within 0.13pt and unchanged by this fix."
+      },
+      "id": "p1-2ff7eb4a2079",
+      "region": "left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 9,
+    "duplicate": 0,
+    "total": 9,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

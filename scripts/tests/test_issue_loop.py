@@ -61,6 +61,23 @@ def result_event(text: str, subtype: str = "success") -> str:
     )
 
 
+def refused_report(text: str, api_error: str, status: int) -> str:
+    """A run the API refused before any work: the CLI's own structured verdict."""
+    return json.dumps(
+        {
+            "type": "result",
+            "subtype": "success",
+            "is_error": True,
+            "num_turns": 1,
+            "total_cost_usd": 0,
+            "terminal_reason": "api_error",
+            "api_error_status": status,
+            "api_error": api_error,
+            "result": text,
+        }
+    )
+
+
 class UsageLimitReasonTest(unittest.TestCase):
     def detect(self, log_text: str) -> subprocess.CompletedProcess:
         with tempfile.TemporaryDirectory() as tmp:
@@ -119,6 +136,27 @@ class UsageLimitReasonTest(unittest.TestCase):
             )
         )
 
+    def test_the_clis_structured_usage_limit_verdict_is_a_limit_whatever_its_wording(self):
+        # 2026-10-19: "You've hit your weekly limit" matched none of the message
+        # patterns, so three refused runs counted as failures, two issues were
+        # wrongly labelled blocked, and the circuit breaker stopped the loop.
+        self.assertLimit(
+            self.detect(
+                refused_report(
+                    "You've hit your weekly limit · resets 2pm (Asia/Seoul)",
+                    "usage_limit_reached",
+                    429,
+                )
+            )
+        )
+
+    def test_another_api_error_is_not_a_usage_limit(self):
+        # Triangulation: an overloaded API also refuses the run, but sleeping an
+        # hour for it would waste the window; only the usage verdict counts.
+        self.assertNoLimit(
+            self.detect(refused_report("API Error: Overloaded", "overloaded_error", 529))
+        )
+
     def test_a_plain_text_cli_failure_is_a_limit(self):
         # A hard stop can kill the CLI before it emits any JSON at all.
         self.assertLimit(self.detect("Claude AI usage limit reached|1789362000\n"))
@@ -139,6 +177,20 @@ class UsageLimitReasonTest(unittest.TestCase):
                 )
             )
         )
+
+    def test_codex_quota_failure_is_a_limit(self):
+        self.assertLimit(self.detect(json.dumps({"type": "turn.failed", "error": {
+            "message": "You've hit your usage limit. Try again later."}})))
+
+    def test_codex_error_event_is_a_limit(self):
+        self.assertLimit(self.detect(json.dumps({"type": "error", "message": "rate_limit_exceeded"})))
+
+    def test_codex_agent_and_command_text_cannot_claim_a_quota_failure(self):
+        for item in (
+            {"type": "agent_message", "text": "You've hit your usage limit."},
+            {"type": "command_execution", "aggregated_output": "rate_limit_exceeded"},
+        ):
+            self.assertNoLimit(self.detect(json.dumps({"type": "item.completed", "item": item})))
 
     def test_an_empty_log_is_not_a_limit(self):
         self.assertNoLimit(self.detect(""))

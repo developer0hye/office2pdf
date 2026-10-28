@@ -55,3 +55,6 @@ replace those documents.
   optimization or measured reason no simple improvement is worthwhile in the PR's
   `Final performance pass`. Revalidate tests and the full affected-file visual
   comparison after optimization changes; a visual pass alone is not completion.
+  The Visual PR Contract rejects missing or unfinished performance declarations.
+  Verify measurements and revalidation before marking Complete, and verify no
+  conversion runtime impact before using an exemption; CI does not establish these.

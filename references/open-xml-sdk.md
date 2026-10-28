@@ -19,6 +19,10 @@ Microsoft's official SDK for working with Office Open XML documents. Strongly-ty
 
 - `DocumentFormat.OpenXml/GeneratedCode/` — Auto-generated types for all OOXML elements
 - Type definitions for `WordprocessingML`, `SpreadsheetML`, `PresentationML`
+- Word 2010 extensions Word itself writes, such as `w14:ligatures`: its
+  [`LigaturesValues`](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.office2010.word.ligaturesvalues)
+  lists `none`, `all` and the standard/contextual/historical/discretional
+  combinations in that fixed order, which `parse_ligatures_value` accepts (#2205)
 
 ## When to consult
 

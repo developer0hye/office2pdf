@@ -1,7 +1,9 @@
 use crate::parser::xml_util::OOXML_XML_VERSION;
 use std::collections::{HashMap, HashSet};
 
-use crate::ir::{Color, DocumentLanguage, PairKerning, ParagraphStyle, TabStop, TextStyle};
+use crate::ir::{
+    Color, DocumentLanguage, Ligatures, PairKerning, ParagraphStyle, TabStop, TextStyle,
+};
 
 use super::{
     ThemeFonts, WORD_UNSTATED_FONT_SIZE_PT, extract_doc_default_paragraph_style,
@@ -77,78 +79,191 @@ impl PairKerningRules {
     }
 
     fn scan(xml: &str) -> Self {
-        use quick_xml::events::Event;
-
-        let mut rules = Self::default();
-        let mut reader = quick_xml::Reader::from_str(xml);
-        reader.config_mut().trim_text(true);
-
-        let mut in_doc_defaults: bool = false;
-        let mut in_run_property_default: bool = false;
-        // `w:pPr` never carries a `w:rPr` in a style definition (the schema
-        // gives styles `CT_PPrGeneral`, which has no run properties), but a
-        // malformed part must not be allowed to plant a threshold either.
-        let mut in_paragraph_property: bool = false;
-        let mut current_style_id: Option<String> = None;
-
-        loop {
-            match reader.read_event() {
-                Ok(Event::Start(element) | Event::Empty(element)) => {
-                    match element.local_name().as_ref() {
-                        b"docDefaults" => in_doc_defaults = true,
-                        b"rPrDefault" => in_run_property_default = true,
-                        b"pPr" => in_paragraph_property = true,
-                        b"style" => {
-                            current_style_id = element
-                                .attributes()
-                                .flatten()
-                                .find(|attribute| attribute.key.local_name().as_ref() == b"styleId")
-                                .and_then(|attribute| {
-                                    attribute
-                                        .decoded_and_normalized_value(
-                                            OOXML_XML_VERSION,
-                                            reader.decoder(),
-                                        )
-                                        .ok()
-                                        .map(|value| value.into_owned())
-                                });
-                        }
-                        b"kern" if !in_paragraph_property => {
-                            let Some(half_points) = read_val_attribute(&element, reader.decoder())
-                            else {
-                                continue;
-                            };
-                            let kerning: PairKerning = pair_kerning_from_half_points(half_points);
-                            if in_doc_defaults && in_run_property_default {
-                                rules.document_default = kerning;
-                            } else if let Some(style_id) = current_style_id.as_ref() {
-                                rules.by_style_id.insert(style_id.clone(), kerning);
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                Ok(Event::End(element)) => match element.local_name().as_ref() {
-                    b"docDefaults" => in_doc_defaults = false,
-                    b"rPrDefault" => in_run_property_default = false,
-                    b"pPr" => in_paragraph_property = false,
-                    b"style" => current_style_id = None,
-                    _ => {}
-                },
-                Ok(Event::Eof) | Err(_) => break,
-                _ => {}
-            }
+        let stated = scan_styles_run_property(xml, b"kern", |element, decoder| {
+            read_val_attribute(element, decoder).map(pair_kerning_from_half_points)
+        });
+        Self {
+            document_default: stated.document_default.unwrap_or(PairKerning::Never),
+            by_style_id: stated.by_style_id,
         }
-
-        rules
     }
 }
 
-/// `w:val` of an element, as the number `w:kern` states it in: half-points.
-fn read_val_attribute(
+/// The `w14:ligatures` values a document states outside its runs, read from
+/// the raw `word/styles.xml` for the reason `PairKerningRules` reads `w:kern`
+/// there: the docx-rs fork has no field for the element (issue #2205).
+///
+/// A body run's own value comes from `RunScanContext` instead, which
+/// checks each run's text before handing a value out.
+///
+/// TODO(header, footer and note runs' own `w14:ligatures` are not read): those
+/// stories convert outside the paragraph cursor `RunScanContext` rides on,
+/// so their runs take the answer their styles resolve to.
+#[derive(Debug, Clone, Default)]
+pub(super) struct LigatureRules {
+    /// `w:docDefaults/w:rPrDefault/w:rPr/w14:ligatures`. Absence is Word's own
+    /// answer, no ligatures: docxide case8 states nothing, and Word draws the
+    /// `ffi` of `officia` as three glyphs in a face that has the ligature.
+    document_default: Ligatures,
+    /// `w:style/w:rPr/w14:ligatures`, keyed by `w:styleId`. A style that
+    /// states nothing is absent from the map and inherits.
+    by_style_id: HashMap<String, Ligatures>,
+}
+
+impl LigatureRules {
+    pub(super) fn from_styles_xml(xml: Option<&str>) -> Self {
+        let Some(xml) = xml else {
+            return Self::default();
+        };
+        let stated = scan_styles_run_property(xml, b"ligatures", |element, decoder| {
+            read_val_text(element, decoder).and_then(|value| parse_ligatures_value(&value))
+        });
+        Self {
+            document_default: stated.document_default.unwrap_or(Ligatures::NONE),
+            by_style_id: stated.by_style_id,
+        }
+    }
+
+    /// The ligatures every run inherits when no style states any.
+    pub(super) fn document_default(&self) -> Ligatures {
+        self.document_default
+    }
+
+    /// What a named style states, or `None` when it states nothing.
+    pub(super) fn for_style(&self, style_id: &str) -> Option<Ligatures> {
+        self.by_style_id.get(style_id).copied()
+    }
+}
+
+/// Read an `ST_Ligatures` value: `none`, `all`, or the classes it switches on
+/// named once each in the fixed order standard, contextual, historical,
+/// discretional — `standardContextual`, `historicalDiscretional`, and so on.
+/// Anything else is not a value Word writes and states nothing.
+pub(super) fn parse_ligatures_value(value: &str) -> Option<Ligatures> {
+    match value {
+        "none" => return Some(Ligatures::NONE),
+        "all" => {
+            return Some(Ligatures {
+                standard: true,
+                contextual: true,
+                historical: true,
+                discretional: true,
+            });
+        }
+        _ => {}
+    }
+    let mut ligatures = Ligatures::NONE;
+    let mut rest: &str = value;
+    let classes: [(&str, &str, &mut bool); 4] = [
+        ("standard", "Standard", &mut ligatures.standard),
+        ("contextual", "Contextual", &mut ligatures.contextual),
+        ("historical", "Historical", &mut ligatures.historical),
+        ("discretional", "Discretional", &mut ligatures.discretional),
+    ];
+    for (leading, following, is_on) in classes {
+        // The first class named is lower camel case, the rest capitalised.
+        let name: &str = if rest.len() == value.len() {
+            leading
+        } else {
+            following
+        };
+        if let Some(remainder) = rest.strip_prefix(name) {
+            *is_on = true;
+            rest = remainder;
+        }
+    }
+    (rest.is_empty() && ligatures != Ligatures::NONE).then_some(ligatures)
+}
+
+/// What `word/styles.xml` states for one run property outside the runs.
+struct StatedInStyles<T> {
+    /// `w:docDefaults/w:rPrDefault/w:rPr`.
+    document_default: Option<T>,
+    /// Each named style's `w:rPr`, keyed by `w:styleId`.
+    by_style_id: HashMap<String, T>,
+}
+
+/// Read the run property whose element has `local_name` from the two levels
+/// a value reaches text from without a run stating it:
+/// `w:docDefaults/w:rPrDefault/w:rPr` and each named style's `w:rPr`.
+/// `parse` returns `None` for a value that states nothing.
+fn scan_styles_run_property<T>(
+    xml: &str,
+    local_name: &[u8],
+    parse: impl Fn(&quick_xml::events::BytesStart<'_>, quick_xml::Decoder) -> Option<T>,
+) -> StatedInStyles<T> {
+    use quick_xml::events::Event;
+
+    let mut stated = StatedInStyles {
+        document_default: None,
+        by_style_id: HashMap::new(),
+    };
+    let mut reader = quick_xml::Reader::from_str(xml);
+    reader.config_mut().trim_text(true);
+
+    let mut in_doc_defaults: bool = false;
+    let mut in_run_property_default: bool = false;
+    // `w:pPr` never carries a `w:rPr` in a style definition (the schema gives
+    // styles `CT_PPrGeneral`, which has no run properties), but a malformed
+    // part must not be allowed to plant a value either.
+    let mut in_paragraph_property: bool = false;
+    let mut current_style_id: Option<String> = None;
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(element) | Event::Empty(element)) => {
+                match element.local_name().as_ref() {
+                    b"docDefaults" => in_doc_defaults = true,
+                    b"rPrDefault" => in_run_property_default = true,
+                    b"pPr" => in_paragraph_property = true,
+                    b"style" => {
+                        current_style_id = element
+                            .attributes()
+                            .flatten()
+                            .find(|attribute| attribute.key.local_name().as_ref() == b"styleId")
+                            .and_then(|attribute| {
+                                attribute
+                                    .decoded_and_normalized_value(
+                                        OOXML_XML_VERSION,
+                                        reader.decoder(),
+                                    )
+                                    .ok()
+                                    .map(|value| value.into_owned())
+                            });
+                    }
+                    name if name == local_name && !in_paragraph_property => {
+                        let Some(value) = parse(&element, reader.decoder()) else {
+                            continue;
+                        };
+                        if in_doc_defaults && in_run_property_default {
+                            stated.document_default = Some(value);
+                        } else if let Some(style_id) = current_style_id.as_ref() {
+                            stated.by_style_id.insert(style_id.clone(), value);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::End(element)) => match element.local_name().as_ref() {
+                b"docDefaults" => in_doc_defaults = false,
+                b"rPrDefault" => in_run_property_default = false,
+                b"pPr" => in_paragraph_property = false,
+                b"style" => current_style_id = None,
+                _ => {}
+            },
+            Ok(Event::Eof) | Err(_) => break,
+            _ => {}
+        }
+    }
+
+    stated
+}
+
+/// `w:val` of an element, decoded but not interpreted.
+fn read_val_text(
     element: &quick_xml::events::BytesStart<'_>,
     decoder: quick_xml::Decoder,
-) -> Option<f64> {
+) -> Option<String> {
     element
         .attributes()
         .flatten()
@@ -157,8 +272,16 @@ fn read_val_attribute(
             attribute
                 .decoded_and_normalized_value(OOXML_XML_VERSION, decoder)
                 .ok()
+                .map(|value| value.into_owned())
         })
-        .and_then(|value| value.trim().parse::<f64>().ok())
+}
+
+/// `w:val` of an element, as the number `w:kern` states it in: half-points.
+fn read_val_attribute(
+    element: &quick_xml::events::BytesStart<'_>,
+    decoder: quick_xml::Decoder,
+) -> Option<f64> {
+    read_val_text(element, decoder).and_then(|value| value.trim().parse::<f64>().ok())
 }
 
 /// Resolved style formatting extracted from a document style definition.
@@ -433,10 +556,11 @@ pub(super) fn build_style_map(
     paragraph_backgrounds: &HashMap<String, Color>,
     style_word_wraps: &HashMap<String, bool>,
     pair_kerning: &PairKerningRules,
+    ligatures: &LigatureRules,
 ) -> StyleMap {
     let mut map = StyleMap::new();
     let (default_text, font_size_is_unstated_default): (TextStyle, bool) =
-        doc_default_text_style(styles, theme_fonts, pair_kerning);
+        doc_default_text_style(styles, theme_fonts, pair_kerning, ligatures);
     let default_paragraph: ParagraphStyle = extract_doc_default_paragraph_style(styles);
 
     map.insert(
@@ -496,6 +620,7 @@ pub(super) fn build_style_map(
                 paragraph_backgrounds,
                 style_word_wraps,
                 pair_kerning,
+                ligatures,
             );
         }
         map.insert(style.style_id.clone(), resolved);
@@ -521,6 +646,78 @@ pub(super) fn build_style_map(
     }
 
     map
+}
+
+/// Each paragraph style's `w:framePr`: its own, or else that of its nearest
+/// `w:basedOn` ancestor that states one, as docxide-pdf's style inheritance
+/// takes it. A paragraph's own `w:framePr` then overrides it attribute by
+/// attribute ([`effective_frame_property`]).
+///
+/// FIXME(unprobed style chain merge): no Word reference shows whether a
+/// derived style's `w:framePr` merges with its base style's attribute by
+/// attribute or replaces it.
+pub(super) fn paragraph_style_frames(
+    styles: &docx_rs::Styles,
+) -> HashMap<String, docx_rs::FrameProperty> {
+    let styles_by_id: HashMap<&str, &docx_rs::Style> = styles
+        .styles
+        .iter()
+        .map(|style| (style.style_id.as_str(), style))
+        .collect();
+    styles
+        .styles
+        .iter()
+        .filter(|style| style.style_type == docx_rs::StyleType::Paragraph)
+        .filter_map(|style| {
+            let frame: &docx_rs::FrameProperty =
+                based_on_chain(style, &styles_by_id)
+                    .into_iter()
+                    .find_map(|definition| definition.paragraph_property.frame_property.as_ref())?;
+            Some((style.style_id.clone(), frame.clone()))
+        })
+        .collect()
+}
+
+/// The `w:framePr` a paragraph with `property` sits in: `style_frame`, its
+/// paragraph style's, with each attribute the paragraph states itself in
+/// place of the style's, as docxide-pdf's `parse_frame_props` merges them.
+/// Word's export of docxide-pdf's scraped
+/// `massachusetts_community_sanitation` draws its letterhead lines in one
+/// frame though only the first states `w:hAnchor` and `w:hSpace` itself; the
+/// others take them from their style (issue #2231).
+///
+/// A frame that states nothing but its `w:wrap` places nothing: Word flows
+/// such a paragraph as a plain one, as docxide-pdf notes for a `Normal`
+/// style's `<w:framePr w:wrap="auto"/>`.
+pub(super) fn effective_frame_property(
+    property: &docx_rs::ParagraphProperty,
+    style_frame: Option<&docx_rs::FrameProperty>,
+) -> Option<docx_rs::FrameProperty> {
+    let own: Option<&docx_rs::FrameProperty> = property.frame_property.as_ref();
+    let frame: docx_rs::FrameProperty = match (own, style_frame) {
+        (None, None) => return None,
+        (Some(own), None) => own.clone(),
+        (None, Some(style)) => style.clone(),
+        (Some(own), Some(style)) => docx_rs::FrameProperty {
+            h: own.h.or(style.h),
+            h_rule: own.h_rule.clone().or_else(|| style.h_rule.clone()),
+            h_anchor: own.h_anchor.clone().or_else(|| style.h_anchor.clone()),
+            h_space: own.h_space.or(style.h_space),
+            v_anchor: own.v_anchor.clone().or_else(|| style.v_anchor.clone()),
+            v_space: own.v_space.or(style.v_space),
+            w: own.w.or(style.w),
+            wrap: own.wrap.clone().or_else(|| style.wrap.clone()),
+            x: own.x.or(style.x),
+            x_align: own.x_align.clone().or_else(|| style.x_align.clone()),
+            y: own.y.or(style.y),
+            y_align: own.y_align.clone().or_else(|| style.y_align.clone()),
+        },
+    };
+    let places_something: bool = docx_rs::FrameProperty {
+        wrap: None,
+        ..frame.clone()
+    } != docx_rs::FrameProperty::default();
+    places_something.then_some(frame)
 }
 
 /// The style and its same-type ancestors, from child to root.
@@ -567,6 +764,7 @@ fn merge_style_definition(
     paragraph_backgrounds: &HashMap<String, Color>,
     style_word_wraps: &HashMap<String, bool>,
     pair_kerning: &PairKerningRules,
+    ligatures: &LigatureRules,
 ) {
     let mut own_text = extract_run_style(&style.run_property);
     if own_text.font_family.is_none()
@@ -574,16 +772,18 @@ fn merge_style_definition(
     {
         own_text.font_family = resolve_theme_font_family(&run_property_json, theme_fonts);
     }
-    // Capture provenance before adding the raw pair-kerning overlay below.
-    // A kerning rule is metadata read from the same rPr, but it must not by
-    // itself make an otherwise unformatted heading definition look like a complete
-    // document-defined text treatment.
+    // Capture provenance before adding the raw pair-kerning and ligature
+    // overlays below. Each is metadata read from the same rPr, but neither may
+    // by itself make an otherwise unformatted heading definition look like a
+    // complete document-defined text treatment.
     let has_document_run_formatting = TextStyle {
         pair_kerning: None,
+        ligatures: None,
         ..own_text.clone()
     } != TextStyle::default();
     // `None` means "states nothing", so the parent decision survives.
     own_text.pair_kerning = pair_kerning.for_style(&style.style_id);
+    own_text.ligatures = ligatures.for_style(&style.style_id);
     resolved.font_size_is_unstated_default &= own_text.font_size.is_none();
     resolved.text.merge_from(&own_text);
 
@@ -622,18 +822,20 @@ fn merge_style_definition(
     }
 }
 
-/// The document-wide run defaults, with the kerning threshold the raw
-/// `word/styles.xml` states folded in, and Word's 10pt when they state no
-/// `w:sz` (issue #2234).
+/// The document-wide run defaults, with the kerning threshold and ligatures
+/// the raw `word/styles.xml` states folded in, and Word's 10pt when they state
+/// no `w:sz` (issue #2234).
 ///
 /// Kept apart from `extract_doc_default_text_style_with_theme` because that
-/// function reads docx-rs' parse, which has no `w:kern` to give.
+/// function reads docx-rs' parse, which has no `w:kern` or `w14:ligatures` to
+/// give.
 pub(super) fn resolve_doc_default_text_style(
     styles: &docx_rs::Styles,
     theme_fonts: &ThemeFonts,
     pair_kerning: &PairKerningRules,
+    ligatures: &LigatureRules,
 ) -> TextStyle {
-    doc_default_text_style(styles, theme_fonts, pair_kerning).0
+    doc_default_text_style(styles, theme_fonts, pair_kerning, ligatures).0
 }
 
 /// `resolve_doc_default_text_style`, and whether its size is the unstated
@@ -642,9 +844,11 @@ fn doc_default_text_style(
     styles: &docx_rs::Styles,
     theme_fonts: &ThemeFonts,
     pair_kerning: &PairKerningRules,
+    ligatures: &LigatureRules,
 ) -> (TextStyle, bool) {
     let mut text: TextStyle = extract_doc_default_text_style_with_theme(styles, theme_fonts);
     text.pair_kerning = Some(pair_kerning.document_default());
+    text.ligatures = Some(ligatures.document_default());
     let font_size_is_unstated_default: bool = text.font_size.is_none();
     text.font_size.get_or_insert(WORD_UNSTATED_FONT_SIZE_PT);
     (text, font_size_is_unstated_default)
@@ -717,6 +921,7 @@ pub(super) fn merge_paragraph_style(
             .indent_first_line
             .or(style_paragraph.and_then(|style| style.indent_first_line)),
         starts_after_layout_break: false,
+        clearing_breaks: Box::default(),
         has_inline_list_number: false,
         numbering_suffix: None,
         line_spacing: explicit
@@ -731,6 +936,8 @@ pub(super) fn merge_paragraph_style(
         space_after: explicit
             .space_after
             .or(style_paragraph.and_then(|style| style.space_after)),
+        section_mark_after: None,
+        keeps_space_before_at_page_top: false,
         decoration_before_spacing: None,
         // Percentage paragraph gaps are a DrawingML intermediate. Word's
         // spacing reaches the IR as absolute points.
@@ -763,6 +970,9 @@ pub(super) fn merge_paragraph_style(
         } else {
             style_paragraph.and_then(|style| style.border_space.clone())
         },
+        // Run content, not formatting: no style carries a rule or a drawing.
+        horizontal_rule: None,
+        holds_anchored_drawing: false,
         // Word does not share a fixed line box across a
         // paragraph's fonts, so its paragraph mark carries no line-box role.
         paragraph_mark_font_family: None,
@@ -770,6 +980,9 @@ pub(super) fn merge_paragraph_style(
         // `<w:p>` is sized from its mark, and only
         // `push_paragraph_from_runs` can see that (issue #1700).
         paragraph_mark_text_style: None,
+        // Resolved from the paragraph mark once the paragraph is known to be
+        // numbered (issue #2337).
+        numbering_label_style: None,
         // Worksheet-cell-only (issue #1631); Word paragraphs never carry one.
         sheet_number_format_reserved_glyphs: None,
         sheet_number_format_accounting_leading_reserved_glyphs: None,

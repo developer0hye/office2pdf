@@ -687,6 +687,72 @@ fn test_scan_table_headers_counts_only_leading_rows() {
     assert_eq!(headers[1].repeat_rows, 0);
 }
 
+/// docx-rs drops `w:cantSplit`, so the story scan records it for every row
+/// of every table, nested ones included, in document order (issue #2217).
+#[test]
+fn test_scan_table_headers_reads_cant_split_per_row() {
+    let document_xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+            <w:tbl>
+                <w:tr><w:trPr><w:cantSplit/></w:trPr><w:tc><w:p/></w:tc></w:tr>
+                <w:tr><w:tc><w:p/></w:tc></w:tr>
+                <w:tr><w:trPr><w:cantSplit w:val="0"/></w:trPr><w:tc><w:p/></w:tc></w:tr>
+                <w:tr>
+                    <w:trPr><w:tblHeader w:val="0"/><w:cantSplit w:val="true"/></w:trPr>
+                    <w:tc>
+                        <w:tbl>
+                            <w:tr><w:tc><w:p/></w:tc></w:tr>
+                            <w:tr><w:trPr><w:cantSplit/></w:trPr><w:tc><w:p/></w:tc></w:tr>
+                        </w:tbl>
+                        <w:p/>
+                    </w:tc>
+                </w:tr>
+                <w:tr/>
+            </w:tbl>
+        </w:body>
+    </w:document>"#;
+
+    let tables = scan_table_headers(document_xml);
+
+    assert_eq!(tables.len(), 2);
+    assert_eq!(
+        tables[0].cant_split_rows,
+        vec![true, false, false, true, false]
+    );
+    assert_eq!(tables[1].cant_split_rows, vec![false, true]);
+}
+
+#[test]
+fn test_docx_table_rows_carry_cant_split() {
+    let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:body>
+        <w:tbl>
+            <w:tblGrid><w:gridCol w:w="2000"/></w:tblGrid>
+            <w:tr><w:tc><w:p><w:r><w:t>Free</w:t></w:r></w:p></w:tc></w:tr>
+            <w:tr>
+                <w:trPr><w:cantSplit/></w:trPr>
+                <w:tc><w:p><w:r><w:t>Kept</w:t></w:r></w:p></w:tc>
+            </w:tr>
+            <w:tr>
+                <w:trPr><w:trHeight w:val="400"/><w:cantSplit w:val="false"/></w:trPr>
+                <w:tc><w:p><w:r><w:t>Off</w:t></w:r></w:p></w:tc>
+            </w:tr>
+        </w:tbl>
+        <w:sectPr/>
+    </w:body>
+</w:document>"#;
+    let data = build_docx_with_columns(document_xml);
+    let (doc, _warnings) = DocxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let flags: Vec<bool> = first_table(&doc)
+        .rows
+        .iter()
+        .map(|row| row.cant_split)
+        .collect();
+
+    assert_eq!(flags, vec![false, true, false]);
+}
+
 #[test]
 fn test_scan_table_headers_tracks_visual_rtl_per_table() {
     let document_xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">

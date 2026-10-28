@@ -4,6 +4,13 @@ Visual evidence lives in an issue-numbered directory and is checked by the Visua
 PR Contract job (`scripts/check_visual_pr.py`). There are three modes; a pull
 request declares which one it uses in `Visual audit > Evidence mode`.
 
+After visual acceptance, complete the [final memory and speed pass](../../AGENTS.md#final-memory-and-speed-pass)
+before final CI and merge. The gate requires `Final performance pass > Status` to
+be `Complete` with non-placeholder measurements and an outcome/revalidation record
+(links allowed), or `Not applicable: explanation`. Review must verify that an
+exemption has no conversion runtime impact and that the evidence is valid;
+declaring completion alone does not prove an optimization.
+
 ## Evidence mode: `fix`
 
 A pull request that fixes a visual defect keeps all three images, a layout

@@ -95,7 +95,8 @@ pub struct FlowPage {
     pub footer: Option<super::elements::HeaderFooter>,
     /// The header this section's **first** page takes, where `<w:titlePg/>`
     /// asks for one. `None` means every page takes [`FlowPage::header`]
-    /// (issue #846).
+    /// (issue #846); an empty story means page one has no header
+    /// (issue #2224).
     pub first_header: Option<super::elements::HeaderFooter>,
     /// The footer this section's first page takes, under the same rule.
     pub first_footer: Option<super::elements::HeaderFooter>,

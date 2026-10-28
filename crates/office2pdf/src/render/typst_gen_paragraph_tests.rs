@@ -73,6 +73,127 @@ fn test_first_line_indent_does_not_change_baseline_after_page_break() {
     );
 }
 
+/// Word lets a paragraph hang into the margin: every line starts at the
+/// margin plus the signed `w:ind w:left`, the first line also plus its signed
+/// first-line offset, and a negative `w:right` moves the line end past the
+/// right margin (issue #2233). Main clamped both indents to zero.
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn a_negative_paragraph_indent_hangs_its_lines_into_the_margin() {
+    let compiled_runs = |left: Option<f64>,
+                         right: Option<f64>,
+                         first_line: Option<f64>,
+                         alignment: Option<Alignment>,
+                         text: &str|
+     -> Vec<crate::render::pdf::PlacedTextRun> {
+        let mut block = make_paragraph(text);
+        let Block::Paragraph(paragraph) = &mut block else {
+            unreachable!();
+        };
+        paragraph.style.indent_left = left;
+        paragraph.style.indent_right = right;
+        paragraph.style.indent_first_line = first_line;
+        paragraph.style.alignment = alignment;
+        let source = generate_typst(&make_doc(vec![make_flow_page(vec![block])]))
+            .unwrap()
+            .source;
+        crate::render::pdf::compiled_text_runs(&source, 0).unwrap()
+    };
+    // Each line's left edge, top to bottom, for a paragraph that wraps.
+    let line_starts = |left: Option<f64>, first_line: Option<f64>| -> Vec<f64> {
+        let text: String = "Word lets a paragraph hang into the margin. ".repeat(14);
+        let mut lines: Vec<(f64, f64)> = Vec::new();
+        for run in compiled_runs(left, None, first_line, None, &text) {
+            match lines
+                .iter_mut()
+                .find(|(baseline, _)| (baseline - run.baseline_pt).abs() < 0.01)
+            {
+                Some((_, start)) => *start = start.min(run.left_pt),
+                None => lines.push((run.baseline_pt, run.left_pt)),
+            }
+        }
+        lines.into_iter().map(|(_, start)| start).collect()
+    };
+    // A4 with 72pt margins: the text column runs from 72pt to 523.28pt. Each
+    // case is a left and a first-line indent, then where the first and the
+    // later lines start.
+    let cases: [(&str, f64, f64, f64, f64); 4] = [
+        ("left -36", -36.0, 0.0, 36.0, 36.0),
+        ("left -36, firstLine 40", -36.0, 40.0, 76.0, 36.0),
+        ("left -36, hanging 18", -36.0, -18.0, 18.0, 36.0),
+        ("left 20", 20.0, 0.0, 92.0, 92.0),
+    ];
+    for (case, left, first_line, first_start, continuation_start) in cases {
+        let starts: Vec<f64> = line_starts(Some(left), Some(first_line));
+        assert!(
+            starts.len() >= 3
+                && (starts[0] - first_start).abs() < 0.05
+                && starts[1..]
+                    .iter()
+                    .all(|start| (start - continuation_start).abs() < 0.05),
+            "{case}: the first line must start at {first_start}pt and the rest at {continuation_start}pt, got {starts:?}"
+        );
+    }
+
+    let right_aligned_start = |right: Option<f64>| -> f64 {
+        compiled_runs(None, right, None, Some(Alignment::Right), "Right")
+            .into_iter()
+            .find(|run| run.text == "Right")
+            .expect("the right-aligned line should be placed")
+            .left_pt
+    };
+    let no_indent: f64 = right_aligned_start(None);
+    for (right, shift) in [(-18.0, 18.0), (18.0, -18.0)] {
+        let moved: f64 = right_aligned_start(Some(right)) - no_indent;
+        assert!(
+            (moved - shift).abs() < 0.05,
+            "a {right}pt right indent must move a right-aligned line {shift}pt, got {moved}pt"
+        );
+    }
+}
+
+/// docxide-pdf `paragraph-offset-frame-no-frame` (`spaced_section_mark.docx`)
+/// and `paragraph-offset-frame-immediate` (`offset_text_frame.docx`),
+/// unmodified: "About providing information" has `w:ind w:left="-1418"
+/// w:firstLine="1560"`, -70.9pt and +78pt. Word starts it at 92.05pt in the
+/// body, 85.05pt − 70.9pt + 78pt, and at 72.28pt in the text-anchored frame
+/// that `w:x` starts at 65.3pt; main started both 71pt to the right
+/// (issue #2233).
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn a_paragraph_hanging_into_the_margin_starts_where_word_starts_it() {
+    use crate::parser::Parser;
+
+    let cases: [(&str, &[u8], f64); 2] = [
+        (
+            "body",
+            include_bytes!("../../../../tests/fixtures/docx/docxide/spaced_section_mark.docx"),
+            92.05,
+        ),
+        (
+            "text frame",
+            include_bytes!("../../../../tests/fixtures/docx/docxide/offset_text_frame.docx"),
+            72.28,
+        ),
+    ];
+    for (place, fixture, word_start) in cases {
+        let (document, _) = crate::parser::docx::DocxParser
+            .parse(fixture, &crate::config::ConvertOptions::default())
+            .expect("the fixture should parse");
+        let source = generate_typst(&document).unwrap().source;
+        let start: f64 = crate::render::pdf::compiled_text_runs(&source, 0)
+            .unwrap()
+            .into_iter()
+            .find(|run| run.text.starts_with("About"))
+            .expect("the hanging paragraph should be placed")
+            .left_pt;
+        assert!(
+            (start - word_start).abs() < 0.25,
+            "{place}: Word starts the paragraph at {word_start}pt, got {start}pt"
+        );
+    }
+}
+
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
 fn docx_terminal_line_break_keeps_the_final_blank_line() {
@@ -271,6 +392,81 @@ fn empty_paragraph_without_line_spacing_takes_its_mark_line() {
         "a blank line whose mark is 20pt must take 20pt Arial's line, \
          expected {expected_pt}pt, got {with_large_blank_pt}pt"
     );
+}
+
+/// Word paces and seats single-spaced lines by the `hhea` of the face the run
+/// names, not the face that paints it. A host without Tahoma paints Tahoma and
+/// Arial with the same Liberation Sans, yet Tahoma's 2049/-423/0 line at 2048
+/// units per em is 1.2070em with its baseline 1.0005em down, and Arial's
+/// 1854/-434/67 line is 1.1499em with its baseline 0.9380em down. Laid out on
+/// the painted face, each Tahoma line advanced 4.7% short: in the header
+/// fixture with its body replaced by 40 single 10pt lines, the 40th landed
+/// 23.48pt above where Word's Tahoma puts it (issue #2247).
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn single_spaced_lines_take_the_named_faces_pitch_and_seat() {
+    let lines_in = |family: &str, size_pt: f64| -> Vec<f64> {
+        let style = TextStyle {
+            font_family: Some(family.to_string()),
+            font_size: Some(size_pt),
+            ..TextStyle::default()
+        };
+        let content: Vec<Block> = ["ALPHA", "BRAVO", "CHARLIE"]
+            .into_iter()
+            .map(|text| {
+                Block::Paragraph(Paragraph {
+                    style: ParagraphStyle::default(),
+                    runs: vec![Run {
+                        text: text.to_string(),
+                        style: style.clone(),
+                        href: None,
+                        footnote: None,
+                        inline_box: None,
+                    }],
+                })
+            })
+            .collect();
+        let doc = make_doc(vec![make_flow_page(content)]);
+        let source: String = generate_typst(&doc).unwrap().source;
+        let runs = crate::render::pdf::compiled_text_runs(&source, 0)
+            .unwrap_or_else(|error| panic!("compile failed: {error}\n{source}"));
+        ["ALPHA", "BRAVO", "CHARLIE"]
+            .into_iter()
+            .map(|needle| {
+                runs.iter()
+                    .find(|run| run.text.contains(needle))
+                    .unwrap_or_else(|| panic!("{needle} must be placed"))
+                    .baseline_pt
+            })
+            .collect()
+    };
+
+    let top_margin_pt: f64 = Margins::default().top;
+    for (family, ascender, descender, line_gap) in [
+        ("Tahoma", 2049.0, 423.0, 0.0),
+        ("Arial", 1854.0, 434.0, 67.0),
+    ] {
+        let seat_em: f64 = (ascender + line_gap) / 2048.0;
+        let pitch_em: f64 = (ascender + descender + line_gap) / 2048.0;
+        for size_pt in [7.5, 10.0, 12.0] {
+            let baselines: Vec<f64> = lines_in(family, size_pt);
+            for pair in baselines.windows(2) {
+                let advance_pt: f64 = pair[1] - pair[0];
+                assert!(
+                    (advance_pt - pitch_em * size_pt).abs() < 0.01,
+                    "{family} {size_pt}pt lines must advance {}pt, got {advance_pt}pt",
+                    pitch_em * size_pt
+                );
+            }
+            let seat_pt: f64 = baselines[0] - top_margin_pt;
+            assert!(
+                (seat_pt - seat_em * size_pt).abs() < 0.01,
+                "{family} {size_pt}pt's first baseline must sit {}pt below the margin, \
+                 got {seat_pt}pt",
+                seat_em * size_pt
+            );
+        }
+    }
 }
 
 #[test]
@@ -734,6 +930,7 @@ fn test_legacy_justified_latin_table_cell_uses_first_fit_breaker() {
     };
     let table: Table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             cells: vec![TableCell {
                 content: vec![Block::Paragraph(paragraph)],
                 ..TableCell::default()
@@ -772,6 +969,7 @@ fn test_word_2013_justified_latin_table_cell_keeps_the_optimized_breaker() {
     };
     let table: Table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             cells: vec![TableCell {
                 content: vec![Block::Paragraph(paragraph)],
                 ..TableCell::default()
@@ -1041,8 +1239,10 @@ fn test_generate_tab_uses_measured_default_stops() {
         result.contains("#context {"),
         "Expected contextual tab rendering in: {result}"
     );
+    // A body paragraph's pen is the rendered prefix on the tab's own line
+    // (issue #2226).
     assert!(
-        result.contains("measure(tab_prefix_0).width"),
+        result.contains("measure(tab_line_0).width"),
         "Expected tab spacing to measure the rendered prefix in: {result}"
     );
     assert!(
@@ -1722,6 +1922,93 @@ fn issue_1896_preserves_empty_paragraph_after_spacing_before_a_leading_page_brea
         (empty_paragraph_gap_pt + 8.0).abs() <= 0.24,
         "Word subtracts the preceding empty Normal paragraph's 8pt after-spacing from the leading page-break continuation gap; observed a {empty_paragraph_gap_pt:.3}pt continuation gap"
     );
+}
+
+/// Word lays an empty paragraph's line out like any one-line paragraph: when
+/// it does not fit in what is left of a page, it starts the next page whole
+/// and pushes the following text down by its height. Typst cut the empty
+/// paragraph's spacing off at the page's bottom and carried none of it over,
+/// so the text started the next page one line high (issue #2253). The filler
+/// leaves 20pt: a 16pt empty line stays on page 1, and 24pt and 30pt ones,
+/// plain, indented or shaded, open page 2.
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn an_empty_paragraph_that_does_not_fit_starts_the_next_page() {
+    let exact_line = |line_pt: f64| ParagraphStyle {
+        line_spacing: Some(LineSpacing::Exact(line_pt)),
+        space_before: Some(0.0),
+        space_after: Some(0.0),
+        ..ParagraphStyle::default()
+    };
+    let exact_line_paragraph = |text: &str| {
+        let mut paragraph: Block = make_paragraph(text);
+        if let Block::Paragraph(paragraph) = &mut paragraph {
+            paragraph.style = exact_line(20.0);
+            paragraph.runs[0].style.font_family = Some("Arial".into());
+            paragraph.runs[0].style.font_size = Some(12.0);
+        }
+        paragraph
+    };
+    let continuation_baseline = |empty_style: ParagraphStyle| -> f64 {
+        let mut content: Vec<Block> = (1..=14)
+            .map(|line| exact_line_paragraph(&format!("Filler {line}")))
+            .collect();
+        content.push(Block::Paragraph(Paragraph {
+            style: empty_style,
+            runs: Vec::new(),
+        }));
+        content.push(exact_line_paragraph("Continuation"));
+        // 300pt of body height: fourteen 20pt lines leave 20pt below them.
+        let document: Document = make_doc(vec![Page::Flow(FlowPage {
+            size: PageSize {
+                width: 300.0,
+                height: 400.0,
+            },
+            margins: Margins {
+                top: 50.0,
+                bottom: 50.0,
+                left: 50.0,
+                right: 50.0,
+            },
+            content,
+            ..match make_flow_page(Vec::new()) {
+                Page::Flow(flow_page) => flow_page,
+                _ => unreachable!(),
+            }
+        })]);
+        let source: String = generate_typst(&document)
+            .expect("the synthetic overflow document should generate")
+            .source;
+        crate::render::pdf::compiled_text_runs(&source, 1)
+            .expect("page 2 should compile")
+            .into_iter()
+            .find(|run| run.text.contains("Continuation"))
+            .expect("the continuation should be on page 2")
+            .baseline_pt
+    };
+
+    // The 16pt empty line fits on page 1, so the continuation opens page 2.
+    let page_top_baseline_pt: f64 = continuation_baseline(exact_line(16.0));
+    let indented = ParagraphStyle {
+        indent_left: Some(36.0),
+        ..exact_line(30.0)
+    };
+    let shaded = ParagraphStyle {
+        background: Some(Color::new(0xD9, 0xE2, 0xF3)),
+        ..exact_line(24.0)
+    };
+    for (label, empty_style, empty_line_pt) in [
+        ("plain", exact_line(24.0), 24.0),
+        ("indented", indented, 30.0),
+        ("shaded", shaded, 24.0),
+    ] {
+        let shift_pt: f64 = continuation_baseline(empty_style) - page_top_baseline_pt;
+        assert!(
+            (shift_pt - empty_line_pt).abs() < 0.01,
+            "a {label} {empty_line_pt}pt empty line that does not fit must open page 2 and push \
+             the continuation down by its height, got {shift_pt:.3}pt"
+        );
+    }
 }
 
 #[test]
@@ -3506,6 +3793,95 @@ fn a_header_tab_places_its_segment_exactly_like_a_body_tab() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn a_header_tab_leader_takes_the_tab_runs_formatting_like_a_body_tab() {
+    // A leader is the tab character's own ink, in the run holding the tab
+    // (issue #2244). Header tabs are written by a separate path from body
+    // tabs, so both must carry the tab run's size and colour to its leader.
+    let tab_style = TextStyle {
+        font_size: Some(15.0),
+        color: Some(Color::new(192, 0, 0)),
+        ..TextStyle::default()
+    };
+    let plain = |text: &str| Run {
+        text: text.to_string(),
+        style: TextStyle::default(),
+        href: None,
+        footnote: None,
+        inline_box: None,
+    };
+    let tab = Run {
+        text: "\t".to_string(),
+        style: tab_style.clone(),
+        href: None,
+        footnote: None,
+        inline_box: None,
+    };
+    let stops = vec![TabStop {
+        position: 451.3,
+        alignment: TabAlignment::Right,
+        leader: TabLeader::Dot,
+    }];
+    let Page::Flow(mut flow) = make_flow_page(vec![Block::Paragraph(Paragraph {
+        style: ParagraphStyle {
+            tab_stops: Some(stops.clone()),
+            ..ParagraphStyle::default()
+        },
+        runs: vec![plain("Body"), tab.clone(), plain("4")],
+    })]) else {
+        unreachable!()
+    };
+    let mut head = running_head(&[], stops);
+    head.elements = vec![
+        HFInline::Run(plain("Head")),
+        HFInline::Run(tab),
+        HFInline::Run(plain("9")),
+    ];
+    flow.header = Some(crate::ir::HeaderFooter {
+        shapes: Vec::new(),
+        paragraphs: vec![head],
+        distance_from_edge: None,
+        sheet_print_scale: None,
+    });
+    let source: String = generate_typst(&make_doc(vec![Page::Flow(flow)]))
+        .unwrap()
+        .source;
+    let runs = crate::render::pdf::compiled_text_runs(&source, 0).unwrap();
+
+    let baseline_of = |label: &str| -> f64 {
+        runs.iter()
+            .find(|run| run.text == label)
+            .unwrap_or_else(|| panic!("no run {label:?} in {runs:?}"))
+            .baseline_pt
+    };
+    for (label, baseline_pt) in [
+        ("header", baseline_of("Head")),
+        ("body", baseline_of("Body")),
+    ] {
+        let leaders: Vec<&crate::render::pdf::PlacedTextRun> = runs
+            .iter()
+            .filter(|run| run.text == "." && (run.baseline_pt - baseline_pt).abs() < 0.01)
+            .collect();
+        assert!(
+            leaders.len() > 10,
+            "{label}: expected a row of leader dots, got {runs:?}"
+        );
+        for dot in leaders {
+            assert!(
+                (dot.font_size_pt - 15.0).abs() < 0.01,
+                "{label}: leader size {}pt",
+                dot.font_size_pt
+            );
+            assert_eq!(
+                dot.fill_rgba,
+                Some([192, 0, 0, 255]),
+                "{label}: leader colour"
+            );
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn centered_header_page_field_uses_its_effective_left_and_right_indents() {
     let page_number_x = |indent_left: Option<f64>, indent_right: Option<f64>| -> f64 {
         let header_paragraph = crate::ir::HeaderFooterParagraph {
@@ -3654,8 +4030,9 @@ fn test_powerpoint_slide_disables_ligatures_document_wide() {
 }
 
 /// Triangulation: the rule is keyed to the slide, not switched on for every
-/// document, so a flow page keeps the engine's default. Word's own ligature
-/// setting is a separate question this change does not answer.
+/// document, so a flow page whose document states no ligature default keeps
+/// the engine's. A Word document states its own default and each run its own
+/// answer (issue #2205); see `test_word_run_without_ligatures_switches_them_off`.
 #[test]
 fn test_flow_page_keeps_ligatures_document_wide() {
     let doc = make_doc(vec![make_flow_page(vec![make_paragraph(
@@ -3665,6 +4042,120 @@ fn test_flow_page_keeps_ligatures_document_wide() {
     assert!(
         !result.contains("ligatures: false"),
         "a flow page must not disable ligatures document-wide, got: {result}"
+    );
+}
+
+fn word_run_paragraph(text: &str, style: TextStyle) -> Block {
+    Block::Paragraph(Paragraph {
+        style: ParagraphStyle::default(),
+        runs: vec![Run {
+            text: text.to_string(),
+            style,
+            href: None,
+            footnote: None,
+            inline_box: None,
+        }],
+    })
+}
+
+/// A Word run that resolves to no ligatures says so on its own text, because
+/// Typst ligates by default: the Word reference of docxide case8 draws the
+/// `ffi` of `officia` as three glyphs where the face's ligature fused them and
+/// pulled the rest of the line one 10pt cell left (issue #2205).
+#[test]
+fn test_word_run_without_ligatures_switches_them_off() {
+    let doc = make_doc(vec![make_flow_page(vec![word_run_paragraph(
+        "culpa qui officia",
+        TextStyle {
+            ligatures: Some(crate::ir::Ligatures::NONE),
+            ..TextStyle::default()
+        },
+    )])]);
+    let result = generate_typst(&doc).unwrap().source;
+    assert!(
+        result.contains("ligatures: false"),
+        "a run Word sets without ligatures must switch them off, got: {result}"
+    );
+}
+
+/// Triangulation: a run whose style asks for standard ligatures states them
+/// on in its `#text(...)`, so it ligates even inside content that switched
+/// them off around it. Every Word run resolves a size, so it has one.
+#[test]
+fn test_word_run_with_standard_ligatures_switches_them_on() {
+    let doc = make_doc(vec![make_flow_page(vec![word_run_paragraph(
+        "scientific flow",
+        TextStyle {
+            font_size: Some(11.0),
+            ligatures: Some(crate::ir::Ligatures {
+                standard: true,
+                contextual: true,
+                ..crate::ir::Ligatures::NONE
+            }),
+            ..TextStyle::default()
+        },
+    )])]);
+    let result = generate_typst(&doc).unwrap().source;
+    assert!(
+        result.contains("ligatures: true") && !result.contains("ligatures: false"),
+        "a run asking for standard ligatures must keep them, got: {result}"
+    );
+    assert!(
+        !result.contains("discretionary-ligatures") && !result.contains("historical-ligatures"),
+        "classes the run does not ask for stay at the engine's off default, got: {result}"
+    );
+}
+
+/// The historical and discretional classes are off unless a run asks for
+/// them, in Word and in Typst alike, so only a request is emitted.
+#[test]
+fn test_word_run_with_historical_and_discretional_ligatures_requests_them() {
+    let doc = make_doc(vec![make_flow_page(vec![word_run_paragraph(
+        "Th ct st",
+        TextStyle {
+            ligatures: Some(crate::ir::Ligatures {
+                historical: true,
+                discretional: true,
+                ..crate::ir::Ligatures::NONE
+            }),
+            ..TextStyle::default()
+        },
+    )])]);
+    let result = generate_typst(&doc).unwrap().source;
+    assert!(
+        result.contains("ligatures: false")
+            && result.contains("discretionary-ligatures: true")
+            && result.contains("historical-ligatures: true"),
+        "historical and discretional ligatures without standard ones, got: {result}"
+    );
+}
+
+/// Tracking still wins over a stated ligature request (issue #684), and the
+/// run carries one `ligatures:` argument, which Typst requires.
+#[test]
+fn test_tracked_word_run_states_ligatures_once() {
+    let doc = make_doc(vec![make_flow_page(vec![word_run_paragraph(
+        "office2pdf",
+        TextStyle {
+            letter_spacing: Some(0.5),
+            ligatures: Some(crate::ir::Ligatures {
+                standard: true,
+                contextual: true,
+                historical: true,
+                discretional: true,
+            }),
+            ..TextStyle::default()
+        },
+    )])]);
+    let result = generate_typst(&doc).unwrap().source;
+    assert_eq!(
+        result.matches("ligatures: ").count(),
+        1,
+        "exactly one ligatures argument, got: {result}"
+    );
+    assert!(
+        result.contains("ligatures: false"),
+        "tracked text must disable ligatures, got: {result}"
     );
 }
 

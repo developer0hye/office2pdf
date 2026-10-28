@@ -84,8 +84,9 @@ pub(super) struct PptxRunPropertyTypefaces {
 }
 
 impl PptxRunPropertyTypefaces {
-    /// Call when an `<a:rPr>` or `<a:endParaRPr>` element opens, so the next
-    /// declaration in each slot is recognised as that element's own.
+    /// Call when an `<a:rPr>`, `<a:endParaRPr>` or paragraph `<a:pPr>/<a:defRPr>`
+    /// element opens, so the next declaration in each slot is recognised as
+    /// that element's own.
     pub(super) fn enter_run_properties(&mut self) {
         self.latin_applied = false;
         self.east_asian_applied = false;
@@ -926,7 +927,7 @@ pub(super) fn apply_pptx_saved_normal_autofit(
             }
             // ECMA-376 limits lnSpcReduction to percentage line spacing;
             // point-based a:spcPts is an absolute rule and stays unchanged.
-            Some(LineSpacing::Exact(points)) => Some(LineSpacing::Exact(points)),
+            Some(spacing @ (LineSpacing::Exact(_) | LineSpacing::AtLeast(_))) => Some(spacing),
             None => Some(LineSpacing::Proportional(1.0 - reduction)),
         };
     }
@@ -1368,10 +1369,10 @@ pub(super) fn parse_pptx_auto_numbering(
     e: &quick_xml::events::BytesStart,
     level: u32,
 ) -> PptxAutoNumbering {
-    let numbering_pattern: Option<String> = get_attr_str(e, b"type")
+    let numbering_pattern: Option<NumberingPattern> = get_attr_str(e, b"type")
         .as_deref()
         .and_then(pptx_auto_numbering_pattern)
-        .map(str::to_string);
+        .map(NumberingPattern::parse);
     let start_at: Option<u32> = get_attr_i64(e, b"startAt").and_then(|value| value.try_into().ok());
 
     PptxAutoNumbering {

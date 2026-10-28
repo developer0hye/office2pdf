@@ -475,6 +475,7 @@ fn build_background_image_element<R: Read + std::io::Seek>(
             fill_rect: None,
             shadow: None,
             paragraph_spacing: None,
+            paragraph_indent: None,
         }),
     })
 }
@@ -1474,6 +1475,7 @@ fn finalize_picture(
                     fill_rect: pic.fill_rect,
                     shadow: pic.shadow.clone(),
                     paragraph_spacing: None,
+                    paragraph_indent: None,
                 }),
             }
         })
@@ -1842,12 +1844,14 @@ fn point_is_inside_even_odd(subpaths: &[crate::ir::Subpath], px: f64, py: f64) -
 }
 
 /// Apply a parsed solid fill color to the appropriate target based on the current context.
+#[allow(clippy::too_many_arguments)]
 fn apply_solid_fill_color(
     ctx: SolidFillCtx,
     parsed: &ParsedColor,
     shape: &mut ShapeState,
     run_style: &mut TextStyle,
     end_run_style: &mut TextStyle,
+    paragraph_default_style: &mut TextStyle,
     bullet_def: &mut PptxBulletDefinition,
     pic: &mut PictureState,
 ) {
@@ -1870,8 +1874,15 @@ fn apply_solid_fill_color(
             end_run_style.color = parsed.color;
             end_run_style.color_alpha = parsed.alpha;
         }
+        SolidFillCtx::ParagraphDefaultFill => {
+            paragraph_default_style.color = parsed.color;
+            paragraph_default_style.color_alpha = parsed.alpha;
+        }
         SolidFillCtx::RunHighlight => run_style.highlight = parsed.color,
         SolidFillCtx::EndParaHighlight => end_run_style.highlight = parsed.color,
+        SolidFillCtx::ParagraphDefaultHighlight => {
+            paragraph_default_style.highlight = parsed.color;
+        }
         SolidFillCtx::BulletFill => {
             bullet_def.color = parsed.color.map(PptxBulletColorSource::Explicit);
         }
@@ -1959,6 +1970,8 @@ struct SlideXmlParser<'a> {
     in_para: bool,
     para_style: ParagraphStyle,
     para_level: u32,
+    /// The run properties a run of the open paragraph starts from: the list
+    /// level's defaults overlaid with the paragraph's own `<a:pPr>/<a:defRPr>`.
     para_default_run_style: TextStyle,
     para_end_run_style: TextStyle,
     /// Whether the open paragraph wrote an `<a:endParaRPr>` element.
@@ -1984,11 +1997,13 @@ struct SlideXmlParser<'a> {
     // ── Inline tracking flags ───────────────────────────────────────
     in_text: bool,
     in_rpr: bool,
-    /// Which typeface slots the open rPr/endParaRPr already filled, so its own
-    /// declaration replaces the inherited face and a duplicate slot does not
-    /// override the first declaration.
+    /// Which typeface slots the open rPr, endParaRPr or paragraph defRPr
+    /// already filled, so its own declaration replaces the inherited face and
+    /// a duplicate slot does not override the first declaration.
     rpr_typefaces: PptxRunPropertyTypefaces,
     in_end_para_rpr: bool,
+    /// Inside the open paragraph's `<a:pPr>/<a:defRPr>`.
+    in_para_default_rpr: bool,
     in_text_line: bool,
     solid_fill_ctx: SolidFillCtx,
     /// Inside `<a:lnRef>` within `<p:style>` — for resolving fallback line color.
@@ -2053,6 +2068,7 @@ impl<'a> SlideXmlParser<'a> {
             in_rpr: false,
             rpr_typefaces: PptxRunPropertyTypefaces::default(),
             in_end_para_rpr: false,
+            in_para_default_rpr: false,
             in_text_line: false,
             solid_fill_ctx: SolidFillCtx::None,
             in_style_ln_ref: false,
@@ -2392,6 +2408,16 @@ impl<'a> SlideXmlParser<'a> {
                     .bullet_for_level(self.para_level);
                 extract_paragraph_props(e, &mut self.para_style);
             }
+            // The paragraph's own default run properties sit between the list
+            // level and each run's `<a:rPr>`: native PowerPoint draws a run
+            // without `sz`, `b`, a fill or a face in whatever this element
+            // states (issue #2157). Its children arrive before `</a:defRPr>`,
+            // which hands the result on to the paragraph mark.
+            b"defRPr" if self.in_para && !self.in_run => {
+                self.in_para_default_rpr = true;
+                self.rpr_typefaces.enter_run_properties();
+                extract_rpr_attributes(e, &mut self.para_default_run_style);
+            }
             b"lnSpc" if self.in_para && !self.in_run => {
                 self.in_ln_spc = true;
             }
@@ -2521,7 +2547,7 @@ impl<'a> SlideXmlParser<'a> {
                 self.para_declares_end_para_rpr = true;
                 extract_rpr_attributes(e, &mut self.para_end_run_style);
             }
-            b"ln" if self.in_rpr || self.in_end_para_rpr => {
+            b"ln" if self.in_rpr || self.in_end_para_rpr || self.in_para_default_rpr => {
                 self.in_text_line = true;
             }
             b"solidFill" if self.in_rpr && !self.in_text_line => {
@@ -2530,11 +2556,17 @@ impl<'a> SlideXmlParser<'a> {
             b"solidFill" if self.in_end_para_rpr && !self.in_text_line => {
                 self.solid_fill_ctx = SolidFillCtx::EndParaFill;
             }
+            b"solidFill" if self.in_para_default_rpr && !self.in_text_line => {
+                self.solid_fill_ctx = SolidFillCtx::ParagraphDefaultFill;
+            }
             b"highlight" if self.in_rpr => {
                 self.solid_fill_ctx = SolidFillCtx::RunHighlight;
             }
             b"highlight" if self.in_end_para_rpr => {
                 self.solid_fill_ctx = SolidFillCtx::EndParaHighlight;
+            }
+            b"highlight" if self.in_para_default_rpr => {
+                self.solid_fill_ctx = SolidFillCtx::ParagraphDefaultHighlight;
             }
             b"hlinkClick" if self.in_rpr => {
                 if self.run_marker_style_before_hyperlink.is_none() {
@@ -2592,6 +2624,7 @@ impl<'a> SlideXmlParser<'a> {
                     &mut self.shape,
                     &mut self.run_style,
                     &mut self.para_end_run_style,
+                    &mut self.para_default_run_style,
                     &mut self.para_bullet_definition,
                     &mut self.pic,
                 );
@@ -2976,6 +3009,7 @@ impl<'a> SlideXmlParser<'a> {
                     &mut self.shape,
                     &mut self.run_style,
                     &mut self.para_end_run_style,
+                    &mut self.para_default_run_style,
                     &mut self.para_bullet_definition,
                     &mut self.pic,
                 );
@@ -3001,7 +3035,7 @@ impl<'a> SlideXmlParser<'a> {
                 self.para_declares_end_para_rpr = true;
                 extract_rpr_attributes(e, &mut self.para_end_run_style);
             }
-            b"ln" if self.in_rpr || self.in_end_para_rpr => {
+            b"ln" if self.in_rpr || self.in_end_para_rpr || self.in_para_default_rpr => {
                 self.in_text_line = true;
             }
             b"pPr" if self.in_para && !self.in_run => {
@@ -3017,6 +3051,10 @@ impl<'a> SlideXmlParser<'a> {
                     .text_body_style_defaults
                     .bullet_for_level(self.para_level);
                 extract_paragraph_props(e, &mut self.para_style);
+            }
+            b"defRPr" if self.in_para && !self.in_run => {
+                extract_rpr_attributes(e, &mut self.para_default_run_style);
+                self.para_end_run_style = self.para_default_run_style.clone();
             }
             b"lnSpc" if self.in_para && !self.in_run => {
                 self.in_ln_spc = true;
@@ -3118,6 +3156,13 @@ impl<'a> SlideXmlParser<'a> {
             b"latin" | b"ea" | b"cs" if self.in_end_para_rpr => {
                 self.rpr_typefaces
                     .apply_typeface(e, &mut self.para_end_run_style, self.ctx.theme);
+            }
+            b"latin" | b"ea" | b"cs" if self.in_para_default_rpr => {
+                self.rpr_typefaces.apply_typeface(
+                    e,
+                    &mut self.para_default_run_style,
+                    self.ctx.theme,
+                );
             }
             _ => return false,
         }
@@ -3394,6 +3439,10 @@ impl<'a> SlideXmlParser<'a> {
             }
             b"endParaRPr" if self.in_end_para_rpr => {
                 self.in_end_para_rpr = false;
+            }
+            b"defRPr" if self.in_para_default_rpr => {
+                self.in_para_default_rpr = false;
+                self.para_end_run_style = self.para_default_run_style.clone();
             }
             b"ln" if self.in_text_line => {
                 self.in_text_line = false;

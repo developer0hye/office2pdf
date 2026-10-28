@@ -23,11 +23,13 @@ fn test_table_simple_2x2() {
     let table = Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("A1"), make_text_cell("B1")],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("A2"), make_text_cell("B2")],
                 height: None,
@@ -53,6 +55,7 @@ fn test_table_simple_2x2() {
 fn test_table_with_default_cell_padding() {
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![make_text_cell("Padded")],
             height: None,
@@ -109,6 +112,7 @@ fn test_table_cell_with_padding_override() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -146,6 +150,7 @@ fn test_table_cell_with_padding_override() {
 fn test_table_alignment_center_wraps_table() {
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![make_text_cell("Centered table")],
             height: None,
@@ -183,11 +188,13 @@ fn test_table_with_repeating_header_rows_uses_table_header() {
     let table = Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("Header 1"), make_text_cell("Header 2")],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("Body 1"), make_text_cell("Body 2")],
                 height: None,
@@ -230,21 +237,25 @@ fn test_repeating_header_expands_to_cover_rowspan() {
     let table = Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![spanning_header, make_text_cell("Year")],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("Month")],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("Day")],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("Body 1"), make_text_cell("Body 2")],
                 height: None,
@@ -275,26 +286,31 @@ fn test_repeating_header_expansion_follows_rowspans_from_newly_covered_rows() {
     let table = Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![first_header, make_text_cell("Year")],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![extending_header],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("Covered 1")],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("Covered 2")],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("Body 1"), make_text_cell("Body 2")],
                 height: None,
@@ -344,11 +360,13 @@ fn test_table_with_colspan() {
     let table = Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![merged_cell],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("A2"), make_text_cell("B2")],
                 height: None,
@@ -385,11 +403,13 @@ fn test_table_with_rowspan() {
     let table = Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![tall_cell, make_text_cell("B1")],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("B2")],
                 height: None,
@@ -426,11 +446,13 @@ fn test_table_with_explicit_row_sizes_and_cell_vertical_align() {
     let table = Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![centered_cell, make_text_cell("B1")],
                 height: Some(36.0),
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("A2"), make_text_cell("B2")],
                 height: None,
@@ -457,11 +479,13 @@ fn test_table_with_content_driven_row_heights_omits_explicit_rows() {
     let table = Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("A1"), make_text_cell("B1")],
                 height: Some(36.0),
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("A2"), make_text_cell("B2")],
                 height: Some(48.0),
@@ -501,16 +525,19 @@ fn test_table_with_colspan_and_rowspan() {
     let table = Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![big_cell, make_text_cell("C1")],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("C2")],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![
                     make_text_cell("A3"),
@@ -554,6 +581,7 @@ fn test_table_with_background_color() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![colored_cell],
             height: None,
@@ -579,6 +607,7 @@ fn a_translucent_table_cell_fill_reaches_typst() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: Some(20.0),
@@ -628,6 +657,7 @@ fn test_table_with_cell_borders() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![bordered_cell],
             height: None,
@@ -674,11 +704,13 @@ fn test_table_with_partial_cell_borders_does_not_fill_missing_grid_lines() {
     let table = Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![header_cell],
                 height: None,
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![make_text_cell("Body")],
                 height: None,
@@ -721,6 +753,7 @@ fn test_table_with_styled_text_in_cell() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![styled_cell],
             height: None,
@@ -760,6 +793,7 @@ fn test_table_cell_paragraph_preserves_right_alignment() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![make_text_cell("greek"), right_cell],
             height: None,
@@ -797,6 +831,7 @@ fn test_table_cell_paragraph_preserves_spacing() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![spaced_cell],
             height: None,
@@ -837,6 +872,7 @@ fn test_table_cell_word_line_box() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -866,6 +902,7 @@ fn test_table_empty_cells() {
     let empty_cell = TableCell::default();
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![empty_cell, make_text_cell("Has text")],
             height: None,
@@ -886,6 +923,7 @@ fn test_table_empty_cells() {
 fn test_table_no_column_widths() {
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![make_text_cell("A"), make_text_cell("B")],
             height: None,
@@ -910,6 +948,7 @@ mod cell_content_tests;
 fn test_table_special_chars_in_cells() {
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![make_text_cell("Price: $100 #items")],
             height: None,
@@ -929,6 +968,7 @@ fn test_table_special_chars_in_cells() {
 fn test_table_in_flow_page_with_paragraphs() {
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![make_text_cell("Cell")],
             height: None,
@@ -1022,6 +1062,7 @@ fn bottom_aligned_spill_cell_anchors_its_line_box_at_the_bottom() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: Some(23.0),
@@ -1095,6 +1136,7 @@ fn center_aligned_spill_cell_sizes_its_clip_box_from_its_own_font() {
         };
         let table = Table {
             rows: vec![TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![cell],
                 height: Some(23.0),
@@ -1192,6 +1234,7 @@ fn a_spill_clip_box_stops_at_the_cell_edge_its_anchor_faces() {
         };
         let table = Table {
             rows: vec![TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![cell],
                 height: Some(23.0),
@@ -1241,6 +1284,7 @@ fn xlsx_test_padding(left: f64) -> Insets {
 /// cells at each row's front.
 fn headings_table(extra_rows: Vec<TableRow>) -> Table {
     let mut rows: Vec<TableRow> = vec![TableRow {
+        cant_split: false,
         minimum_height: None,
         cells: vec![
             TableCell::default(),
@@ -1260,6 +1304,7 @@ fn headings_table(extra_rows: Vec<TableRow>) -> Table {
 
 fn gutter_row(number: &str, first: &str, second: &str) -> TableRow {
     TableRow {
+        cant_split: false,
         minimum_height: None,
         cells: vec![
             make_text_cell(number),
@@ -1399,6 +1444,7 @@ fn separator_bordered_headings_table(data_cell: TableCell, prints_gridlines: boo
     Table {
         rows: vec![
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![
                     TableCell {
@@ -1421,6 +1467,7 @@ fn separator_bordered_headings_table(data_cell: TableCell, prints_gridlines: boo
                 height: Some(13.0),
             },
             TableRow {
+                cant_split: false,
                 minimum_height: None,
                 cells: vec![
                     TableCell {
@@ -1589,6 +1636,7 @@ fn test_slide_table_cell_uses_the_powerpoint_line_box() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![sized_cell("wrapped cell text")],
             height: None,
@@ -1664,6 +1712,7 @@ fn tracked_slide_table_cell_source(
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: Some(36.0),
@@ -1812,6 +1861,7 @@ fn slide_table_hard_break_clears_the_taller_line_above_it() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: Some(66.24),
@@ -1906,6 +1956,7 @@ fn test_slide_table_empty_cell_blank_line_uses_the_powerpoint_line_box() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -1974,6 +2025,7 @@ fn spill_cell_text_is_not_wrapped_by_its_clip_box() {
     };
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -2011,6 +2063,7 @@ fn spill_cell_text_is_not_wrapped_by_its_clip_box() {
 fn test_centred_table_does_not_centre_its_cell_paragraphs() {
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![make_text_cell("Inherits left")],
             height: None,
@@ -2042,6 +2095,7 @@ fn test_centred_table_keeps_a_cell_paragraph_own_alignment() {
     }
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![cell],
             height: None,
@@ -2065,6 +2119,7 @@ fn test_centred_table_keeps_a_cell_paragraph_own_alignment() {
 fn test_unaligned_table_emits_no_alignment_reset() {
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![make_text_cell("Plain")],
             height: None,
@@ -2089,6 +2144,7 @@ fn test_unaligned_table_emits_no_alignment_reset() {
 fn a_row_minimum_height_emits_a_strut_rather_than_a_fixed_row() {
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             cells: vec![make_text_cell("Left"), make_text_cell("Right")],
             height: None,
             minimum_height: Some(110.75),
@@ -2141,6 +2197,7 @@ fn a_row_minimum_height_emits_a_strut_rather_than_a_fixed_row() {
 fn test_body_table_pins_its_own_block_spacing() {
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![make_text_cell("Warehouse lease")],
             height: None,
@@ -2181,6 +2238,7 @@ fn test_body_table_pins_its_own_block_spacing() {
 fn test_nested_table_does_not_gain_a_second_spacing_block() {
     let inner = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![make_text_cell("Inner")],
             height: None,
@@ -2190,6 +2248,7 @@ fn test_nested_table_does_not_gain_a_second_spacing_block() {
     };
     let outer = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![TableCell {
                 content: vec![Block::Table(inner)],
@@ -2224,6 +2283,7 @@ fn test_nested_table_does_not_gain_a_second_spacing_block() {
 fn test_centered_body_table_keeps_its_alignment_inside_the_wrapper() {
     let table = Table {
         rows: vec![TableRow {
+            cant_split: false,
             minimum_height: None,
             cells: vec![make_text_cell("Centred")],
             height: None,

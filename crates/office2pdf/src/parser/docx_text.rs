@@ -1,8 +1,12 @@
 use super::{
-    Alignment, Color, HyperlinkMap, LineSpacing, PairKerning, ParagraphStyle, TabAlignment,
-    TabLeader, TabStop, TabStopOverride, TextStyle, VerticalTextAlign, apply_tab_stop_overrides,
+    Alignment, Color, FieldContent, HyperlinkMap, LineSpacing, PageFieldScan, PairKerning,
+    ParagraphStyle, TabAlignment, TabLeader, TabStop, TabStopOverride, TextStyle,
+    VerticalTextAlign, apply_tab_stop_overrides,
 };
-use crate::ir::{BorderLineStyle, BorderSide, CellBorder, Insets, LineCap, LineJoin, Run};
+use crate::ir::{
+    BorderLineStyle, BorderSide, BreakClear, CellBorder, ClearingBreak, Insets, LineCap, LineJoin,
+    Run,
+};
 use crate::parser::units::{half_points_to_pt, twips_to_pt};
 use crate::parser::xml_util;
 use crate::parser::xml_util::OOXML_XML_VERSION;
@@ -117,12 +121,15 @@ pub(super) fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> Para
         indent_right,
         indent_first_line,
         starts_after_layout_break: false,
+        clearing_breaks: Box::default(),
         has_inline_list_number: false,
         numbering_suffix: None,
         line_spacing,
         line_box: None,
         space_before,
         space_after,
+        section_mark_after: None,
+        keeps_space_before_at_page_top: false,
         decoration_before_spacing: None,
         space_before_percent: None,
         space_after_percent: None,
@@ -133,6 +140,10 @@ pub(super) fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> Para
         background: None,
         border,
         border_space,
+        // Read from the paragraph's runs once they are converted (issues #2251
+        // and #2327).
+        horizontal_rule: None,
+        holds_anchored_drawing: false,
         // Word does not share a fixed line box across a
         // paragraph's fonts, so its paragraph mark carries no line-box role.
         paragraph_mark_font_family: None,
@@ -140,6 +151,9 @@ pub(super) fn extract_paragraph_style(prop: &docx_rs::ParagraphProperty) -> Para
         // `<w:p>` is sized from its mark, and only
         // `push_paragraph_from_runs` can see that (issue #1700).
         paragraph_mark_text_style: None,
+        // Resolved from the paragraph mark once the paragraph is known to be
+        // numbered (issue #2337).
+        numbering_label_style: None,
         // Worksheet-cell-only (issue #1631); Word paragraphs never carry one.
         sheet_number_format_reserved_glyphs: None,
         sheet_number_format_accounting_leading_reserved_glyphs: None,
@@ -243,7 +257,9 @@ fn extract_paragraph_borders(
     Some(Box::new(border))
 }
 
-fn extract_indent(indent: &Option<docx_rs::Indent>) -> (Option<f64>, Option<f64>, Option<f64>) {
+pub(super) fn extract_indent(
+    indent: &Option<docx_rs::Indent>,
+) -> (Option<f64>, Option<f64>, Option<f64>) {
     let Some(indent) = indent else {
         return (None, None, None);
     };
@@ -283,7 +299,8 @@ fn line_spacing_from_json(
         let line = line_val.as_f64()?;
         let rule = json.get("lineRule").and_then(|v| v.as_str());
         match rule {
-            Some("exact") | Some("atLeast") => Some(LineSpacing::Exact(twips_to_pt(line))),
+            Some("exact") => Some(LineSpacing::Exact(twips_to_pt(line))),
+            Some("atLeast") => Some(LineSpacing::AtLeast(twips_to_pt(line))),
             _ => Some(LineSpacing::Proportional(line / 240.0)),
         }
     });
@@ -409,6 +426,10 @@ pub(super) fn extract_run_style_from_json(rp: &serde_json::Value) -> TextStyle {
             .and_then(serde_json::Value::as_i64)
             .map(|twips| twips_to_pt(twips as f64)),
         pair_kerning: extract_pair_kerning(rp),
+        // docx-rs drops `w14:ligatures` from `RunProperty`, so it never
+        // reaches this JSON: `LigatureRules` reads the style levels and
+        // `RunScanContext` a body run's own value (issue #2205).
+        ligatures: None,
     }
 }
 
@@ -646,6 +667,11 @@ pub(super) fn is_page_break(br: &docx_rs::Break) -> bool {
     break_type(br).as_deref() == Some("page")
 }
 
+/// Whether a break ends only the line: anything but a page or column break.
+pub(super) fn is_line_break(br: &docx_rs::Break) -> bool {
+    !is_page_break(br) && !is_column_break(br)
+}
+
 fn break_type(br: &docx_rs::Break) -> Option<String> {
     serde_json::to_value(br)
         .ok()
@@ -653,16 +679,129 @@ fn break_type(br: &docx_rs::Break) -> Option<String> {
 }
 
 pub(super) fn extract_run_text(run: &docx_rs::Run) -> String {
+    extract_run_text_marking_clears(run, &mut std::iter::empty())
+}
+
+/// In-text markers for a line break that clears floats, one per
+/// [`BreakClear`]. They live only from run extraction until
+/// [`take_clearing_break_markers`] turns each back into `'\n'` for the
+/// paragraph built from those runs. XML 1.0 admits none of these characters,
+/// so no document text can contain them.
+const CLEARING_BREAK_MARKERS: [(char, BreakClear); 3] = [
+    ('\u{1C}', BreakClear::Left),
+    ('\u{1D}', BreakClear::Right),
+    ('\u{1E}', BreakClear::All),
+];
+
+fn marked_clear(ch: char) -> Option<BreakClear> {
+    CLEARING_BREAK_MARKERS
+        .iter()
+        .find(|(marker, _)| *marker == ch)
+        .map(|(_, clear)| *clear)
+}
+
+/// [`extract_run_text`], writing each line break the next of `clears` says
+/// clears floats as that clear's marker. A page or column break takes no
+/// entry: it never clears.
+pub(super) fn extract_run_text_marking_clears(
+    run: &docx_rs::Run,
+    clears: &mut impl Iterator<Item = Option<BreakClear>>,
+) -> String {
+    extract_run_text_reading_fields(run, clears, &mut PageFieldScan::default())
+}
+
+/// [`extract_run_text_marking_clears`], replacing each page field's cached
+/// result with the marker `fields` gives it. `fields` carries the paragraph's
+/// open fields from run to run.
+pub(super) fn extract_run_text_reading_fields(
+    run: &docx_rs::Run,
+    clears: &mut impl Iterator<Item = Option<BreakClear>>,
+    fields: &mut PageFieldScan,
+) -> String {
     let mut text = String::new();
     for child in &run.children {
-        match child {
-            docx_rs::RunChild::Text(t) => text.push_str(&t.text),
-            docx_rs::RunChild::Tab(_) => text.push('\t'),
-            docx_rs::RunChild::Break(_) => text.push('\n'),
-            _ => {}
+        let shown: char = match child {
+            docx_rs::RunChild::FieldChar(field_char) => {
+                match field_char.field_char_type {
+                    docx_rs::FieldCharType::Begin => fields.begin(),
+                    docx_rs::FieldCharType::Separate => fields.separate(),
+                    docx_rs::FieldCharType::End => text.extend(fields.end()),
+                    _ => {}
+                }
+                continue;
+            }
+            docx_rs::RunChild::InstrText(instruction) => {
+                fields.instruction(match instruction.as_ref() {
+                    docx_rs::InstrText::PAGE(_) => "PAGE",
+                    docx_rs::InstrText::NUMPAGES(_) => "NUMPAGES",
+                    docx_rs::InstrText::Unsupported(text) => text,
+                    _ => "OTHER",
+                });
+                continue;
+            }
+            docx_rs::RunChild::InstrTextString(instruction) => {
+                fields.instruction(instruction);
+                continue;
+            }
+            docx_rs::RunChild::Text(t) => {
+                if !t.text.is_empty() {
+                    match fields.content() {
+                        FieldContent::Shown => text.push_str(&t.text),
+                        FieldContent::Hidden => {}
+                        FieldContent::Marker(marker) => text.push(marker),
+                    }
+                }
+                continue;
+            }
+            docx_rs::RunChild::Tab(_) => '\t',
+            docx_rs::RunChild::Break(br) if is_line_break(br) => {
+                // Taken even inside a hidden result, so the run's later
+                // breaks keep their own clears.
+                let marker: Option<char> = clears.next().flatten().and_then(|clear| {
+                    CLEARING_BREAK_MARKERS
+                        .iter()
+                        .find(|(_, marked)| *marked == clear)
+                        .map(|(marker, _)| *marker)
+                });
+                marker.unwrap_or('\n')
+            }
+            docx_rs::RunChild::Break(_) => '\n',
+            _ => continue,
+        };
+        match fields.content() {
+            FieldContent::Shown => text.push(shown),
+            FieldContent::Hidden => {}
+            FieldContent::Marker(marker) => text.push(marker),
         }
     }
     text
+}
+
+/// Turn the clearing-break markers in a paragraph's runs back into `'\n'`,
+/// returning where they were among the paragraph's line breaks.
+pub(super) fn take_clearing_break_markers(runs: &mut [Run]) -> Box<[ClearingBreak]> {
+    let mut clearing_breaks: Vec<ClearingBreak> = Vec::new();
+    let mut line_break: usize = 0;
+    for run in runs {
+        if !run.text.contains(|ch| marked_clear(ch).is_some()) {
+            line_break += run.text.matches('\n').count();
+            continue;
+        }
+        let mut text = String::with_capacity(run.text.len());
+        for ch in run.text.chars() {
+            let ch: char = match marked_clear(ch) {
+                Some(clear) => {
+                    clearing_breaks.push(ClearingBreak { line_break, clear });
+                    '\n'
+                }
+                None => ch,
+            };
+            line_break += usize::from(ch == '\n');
+            text.push(ch);
+        }
+        run.text = text;
+    }
+    clearing_breaks.into_boxed_slice()
 }
 
 /// Extract the referenced character style id (`<w:rStyle>`) from a run's

@@ -23,4 +23,4 @@ office2pdf = { path = "../office2pdf" }
 pdf-extract = "0.10"
 # Saved containers are re-read with `zip` directly so the model under test
 # never verifies its own output.
-zip = { version = "0.6", default-features = false, features = ["deflate"] }
+zip = { version = "9.0.5", default-features = false, features = ["deflate"] }
