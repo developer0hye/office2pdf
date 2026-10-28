@@ -1,66 +1,47 @@
 # Issue 2056 visual evidence
 
-This directory holds the evidence for the third #2056 fix: an empty header
-paragraph reserves one line of its paragraph mark above the body. The
-wrapped-line evidence from #2057 remains at merge commit
-`d65372fb7f0172edc1c8940e947c5cc068743bf6`, and the exact-line evidence from
-#2219 at `6a4b7992b1a592644e713b1443253bba6f551713`.
+This directory holds the evidence for the fourth #2056 fix: Word's header
+measure keeps paragraph spacing and `w:lineRule="auto"` multiples above the
+body. Earlier evidence stays at the merge commits of its pull requests:
+wrapped lines (#2057) at `d65372fb7f0172edc1c8940e947c5cc068743bf6`, exact
+lines (#2219) at `6a4b7992b1a592644e713b1443253bba6f551713`, and empty
+paragraphs (#2225) at `68c55ebe6b99c2a09e7d5591c12d371f1eb72ce4`.
 
-Source, not committed: docxide-pdf
-[`tests/fixtures/scraped/construction_quality_control_spec`](https://github.com/sverrejb/docxide-pdf/tree/fe7b8beafa7612cc89ad62a7d27b2c6141c4d6ed/tests/fixtures/scraped/construction_quality_control_spec)
-at `fe7b8beafa7612cc89ad62a7d27b2c6141c4d6ed`, a public three-page
-specification. Its `reference.pdf` reports `Creator: Microsoft Word`, US
-Letter, three pages, and `check_gt_integrity.py --source` passes. The tracked
-regressions build their own synthetic packages instead.
-
-Its header is three Calibri 11pt lines and an empty paragraph whose mark
-resolves to Times New Roman 12pt (`Header` style, `Normal` 12pt,
-`w:rPrDefault` Times New Roman). `w:header` is 36pt and `w:top` 64.8pt.
+Fixture: `tests/fixtures/docx/issue-2056-header-last-after.docx`, the
+`last-after-480` variant of `scripts/probes/issue-2056-header-spacing.json`,
+unmodified. A4, `w:top` 72pt, `w:header` 36pt, and three single-spaced Arial
+12pt header paragraphs (`One`, `Two`, `Three`); the last states
+`w:after="480"`. The GT is that variant's native export from
+`probe_harness.py --backend office` (Microsoft Word for Mac 16.114.3, macOS
+27.0.1 build 26A434, `Producer: Quartz PDFContext`), staged in Word's own
+container. The probe's no-patch re-zip control was layout-identical to the
+base. `check_gt_integrity.py --source` passes.
 
 SHA-256:
 
-- Source: `b2c0d12a5dd997088ba597e35f4b5665876cffcc2088db3cc448c2bd06153e06`
-- Word reference: `5f75e91c24dccfcb63e7d6a987a48ac975891d92cfb3230456839b0b0b6df610`
-- Before output (main `3e946f31`): `dc7c63616e9638e67ece9fdac86a91ef2b1343dd0d3ba1c75241bac9403a2e32`
-- After output: `9177cb6a0c0407a843b583ca8507ac73ee39b1745b25847b9bdddb9c17155223`
+- Fixture: `5411fa7097fffe2de476d707937be188432a46d11c29af1839593d1737ab392e`
+- Word export: `b663817ea6e88f37788d36d9d8087b8fd02fd45fe3deb9979428d84634e011de`
+- Before output (main `e8d7378f`): `55dd20f3d0c58aaa645b4a525ae120bbe1db66973fd76c7f2ed552980eebbfe4`
+- After output: `d64a0e399ad7b68e5aa65abbabcca433add97263c94e0e995f8879a813875393`
 
-Both CLIs were built with `cargo build --locked --profile ci -p
-office2pdf-cli` in separate target directories; the output is Typst 0.15.1.
-`layout-audit.json` comes from `compare_layout.py --json --audit --fine-shift
-0.5` over all three pages. Each `render-clusters-page-<page>.json` comes from
-`compare_render.py --dpi 150 --fine-shift 0.5 --strict-clusters`. The JPEGs
-are page 1 as pdftoppm 150 DPI renders, saved as progressive quality 86
-without metadata.
+Both CLIs were built with `cargo build --locked -p office2pdf-cli --profile
+ci`. `layout-audit.json` comes from `compare_layout.py --json --audit
+--fine-shift 0.5`, and `render-clusters-page-1.json` from `compare_render.py
+--dpi 150 --fine-shift 0.5 --strict-clusters`. The JPEGs are pdftoppm 150 DPI
+renders, saved as progressive quality 86 without metadata.
 
-Result, as word-box deltas from `pdftotext -bbox` (the faces are
-metric-compatible, so they track the baselines):
+Result, as first-character baselines from `mutool draw -F stext`:
 
-| line | before | after |
-|---|---:|---:|
-| header lines 1-3 | -3.29 to -3.47pt | -0.05 to +0.12pt |
-| `SECTION 01 40 00` (first body line) | -25.26pt | +0.03pt |
-| `PART 1 GENERAL` | -25.24pt | +0.04pt |
+| line | Word | before | after |
+|---|---:|---:|---:|
+| `One` | 47.28 | 47.25 | 47.25 |
+| `Two` | 60.96 | 61.05 | 61.05 |
+| `Three` | 74.88 | 74.85 | 74.85 |
+| `Body marker` | 112.56 | 91.31 | 112.65 |
 
-Main measured no header height once a paragraph was empty, so the body sat on
-the 64.8pt margin and overprinted the third header line. The band also had no
-room for the header's ascent shift, which lifted the header lines 3.4pt. After
-the fix every page breaks where Word's does, and `compare_layout.py` findings
-fall from 212 to 28. The text layer differs only as listed below.
+Main ignored the 24pt `w:after`, so the body sat 21.25pt high, directly under
+`Three`. After the fix the layout audit has no findings and the strict render
+audit has no material cluster.
 
-Remaining on all three pages, present on main too:
-
-- `1.%1` labels print `1` … `9` where Word prints `1.1` … `1.9` (#2221).
-- The footer's first line sits 33.28pt above Word's and overprints the last
-  body line on pages 1 and 2 (#2222). In text extraction it merges into that
-  line.
-- Page 3's `PREPARATION:` starts 14.40pt left of Word's default stop (#2223).
-- Sub-material residuals, recorded in #1874: body words within 0.27pt
-  vertically, drifting up to 1.77pt horizontally along long tracked lines;
-  `DMS 2023 Edition` 0.81pt left.
-
-Other Word references checked, as first-body-line baseline dy (main, then
-after): `centrifugal_water_chillers` page 1 (nine pages, 11pt empty mark),
--16.81pt to +0.13pt; `federal_procurement_terms` page 1 (one empty header
-paragraph, `w:top` = `w:header`), -13.56pt to -0.13pt;
-`radiographer_interventional_job_desc` page 3 (two empty paragraphs),
--26.78pt to +0.02pt.
+The probe tables for every spacing and multiple variant are on #2056 and in
+the pull request.
