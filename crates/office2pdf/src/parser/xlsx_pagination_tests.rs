@@ -788,6 +788,7 @@ fn test_fit_to_width_scales_an_anchored_line_shape_with_the_grid() {
             }),
             rotation_deg: None,
             opacity: None,
+            stroke_opacity: None,
             shadow: None,
             top_bevel: None,
         },

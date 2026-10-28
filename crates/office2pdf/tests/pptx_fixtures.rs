@@ -1901,3 +1901,73 @@ fn issue_2157_paragraph_default_size_reaches_the_compiled_runs() {
 fn issue_2157_paragraph_default_size_smoke() {
     assert_produces_valid_pdf("issue_2157_paragraph_default_size.pptx");
 }
+
+// ---------------------------------------------------------------------------
+// issue_2159_style_ref_alpha.pptx — the issue's two-slide deck. Each slide
+// groups an ellipse and a rectangle that take their fill (the theme's gradient
+// fill style 3) and outline (line style 1) from `<p:style>`. Slide 2 adds
+// `<a:alpha val="50000"/>` to the `a:fillRef` and `a:lnRef` colours (issue
+// #2159). The native PowerPoint export masks each slide-2 gradient with one
+// uniform 0.502 soft mask and strokes each outline at `/CA 0.502`.
+// ---------------------------------------------------------------------------
+
+/// Slide 2's style-reference alpha reaches both shapes' fill and outline;
+/// slide 1 states none and stays opaque.
+#[test]
+fn issue_2159_style_reference_alpha_reaches_fill_and_outline() {
+    let pages = fixed_pages("issue_2159_style_ref_alpha.pptx");
+    assert_eq!(pages.len(), 2);
+    let paint = |page: &FixedPage| -> Vec<(bool, Option<f64>, Option<f64>)> {
+        page.elements
+            .iter()
+            .filter_map(|element| match &element.kind {
+                FixedElementKind::Shape(shape) => Some((
+                    shape.gradient_fill.is_some(),
+                    shape.opacity,
+                    shape.stroke_opacity,
+                )),
+                _ => None,
+            })
+            .collect()
+    };
+
+    assert_eq!(paint(&pages[0]), vec![(true, None, None); 2]);
+    assert_eq!(paint(&pages[1]), vec![(true, Some(0.5), Some(0.5)); 2]);
+}
+
+/// The alpha survives codegen: slide 2's gradient stops and outlines
+/// composite at 128/255, the 0.502 PowerPoint writes, while slide 1's stay
+/// opaque.
+#[test]
+fn issue_2159_style_reference_alpha_composites_in_the_generated_source() {
+    let data = load_fixture("issue_2159_style_ref_alpha.pptx");
+    let (document, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let source = generate_typst(&document).unwrap().source;
+
+    assert_eq!(source.matches("gradient.linear(").count(), 4, "{source}");
+    assert_eq!(
+        source.matches(", 128), 0%), (rgb(").count(),
+        2,
+        "slide 2's two gradients start at 128/255: {source}"
+    );
+    assert_eq!(
+        source.matches(", 128), 100%)").count(),
+        2,
+        "and end at 128/255: {source}"
+    );
+    assert_eq!(
+        source.matches("stroke: (paint: rgb(").count(),
+        4,
+        "{source}"
+    );
+    assert_eq!(
+        source.matches(", 128), thickness: ").count(),
+        2,
+        "slide 2's two outlines paint at 128/255: {source}"
+    );
+}
+
+#[test]
+fn issue_2159_style_ref_alpha_smoke() {
+    assert_produces_valid_pdf("issue_2159_style_ref_alpha.pptx");
+}

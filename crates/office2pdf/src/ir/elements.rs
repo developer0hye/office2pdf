@@ -2404,8 +2404,12 @@ pub struct Shape {
     pub stroke: Option<BorderSide>,
     /// Rotation angle in degrees (clockwise).
     pub rotation_deg: Option<f64>,
-    /// Opacity from 0.0 (fully transparent) to 1.0 (fully opaque).
+    /// Fill opacity from 0.0 (fully transparent) to 1.0 (fully opaque). It
+    /// scales a solid fill and every stop of a gradient fill alike.
     pub opacity: Option<f64>,
+    /// Outline opacity from the line paint's `<a:alpha>`, independent of the
+    /// fill's. `None` keeps the outline opaque.
+    pub stroke_opacity: Option<f64>,
     /// Outer shadow effect.
     pub shadow: Option<Shadow>,
     /// Top/front-face bevel effect (rendered on filled rectangles only).
