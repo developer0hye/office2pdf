@@ -1,0 +1,462 @@
+{
+ "pages": [
+  {
+   "lines": {
+    "gt": 0,
+    "out": 0,
+    "matched": 0,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 0,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 0.0,
+    "worst_dy": 0.0,
+    "worst_dy_signed": 0.0,
+    "worst_line": ""
+   },
+   "dx0": {
+    "mean_abs": 0.0,
+    "worst": 0.0
+   },
+   "width": {
+    "mean_abs_pct": 0.0,
+    "worst_pct": 0.0
+   },
+   "instances": {
+    "compared": 0,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 0,
+    "large_shifts": [],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 0,
+    "fine_shifts": []
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 0,
+    "worst_delta": 0.0
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 2,
+    "out_count": 2,
+    "canonical_gt_count": 2,
+    "canonical_out_count": 2,
+    "matched": 2,
+    "unmatched_gt": 0,
+    "unmatched_out": 0,
+    "mean_center_delta": 0.001380258750032226,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 1,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [
+     {
+      "kind": "stroke",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       1
+      ],
+      "out_indices": [
+       1
+      ],
+      "gt_bbox": [
+       207.25,
+       101.61000000000001,
+       386.24,
+       218.69
+      ],
+      "out_bbox": [
+       207.25237,
+       101.60748,
+       386.24300000000005,
+       218.69157
+      ],
+      "dx": 0.002370000000013306,
+      "dy": -0.0025200000000182854,
+      "dwidth": 0.0006300000000294403,
+      "dheight": 0.004090000000033456,
+      "edges": {
+       "left": 0.002370000000013306,
+       "top": -0.0025200000000182854,
+       "right": 0.0030000000000427463,
+       "bottom": 0.0015700000000151704
+      },
+      "center_dx": 0.002685000000042237,
+      "center_dy": -0.0004749999999944521,
+      "max_abs_delta": 0.004090000000033456
+     },
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       0
+      ],
+      "out_indices": [
+       0
+      ],
+      "gt_bbox": [
+       0.0,
+       -9.000000000014552e-05,
+       960.0,
+       539.999938965
+      ],
+      "out_bbox": [
+       0.0,
+       0.0,
+       960.0,
+       540.0
+      ],
+      "dx": 0.0,
+      "dy": 9.000000000014552e-05,
+      "dwidth": 0.0,
+      "dheight": -2.896499995586055e-05,
+      "edges": {
+       "left": 0.0,
+       "top": 9.000000000014552e-05,
+       "right": 0.0,
+       "bottom": 6.103500004428497e-05
+      },
+      "center_dx": 0.0,
+      "center_dy": 7.551750002221524e-05,
+      "max_abs_delta": 9.000000000014552e-05,
+      "visible_coverage": {
+       "status": "unmodeled",
+       "mismatch_area_pt2": 0.0,
+       "unmodeled_area_pt2": 23068.86368863913,
+       "unmodeled_samples": [
+        [
+         203.52,
+         99.72002,
+         204.1477,
+         100.31383
+        ],
+        [
+         203.52,
+         100.31383,
+         204.1477,
+         223.76362500000002
+        ],
+        [
+         204.1477,
+         99.72002,
+         389.493825,
+         100.31383
+        ],
+        [
+         204.1477,
+         100.31383,
+         389.493825,
+         223.76362500000002
+        ]
+       ],
+       "mismatch_samples": [],
+       "raw_edge_coverage": {
+        "left": "unchanged",
+        "right": "unchanged",
+        "top": "unchanged",
+        "bottom": "unchanged"
+       }
+      }
+     }
+    ],
+    "x": {
+     "mean_abs": 0.001185000000006653,
+     "worst": 0.002370000000013306
+    },
+    "y": {
+     "mean_abs": 0.0013050000000092155,
+     "worst": -0.0025200000000182854
+    },
+    "width": {
+     "mean_abs": 0.00031500000001472017,
+     "worst": 0.0006300000000294403
+    },
+    "height": {
+     "mean_abs": 0.002059482499994658,
+     "worst": 0.004090000000033456
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.001185000000006653,
+      "worst": 0.002370000000013306
+     },
+     "top": {
+      "mean_abs": 0.0013050000000092155,
+      "worst": -0.0025200000000182854
+     },
+     "right": {
+      "mean_abs": 0.0015000000000213731,
+      "worst": 0.0030000000000427463
+     },
+     "bottom": {
+      "mean_abs": 0.0008155175000297277,
+      "worst": 0.0015700000000151704
+     }
+    }
+   },
+   "noise_floor": 0.12
+  },
+  {
+   "lines": {
+    "gt": 0,
+    "out": 0,
+    "matched": 0,
+    "missing": 0,
+    "extra": 0,
+    "deviant": 0,
+    "missing_text": [],
+    "extra_text": []
+   },
+   "baseline": {
+    "mean_abs_dy": 0.0,
+    "worst_dy": 0.0,
+    "worst_dy_signed": 0.0,
+    "worst_line": ""
+   },
+   "dx0": {
+    "mean_abs": 0.0,
+    "worst": 0.0
+   },
+   "width": {
+    "mean_abs_pct": 0.0,
+    "worst_pct": 0.0
+   },
+   "instances": {
+    "compared": 0,
+    "large_shift_threshold": 5.0,
+    "large_shift_count": 0,
+    "large_shifts": [],
+    "fine_shift_threshold": 0.5,
+    "fine_shift_count": 0,
+    "fine_shifts": []
+   },
+   "visibility": {
+    "mismatch_count": 0,
+    "mismatches": [],
+    "unmatched_hidden_gt": 0,
+    "unmatched_hidden_out": 0,
+    "unmatched_hidden_gt_text": [],
+    "unmatched_hidden_out_text": []
+   },
+   "visible_fills": {
+    "mismatch_count": 0,
+    "mismatches": []
+   },
+   "pitch": {
+    "pairs": 0,
+    "worst_delta": 0.0
+   },
+   "wraps": {
+    "count": 0,
+    "samples": []
+   },
+   "topology": {
+    "groups": 0,
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "reflow": {
+    "gt_lines": 0,
+    "out_lines": 0,
+    "samples": []
+   },
+   "rects": {
+    "gt_count": 2,
+    "out_count": 2,
+    "canonical_gt_count": 2,
+    "canonical_out_count": 2,
+    "matched": 2,
+    "unmatched_gt": 0,
+    "unmatched_out": 0,
+    "mean_center_delta": 0.001380258750032226,
+    "geometry_threshold": 0.5,
+    "raw_geometry_mismatch_count": 0,
+    "raw_geometry_mismatch_samples": [],
+    "coverage_equivalent_count": 0,
+    "coverage_unmodeled_count": 1,
+    "geometry_mismatch_count": 0,
+    "geometry_mismatch_samples": [],
+    "samples": [
+     {
+      "kind": "stroke",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       1
+      ],
+      "out_indices": [
+       1
+      ],
+      "gt_bbox": [
+       207.25,
+       101.61000000000001,
+       386.24,
+       218.69
+      ],
+      "out_bbox": [
+       207.25237,
+       101.60748,
+       386.24300000000005,
+       218.69157
+      ],
+      "dx": 0.002370000000013306,
+      "dy": -0.0025200000000182854,
+      "dwidth": 0.0006300000000294403,
+      "dheight": 0.004090000000033456,
+      "edges": {
+       "left": 0.002370000000013306,
+       "top": -0.0025200000000182854,
+       "right": 0.0030000000000427463,
+       "bottom": 0.0015700000000151704
+      },
+      "center_dx": 0.002685000000042237,
+      "center_dy": -0.0004749999999944521,
+      "max_abs_delta": 0.004090000000033456
+     },
+     {
+      "kind": "fill",
+      "geometry_kind": "rectangle",
+      "gt_indices": [
+       0
+      ],
+      "out_indices": [
+       0
+      ],
+      "gt_bbox": [
+       0.0,
+       -9.000000000014552e-05,
+       960.0,
+       539.999938965
+      ],
+      "out_bbox": [
+       0.0,
+       0.0,
+       960.0,
+       540.0
+      ],
+      "dx": 0.0,
+      "dy": 9.000000000014552e-05,
+      "dwidth": 0.0,
+      "dheight": -2.896499995586055e-05,
+      "edges": {
+       "left": 0.0,
+       "top": 9.000000000014552e-05,
+       "right": 0.0,
+       "bottom": 6.103500004428497e-05
+      },
+      "center_dx": 0.0,
+      "center_dy": 7.551750002221524e-05,
+      "max_abs_delta": 9.000000000014552e-05,
+      "visible_coverage": {
+       "status": "unmodeled",
+       "mismatch_area_pt2": 0.0,
+       "unmodeled_area_pt2": 25043.11735885391,
+       "unmodeled_samples": [
+        [
+         200.4,
+         96.600009,
+         201.0227,
+         97.18883
+        ],
+        [
+         200.4,
+         97.18883,
+         201.0227,
+         226.8861195
+        ],
+        [
+         201.0227,
+         96.600009,
+         392.61632499999996,
+         97.18883
+        ],
+        [
+         201.0227,
+         97.18883,
+         392.61632499999996,
+         226.8861195
+        ]
+       ],
+       "mismatch_samples": [],
+       "raw_edge_coverage": {
+        "left": "unchanged",
+        "right": "unchanged",
+        "top": "unchanged",
+        "bottom": "unchanged"
+       }
+      }
+     }
+    ],
+    "x": {
+     "mean_abs": 0.001185000000006653,
+     "worst": 0.002370000000013306
+    },
+    "y": {
+     "mean_abs": 0.0013050000000092155,
+     "worst": -0.0025200000000182854
+    },
+    "width": {
+     "mean_abs": 0.00031500000001472017,
+     "worst": 0.0006300000000294403
+    },
+    "height": {
+     "mean_abs": 0.002059482499994658,
+     "worst": 0.004090000000033456
+    },
+    "edges": {
+     "left": {
+      "mean_abs": 0.001185000000006653,
+      "worst": 0.002370000000013306
+     },
+     "top": {
+      "mean_abs": 0.0013050000000092155,
+      "worst": -0.0025200000000182854
+     },
+     "right": {
+      "mean_abs": 0.0015000000000213731,
+      "worst": 0.0030000000000427463
+     },
+     "bottom": {
+      "mean_abs": 0.0008155175000297277,
+      "worst": 0.0015700000000151704
+     }
+    }
+   },
+   "noise_floor": 0.12
+  }
+ ],
+ "gt_pages": 2,
+ "out_pages": 2
+}

@@ -1,0 +1,45 @@
+{
+  "name": "issue-2158-shadow-paint-alpha",
+  "base": "../../tests/fixtures/pptx/issue_2158_nofill_shadow.pptx",
+  "part": "ppt/slides/slide64.xml",
+  "factor": "the shape's own fill and line paint alpha under a theme outerShdw (effectRef idx 2, 35% black); slide 2's 7pt outline",
+  "page": 2,
+  "variants": [
+    {
+      "value": "fill-opaque",
+      "find": "<a:noFill/><a:ln w=\"88900\"/>",
+      "replace": "<a:solidFill><a:schemeClr val=\"accent1\"/></a:solidFill><a:ln w=\"88900\"/>",
+      "count": 1
+    },
+    {
+      "value": "fill-50",
+      "find": "<a:noFill/><a:ln w=\"88900\"/>",
+      "replace": "<a:solidFill><a:schemeClr val=\"accent1\"><a:alpha val=\"50000\"/></a:schemeClr></a:solidFill><a:ln w=\"88900\"/>",
+      "count": 1
+    },
+    {
+      "value": "fill-0",
+      "find": "<a:noFill/><a:ln w=\"88900\"/>",
+      "replace": "<a:solidFill><a:schemeClr val=\"accent1\"><a:alpha val=\"0\"/></a:schemeClr></a:solidFill><a:ln w=\"88900\"/>",
+      "count": 1
+    },
+    {
+      "value": "line-50",
+      "find": "<a:noFill/><a:ln w=\"88900\"/>",
+      "replace": "<a:noFill/><a:ln w=\"88900\"><a:solidFill><a:schemeClr val=\"accent1\"><a:alpha val=\"50000\"/></a:schemeClr></a:solidFill></a:ln>",
+      "count": 1
+    },
+    {
+      "value": "fill-50-line-50",
+      "find": "<a:noFill/><a:ln w=\"88900\"/>",
+      "replace": "<a:solidFill><a:schemeClr val=\"accent1\"><a:alpha val=\"50000\"/></a:schemeClr></a:solidFill><a:ln w=\"88900\"><a:solidFill><a:schemeClr val=\"accent1\"><a:alpha val=\"50000\"/></a:schemeClr></a:solidFill></a:ln>",
+      "count": 1
+    },
+    {
+      "value": "fill-opaque-line-50",
+      "find": "<a:noFill/><a:ln w=\"88900\"/>",
+      "replace": "<a:solidFill><a:schemeClr val=\"accent1\"/></a:solidFill><a:ln w=\"88900\"><a:solidFill><a:schemeClr val=\"accent1\"><a:alpha val=\"50000\"/></a:schemeClr></a:solidFill></a:ln>",
+      "count": 1
+    }
+  ]
+}

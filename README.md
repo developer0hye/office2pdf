@@ -384,6 +384,8 @@ Picture outlines in PPTX and cached DOCX drawings retain ellipse, rounded-rectan
 and custom-path geometry, line opacity, and picture flips/rotation.
 PPTX shapes also paint `<a:alpha>` on their outlines and on solid or gradient
 fills, including colours supplied by `<p:style>` fill and line references.
+A shape casts its outer shadow from what it paints, each fill and outline at
+its own alpha, so an unfilled shape's shadow is a ring under its outline.
 
 DOCX body SmartArt imports saved drawing caches as vector shapes and searchable
 text, inline or anchored in Word flow. The IR represents them as `DrawingGroup`
