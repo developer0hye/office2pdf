@@ -1,0 +1,29 @@
+{
+  "name": "issue-2062-header-multiple-seat",
+  "base": "../../tests/fixtures/docx/issue-2062-header-multiple-seat.docx",
+  "part": "word/header1.xml",
+  "factor": "the w:line multiple of a Courier New 48pt header line, which seats its baseline at a different share of the line under each candidate rule",
+  "page": 1,
+  "variants": [
+    {
+      "value": "seat-line-120-auto",
+      "find": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii=\"Courier New\" w:hAnsi=\"Courier New\"/><w:sz w:val=\"96\"/></w:rPr><w:t>Seat<",
+      "replace": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"120\" w:lineRule=\"auto\"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii=\"Courier New\" w:hAnsi=\"Courier New\"/><w:sz w:val=\"96\"/></w:rPr><w:t>Seat<"
+    },
+    {
+      "value": "seat-line-180-auto",
+      "find": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii=\"Courier New\" w:hAnsi=\"Courier New\"/><w:sz w:val=\"96\"/></w:rPr><w:t>Seat<",
+      "replace": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"180\" w:lineRule=\"auto\"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii=\"Courier New\" w:hAnsi=\"Courier New\"/><w:sz w:val=\"96\"/></w:rPr><w:t>Seat<"
+    },
+    {
+      "value": "seat-line-360-auto",
+      "find": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii=\"Courier New\" w:hAnsi=\"Courier New\"/><w:sz w:val=\"96\"/></w:rPr><w:t>Seat<",
+      "replace": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"360\" w:lineRule=\"auto\"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii=\"Courier New\" w:hAnsi=\"Courier New\"/><w:sz w:val=\"96\"/></w:rPr><w:t>Seat<"
+    },
+    {
+      "value": "next-line-120-auto",
+      "find": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii=\"Courier New\" w:hAnsi=\"Courier New\"/><w:sz w:val=\"96\"/></w:rPr><w:t>Next<",
+      "replace": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"120\" w:lineRule=\"auto\"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii=\"Courier New\" w:hAnsi=\"Courier New\"/><w:sz w:val=\"96\"/></w:rPr><w:t>Next<"
+    }
+  ]
+}

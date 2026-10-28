@@ -1,0 +1,61 @@
+{
+  "name": "issue-2062-footer-spacing",
+  "base": "../../tests/fixtures/docx/issue-2062-footer-spacing.docx",
+  "part": "word/footer1.xml",
+  "factor": "one footer paragraph's w:spacing w:before/w:after or w:line multiple, or an added empty footer paragraph, in a three-line Arial 12pt footer bottom-anchored 36pt above the page edge",
+  "page": 1,
+  "variants": [
+    {
+      "value": "trailing-empty",
+      "find": "Three</w:t></w:r></w:p>",
+      "replace": "Three</w:t></w:r></w:p><w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr></w:p>"
+    },
+    {
+      "value": "interior-empty",
+      "find": "One</w:t></w:r></w:p>",
+      "replace": "One</w:t></w:r></w:p><w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr></w:p>"
+    },
+    {
+      "value": "first-before-240",
+      "find": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>One<",
+      "replace": "<w:spacing w:before=\"240\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>One<"
+    },
+    {
+      "value": "first-after-240",
+      "find": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>One<",
+      "replace": "<w:spacing w:before=\"0\" w:after=\"240\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>One<"
+    },
+    {
+      "value": "second-before-240",
+      "find": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Two<",
+      "replace": "<w:spacing w:before=\"240\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Two<"
+    },
+    {
+      "value": "last-after-240",
+      "find": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Three<",
+      "replace": "<w:spacing w:before=\"0\" w:after=\"240\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Three<"
+    },
+    {
+      "value": "line-360-auto",
+      "find": "w:line=\"240\" w:lineRule=\"auto\"",
+      "replace": "w:line=\"360\" w:lineRule=\"auto\"",
+      "count": 3
+    },
+    {
+      "value": "line-120-auto",
+      "find": "w:line=\"240\" w:lineRule=\"auto\"",
+      "replace": "w:line=\"120\" w:lineRule=\"auto\"",
+      "count": 3
+    },
+    {
+      "value": "last-line-360-auto",
+      "find": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Three<",
+      "replace": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"360\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>Three<"
+    },
+    {
+      "value": "first-line-120-auto",
+      "find": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"240\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>One<",
+      "replace": "<w:spacing w:before=\"0\" w:after=\"0\" w:line=\"120\" w:lineRule=\"auto\"/></w:pPr><w:r><w:t>One<"
+    }
+  ]
+}

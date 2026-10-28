@@ -553,8 +553,23 @@ mod rendered {
         let Some((_, _, pitch_em)) = crate::render::pdf::font_line_metrics_em("Arial") else {
             return; // the face is unavailable on this runner
         };
-        // `Page 1` and the anchor paragraph are two 11pt Arial lines.
-        let word_top: f64 = STORY_BOTTOM_PT - 2.0 * pitch_em * 11.0;
+        // `Page 1` and the anchor paragraph are two 11pt Arial lines. A
+        // package without a styles part takes Word's built-in 1.158-line
+        // multiple (issue #2215), which Word's footer boxes stack at
+        // (issue #2062).
+        let probe: Document = footer_with(&Anchor::new(
+            Position::Offset("page", 0),
+            Position::Offset("page", 0),
+            (20, 10),
+        ));
+        let multiple: f64 = match flow_page(&probe).footer.as_ref().unwrap().paragraphs[0]
+            .style
+            .line_spacing
+        {
+            Some(crate::ir::LineSpacing::Proportional(factor)) => factor,
+            _ => 1.0,
+        };
+        let word_top: f64 = STORY_BOTTOM_PT - 2.0 * multiple * pitch_em * 11.0;
         let ending_at = |bottom_pt: f64| {
             let height_emu: i64 = (bottom_pt * EMU_PER_PT as f64).round() as i64 - 740 * EMU_PER_PT;
             let mut anchor = Anchor::new(

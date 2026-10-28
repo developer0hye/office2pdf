@@ -176,8 +176,9 @@ struct GenCtx {
     /// Header/footer story tables preserve their sibling-derived blank
     /// paragraph metrics so paragraph-anchored artwork keeps its native seat.
     prefer_sibling_metrics_for_empty_cell_paragraphs: bool,
-    /// Whether the header story being written lays each line out as Word's
-    /// own line box, which is the only form that honours an exact line.
+    /// Whether the header or footer story being written lays each line out as
+    /// Word's own line box, the form that keeps exact lines, empty paragraphs,
+    /// paragraph gaps and `auto` multiples (issues #2214, #2062).
     hf_lines_are_word_boxes: bool,
     /// How many sheet drawing layers have been written. Each needs its own
     /// label, because the layer is a page foreground that has to recognise
@@ -3080,13 +3081,22 @@ fn round_to_hundredths(value_pt: f64) -> f64 {
 ///
 /// The paragraph asked is the last one the story actually draws: a
 /// page-anchored frame is positioned against the page rather than laid out
-/// above the anchor, so its gap is not what sits there. A story stating no gap
-/// at all — every format but DOCX — reserves nothing and keeps the band it had.
+/// above the anchor, so its gap is not what sits there, and a trailing empty
+/// paragraph is drawn only where the story is drawn as Word's line boxes
+/// (issue #2062). A story stating no gap at all — every format but DOCX —
+/// reserves nothing and keeps the band it had.
 fn hf_trailing_space_after_pt(hf: &HeaderFooter) -> f64 {
+    let boxed: bool = hf_story_draws_line_boxes(hf, HfStoryEdge::Bottom);
     hf.paragraphs
         .iter()
         .rev()
-        .find(|paragraph| hf_paragraph_is_emitted(paragraph))
+        .find(|paragraph| {
+            if boxed {
+                hf_paragraph_is_boxed_line(paragraph)
+            } else {
+                hf_paragraph_is_emitted(paragraph)
+            }
+        })
         .and_then(|paragraph| paragraph.style.space_after)
         .filter(|gap| *gap > 0.0)
         .unwrap_or(0.0)
@@ -3134,9 +3144,9 @@ fn footer_line_obstacles(footer: &HeaderFooter, page: &FlowPage) -> Vec<(f64, f6
 /// How far Word's line box for a flowed story's first line reaches above the
 /// cap height Typst starts that line at, in points; zero where the face is
 /// unknown, the line holds a picture, or the story is laid out as stacked
-/// blocks of Word's own line heights.
+/// blocks of Word's own line heights or boxes.
 fn hf_story_first_line_ascent_above_cap_pt(hf: &HeaderFooter) -> f64 {
-    if hf_story_rules_a_paragraph(hf) {
+    if hf_story_rules_a_paragraph(hf) || hf_story_draws_line_boxes(hf, HfStoryEdge::Bottom) {
         return 0.0;
     }
     hf.paragraphs
@@ -3205,8 +3215,15 @@ fn flow_footer_value(footer: &HeaderFooter, page: &FlowPage, ctx: &mut GenCtx) -
         // That edge sits under every line of the story, so the leading has to
         // leave room for it. Where it is the renderer's own `"descender"`, the
         // last paragraph's face did not resolve and no descent is known to
-        // leave room for.
-        generate_flow_hf_content(&mut value, footer, descent_em.unwrap_or(0.0), ctx);
+        // leave room for. A story drawn as Word's line boxes states its own
+        // edges, so its last box ends on the band bottom: native Word for Mac
+        // probes stack a footer's boxes, gaps and empty lines up from its
+        // anchor exactly as a header's go down (issue #2062).
+        if hf_story_draws_line_boxes(footer, HfStoryEdge::Bottom) {
+            generate_line_boxed_hf_paragraphs(&mut value, footer, HfStoryEdge::Bottom, ctx);
+        } else {
+            generate_flow_hf_content(&mut value, footer, descent_em.unwrap_or(0.0), ctx);
+        }
         if obstacles.is_empty() {
             value.push_str("])]");
         } else {
@@ -3536,7 +3553,8 @@ fn flow_page_top_margin_pt(
             // Where the drawn story's lines end, and where Word's own story
             // ends once each line takes its stated height and each paragraph
             // its spacing.
-            let drawn_lines: HfLineHeights = if header_story_draws_line_boxes(header) {
+            let drawn_lines: HfLineHeights = if hf_story_draws_line_boxes(header, HfStoryEdge::Top)
+            {
                 HfLineHeights::Boxed
             } else {
                 HfLineHeights::Natural
@@ -3582,11 +3600,12 @@ fn flow_page_top_margin_pt(
 /// Which layout [`hf_content_height_pt`] measures a header story in.
 #[derive(Clone, Copy)]
 enum HfLineHeights {
-    /// The face's natural line, which is what the flowed drawn story lays out.
-    /// Neither drawn layout keeps paragraph spacing (issue #2062).
+    /// The face's natural line and no paragraph spacing, which is what the
+    /// flowed drawn story lays out.
     Natural,
-    /// An exact line at its stated height and any other at the face's natural
-    /// line, which is what a story drawn as Word's line boxes lays out.
+    /// Each line in its [`hf_paragraph_line_box_pt`], empty paragraphs
+    /// included, with Word's paragraph gaps between them, which is what a
+    /// story drawn as Word's line boxes lays out (issue #2062).
     Boxed,
     /// Word's own: the paragraph's exact, at-least or proportional
     /// `w:spacing w:line` where it states one, and its `w:before`/`w:after`
@@ -3597,13 +3616,15 @@ enum HfLineHeights {
 /// Height a header or footer story's lines take, in points.
 ///
 /// Reserve each measurable wrapped line plus its paragraph border rules. An
-/// empty paragraph is a line of its paragraph mark in Word's measurement and
-/// nothing in the drawn story's, which leaves it out (issue #2062). A
-/// horizontal rule's paragraph is a line of its mark in both, because the
-/// drawn story draws it (issue #2251).
+/// empty paragraph is a line of its paragraph mark in Word's own measure
+/// (`Declared`) and nothing in the flowed drawn story's (`Natural`), which
+/// leaves it out. A horizontal rule's paragraph is a line of its mark in both,
+/// because the flowed story draws it (issue #2251). A story drawn as Word's
+/// line boxes (`Boxed`) keeps empty lines, paragraph gaps and proportional
+/// boxes, and [`hf_boxed_story_height_pt`] measures it (issue #2062).
 ///
 /// Word's measure also keeps paragraph spacing and proportional lines, which
-/// the drawn story drops (issue #2062). Native Word for Mac probes of a
+/// the flowed story drops. Native Word for Mac probes of a
 /// three-paragraph Arial 12pt header (issue #2056) moved the body by exactly
 /// the first paragraph's `w:before`, the larger of each adjacent
 /// `w:after`/`w:before` pair (12pt after against 6, 12 and 18pt before gave
@@ -3618,6 +3639,9 @@ fn hf_content_height_pt(
     text_width_pt: f64,
     line_heights: HfLineHeights,
 ) -> Option<f64> {
+    if let HfLineHeights::Boxed = line_heights {
+        return hf_boxed_story_height_pt(hf, text_width_pt);
+    }
     let mut total: f64 = 0.0;
     // The `w:after` below the paragraph last measured, which the next one's
     // `w:before` collapses against.
@@ -3651,8 +3675,7 @@ fn hf_content_height_pt(
         }
         let line_count: usize = hf_paragraph_line_count(paragraph, text_width_pt);
         let stated_line_pt: Option<f64> = match line_heights {
-            HfLineHeights::Natural => None,
-            HfLineHeights::Boxed => hf_paragraph_exact_line_pt(paragraph),
+            HfLineHeights::Natural | HfLineHeights::Boxed => None,
             HfLineHeights::Declared => hf_paragraph_declared_line_pt(paragraph),
         };
         if let Some(line_pt) = stated_line_pt {
@@ -3671,6 +3694,27 @@ fn hf_content_height_pt(
         }
     }
     Some(total + pending_after_pt.unwrap_or(0.0))
+}
+
+/// Height a header story drawn as Word's line boxes takes, in points: each
+/// paragraph's lines in its [`hf_paragraph_line_box_pt`] and the gaps
+/// [`generate_line_boxed_hf_paragraphs`] draws between them, from the same
+/// helpers so the band and the drawing cannot disagree. `None` where a
+/// paragraph has no box, which such a story never holds.
+fn hf_boxed_story_height_pt(hf: &HeaderFooter, text_width_pt: f64) -> Option<f64> {
+    let drawn: Vec<&crate::ir::HeaderFooterParagraph> = hf
+        .paragraphs
+        .iter()
+        .filter(|paragraph| hf_paragraph_is_boxed_line(paragraph))
+        .collect();
+    let gaps_pt: f64 = hf_boxed_paragraph_gaps_pt(&drawn, HfStoryEdge::Top)
+        .iter()
+        .sum();
+    drawn.iter().try_fold(gaps_pt, |total, paragraph| {
+        let (ascent_pt, descent_pt) = hf_paragraph_line_box_pt(paragraph)?;
+        let line_count: usize = hf_paragraph_line_count(paragraph, text_width_pt);
+        Some(total + line_count as f64 * (ascent_pt + descent_pt))
+    })
 }
 
 /// The line height a header or footer paragraph with text states for each of
@@ -3704,15 +3748,6 @@ fn hf_paragraph_declared_line_pt(paragraph: &crate::ir::HeaderFooterParagraph) -
     }
 }
 
-/// The height a header or footer paragraph with text states as an exact
-/// line, as [`hf_paragraph_declared_line_pt`] reads it.
-fn hf_paragraph_exact_line_pt(paragraph: &crate::ir::HeaderFooterParagraph) -> Option<f64> {
-    match paragraph.style.line_spacing {
-        Some(crate::ir::LineSpacing::Exact(_)) => hf_paragraph_declared_line_pt(paragraph),
-        _ => None,
-    }
-}
-
 /// Whether a header or footer paragraph is an empty line in its story's flow:
 /// no content, no rule, and no `w:framePr` frame, which Word positions out of
 /// the flow. A scraped docxide-pdf decree's first-page header is an empty
@@ -3740,8 +3775,9 @@ fn hf_empty_paragraph_line_pt(
         {
             Some(line_pt)
         }
-        // The drawn story sets a rule's mark line at the face's natural line,
-        // so only Word's measure scales it.
+        // The flowed story sets a rule's mark line at the face's natural
+        // line, so only Word's measure scales it here; a story drawn as
+        // Word's line boxes is measured by [`hf_boxed_story_height_pt`].
         Some(crate::ir::LineSpacing::Proportional(factor))
             if factor > 0.0 && matches!(line_heights, HfLineHeights::Declared) =>
         {
@@ -4719,62 +4755,211 @@ fn generate_stacked_hf_paragraphs(out: &mut String, hf: &HeaderFooter, ctx: &mut
     }
 }
 
-/// Write a header story's content, as Word's own line boxes where it has an
-/// exact line.
+/// Write a header story's content, as Word's own line boxes where the flowed
+/// story cannot draw it (see [`hf_story_draws_line_boxes`]).
 fn generate_flow_header_content(out: &mut String, header: &HeaderFooter, ctx: &mut GenCtx) {
-    if header_story_draws_line_boxes(header) {
-        generate_line_boxed_header_paragraphs(out, header, ctx);
+    if hf_story_draws_line_boxes(header, HfStoryEdge::Top) {
+        generate_line_boxed_hf_paragraphs(out, header, HfStoryEdge::Top, ctx);
     } else {
         generate_flow_hf_content(out, header, 0.0, ctx);
     }
 }
 
-/// Whether a header story is drawn as Word's own line boxes.
-///
-/// Only a story with an exact line needs them, and only when every paragraph
-/// it emits has a box to give: a natural line whose face does not resolve
-/// keeps the flowed story's estimates. A ruled story keeps its stacked form,
-/// which seats each rule against the face's natural line (issue #1824).
-fn header_story_draws_line_boxes(header: &HeaderFooter) -> bool {
-    let mut emitted = header
-        .paragraphs
-        .iter()
-        .filter(|paragraph| hf_paragraph_is_emitted(paragraph));
-    !hf_story_rules_a_paragraph(header)
-        && emitted
-            .clone()
-            .any(|paragraph| hf_paragraph_exact_line_pt(paragraph).is_some())
-        && emitted.all(|paragraph| hf_paragraph_line_box_pt(paragraph).is_some())
+/// Which edge of its band a header or footer story is anchored on.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum HfStoryEdge {
+    /// A header grows down from `w:pgMar/@w:header`, so its first
+    /// paragraph's `w:before` lowers every line.
+    Top,
+    /// A footer grows up from `w:pgMar/@w:footer`, so nothing above its first
+    /// line moves a line; its last `w:after` is the band's own business
+    /// ([`hf_trailing_space_after_pt`]).
+    Bottom,
 }
 
-/// The ascent and descent, in points, Word gives each line of a header
-/// paragraph: its exact line where it states one, otherwise its face's
-/// natural line.
+/// Whether a header or footer story is drawn as Word's own line boxes.
+///
+/// The flowed story advances every line by one leading and drops what Word
+/// stacks between them, so a story needs Word's boxes once it states an exact
+/// line (issue #2214), a `w:lineRule="auto"` multiple other than 1, a
+/// paragraph gap, or an empty paragraph (issue #2062). Each paragraph it draws
+/// must have a box to give, so a face that does not resolve keeps the flowed
+/// story's estimates. A ruled story keeps its stacked form, which seats each
+/// rule against the face's natural line (issue #1824).
+///
+/// A story drawn for its exact lines alone is drawn as it was before the
+/// rest joined. The rest also leave a story flowed where it holds an inline
+/// picture, whose height rather than the face's sets its line (issue #2164),
+/// or a `w:framePr` paragraph that is not page-anchored:
+/// `TODO(text-anchored frames)` Word positions such a frame against the next
+/// paragraph rather than stacking it as a line, and the page number of a
+/// docxide-pdf lease form's footer, a right-aligned frame over an empty
+/// paragraph, rose a line above Word's when both were stacked.
+fn hf_story_draws_line_boxes(hf: &HeaderFooter, edge: HfStoryEdge) -> bool {
+    if hf_story_rules_a_paragraph(hf) || !hf_has_flow_content(hf) {
+        return false;
+    }
+    let drawn: Vec<&crate::ir::HeaderFooterParagraph> = hf
+        .paragraphs
+        .iter()
+        .filter(|paragraph| hf_paragraph_is_boxed_line(paragraph))
+        .collect();
+    if !drawn
+        .iter()
+        .all(|paragraph| hf_paragraph_line_box_pt(paragraph).is_some())
+    {
+        return false;
+    }
+    let states_an_exact_line: bool = drawn.iter().any(|paragraph| {
+        matches!(
+            paragraph.style.line_spacing,
+            Some(crate::ir::LineSpacing::Exact(line_pt)) if line_pt > 0.0
+        ) && !hf_paragraph_is_empty_flow_line(paragraph)
+    });
+    if states_an_exact_line {
+        return true;
+    }
+    let holds_a_flow_frame: bool = hf.paragraphs.iter().any(|paragraph| {
+        paragraph
+            .frame
+            .as_ref()
+            .is_some_and(|frame| !is_page_anchored_frame(frame))
+    });
+    let holds_a_picture: bool = drawn.iter().any(|paragraph| {
+        paragraph
+            .elements
+            .iter()
+            .any(|element| matches!(element, HFInline::Image(_)))
+    });
+    if holds_a_flow_frame || holds_a_picture {
+        return false;
+    }
+    drawn.iter().any(|paragraph| {
+        matches!(
+            paragraph.style.line_spacing,
+            Some(crate::ir::LineSpacing::Proportional(factor))
+                if factor > 0.0 && (factor - 1.0).abs() > 1e-6
+        ) || hf_paragraph_is_empty_flow_line(paragraph)
+    }) || hf_boxed_paragraph_gaps_pt(&drawn, edge)
+        .iter()
+        .any(|gap_pt| *gap_pt > 0.0)
+}
+
+/// Whether a story drawn as Word's line boxes draws this paragraph: whatever
+/// the flowed story emits, and each empty paragraph as a line of its mark.
+fn hf_paragraph_is_boxed_line(paragraph: &crate::ir::HeaderFooterParagraph) -> bool {
+    hf_paragraph_is_emitted(paragraph) || hf_paragraph_is_empty_flow_line(paragraph)
+}
+
+/// The gap Word leaves above each of `drawn`, in points: the larger of the
+/// `w:after` above it and its own `w:before`, and for a header's first
+/// paragraph its `w:before`. Native Word for Mac probes (issues #2056 and
+/// #2062) moved later lines by exactly these gaps in headers and footers
+/// alike; a footer's first `w:before` moved none of its lines.
+fn hf_boxed_paragraph_gaps_pt(
+    drawn: &[&crate::ir::HeaderFooterParagraph],
+    edge: HfStoryEdge,
+) -> Vec<f64> {
+    let gap = |gap_pt: Option<f64>| gap_pt.unwrap_or(0.0).max(0.0);
+    drawn
+        .iter()
+        .enumerate()
+        .map(|(index, paragraph)| {
+            let before_pt: f64 = gap(paragraph.style.space_before);
+            match index.checked_sub(1) {
+                Some(above) => gap(drawn[above].style.space_after).max(before_pt),
+                None if edge == HfStoryEdge::Top => before_pt,
+                None => 0.0,
+            }
+        })
+        .collect()
+}
+
+/// The runs a paragraph drawn as Word's line box measures against: its own,
+/// or for an empty paragraph its mark's, where the parser resolved one.
+fn hf_paragraph_box_runs(paragraph: &crate::ir::HeaderFooterParagraph) -> Vec<Run> {
+    if !hf_paragraph_is_empty_flow_line(paragraph) {
+        return hf_paragraph_metric_runs(paragraph);
+    }
+    paragraph
+        .style
+        .paragraph_mark_text_style
+        .as_deref()
+        .map(|style| {
+            vec![Run {
+                text: "M".to_string(),
+                style: style.clone(),
+                href: None,
+                footnote: None,
+                inline_box: None,
+            }]
+        })
+        .unwrap_or_default()
+}
+
+/// The ascent and descent, in points, Word gives each line of a header or
+/// footer paragraph.
+///
+/// An exact line takes its stated height whatever the face
+/// ([`text::word_exact_line_box_pt`]). Any other starts from the face's
+/// natural line, which a `w:lineRule="auto"` multiple scales. Native Word for
+/// Mac probes of a Courier New 48pt header line (issue #2062) seat its baseline
+/// 39.96pt below the line top at 1 and 1.5, 30.00pt at 0.75 and 19.92pt at 0.5:
+/// a multiple above 1 adds its extra below the line, and one below 1 scales the
+/// whole box, ascent included. Footers stack the same boxes up from their
+/// anchor. An at-least line keeps its natural box (`TODO(at-least lines)`).
 fn hf_paragraph_line_box_pt(paragraph: &crate::ir::HeaderFooterParagraph) -> Option<(f64, f64)> {
-    match hf_paragraph_exact_line_pt(paragraph) {
-        Some(line_pt) => Some(text::word_exact_line_box_pt(line_pt)),
-        None => text::word_header_line_box_pt(&hf_paragraph_metric_runs(paragraph)),
+    let runs: Vec<Run> = hf_paragraph_box_runs(paragraph);
+    if runs.is_empty() {
+        return None;
+    }
+    match paragraph.style.line_spacing {
+        Some(crate::ir::LineSpacing::Exact(line_pt)) if line_pt > 0.0 => {
+            Some(text::word_exact_line_box_pt(line_pt))
+        }
+        Some(crate::ir::LineSpacing::Proportional(factor)) if factor > 0.0 => {
+            let (ascent_pt, descent_pt) = text::word_header_line_box_pt(&runs)?;
+            let line_pt: f64 = (ascent_pt + descent_pt) * factor;
+            let scaled_ascent_pt: f64 = ascent_pt * factor.min(1.0);
+            Some((scaled_ascent_pt, line_pt - scaled_ascent_pt))
+        }
+        _ => text::word_header_line_box_pt(&runs),
     }
 }
 
-/// Emit a header story as one block per paragraph, each line in Word's box.
+/// Emit a header or footer story as one block per paragraph, each line in
+/// Word's box, with Word's paragraph gaps between them.
 ///
 /// The flowed story cannot draw an exact line: its one leading and the band
 /// shift seat every line one face ascent down and advance it by the face's
 /// natural line, so a 160pt exact line's text sat one face ascent below the
-/// band top where Word seats it 128pt down (issue #2214). Stating each line's
-/// ascent and descent as the text edges, with no leading, has Typst lay Word's
-/// boxes out directly. The first baseline then sits its own ascent below the
-/// band top, so the story takes no band shift, and each line advances by its
-/// own height.
-fn generate_line_boxed_header_paragraphs(
+/// band top where Word seats it 128pt down (issue #2214). Nor can it draw an
+/// empty paragraph, a paragraph gap or a proportional line, which it dropped
+/// and so bunched the lines (issue #2062). Stating each line's ascent and
+/// descent as the text edges, with no leading, has Typst lay Word's boxes out
+/// directly. The first baseline then sits its own ascent below the band top,
+/// so the story takes no band shift, and each line advances by its own
+/// height.
+fn generate_line_boxed_hf_paragraphs(
     out: &mut String,
-    header: &HeaderFooter,
+    hf: &HeaderFooter,
+    edge: HfStoryEdge,
     ctx: &mut GenCtx,
 ) {
-    for paragraph in &header.paragraphs {
-        if !hf_paragraph_is_emitted(paragraph) {
-            continue;
+    let drawn: Vec<&crate::ir::HeaderFooterParagraph> = hf
+        .paragraphs
+        .iter()
+        .filter(|paragraph| hf_paragraph_is_boxed_line(paragraph))
+        .collect();
+    let gaps: Vec<f64> = hf_boxed_paragraph_gaps_pt(&drawn, edge);
+    // A story taller than its band overflows it, as Word lets it, where a
+    // breakable block would carry its last lines into a region the band does
+    // not have: a three-line footer with a 12pt gap in its 36pt band lost its
+    // last line (issue #2222 met the flowed story's form of this).
+    out.push_str("#set block(breakable: false)\n");
+    for (paragraph, gap_pt) in drawn.into_iter().zip(gaps) {
+        if gap_pt > 0.0 {
+            let _ = writeln!(out, "#v({}pt)", format_f64(gap_pt));
         }
         out.push_str("#block(width: 100%, above: 0pt, below: 0pt)[");
         if let Some((ascent_pt, descent_pt)) = hf_paragraph_line_box_pt(paragraph) {
@@ -4786,7 +4971,11 @@ fn generate_line_boxed_header_paragraphs(
             );
         }
         ctx.hf_lines_are_word_boxes = true;
-        generate_hf_styled_paragraph(out, paragraph, ctx);
+        if hf_paragraph_is_empty_flow_line(paragraph) {
+            write_hf_mark_line(out, paragraph, None, true);
+        } else {
+            generate_hf_styled_paragraph(out, paragraph, ctx);
+        }
         ctx.hf_lines_are_word_boxes = false;
         out.push_str("]\n");
     }
@@ -4831,7 +5020,7 @@ const MIN_HEADER_BAND_SHIFT_PT: f64 = 0.02;
 /// line ascent. Also `None` for a story drawn as Word's line boxes, whose
 /// first line seats its own baseline (issue #2214).
 fn header_band_shift_pt(hf: &HeaderFooter) -> Option<f64> {
-    if header_story_draws_line_boxes(hf) {
+    if hf_story_draws_line_boxes(hf, HfStoryEdge::Top) {
         return None;
     }
     let first: &crate::ir::HeaderFooterParagraph =

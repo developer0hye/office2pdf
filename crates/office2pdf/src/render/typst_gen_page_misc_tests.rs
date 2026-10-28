@@ -5948,17 +5948,18 @@ fn probe_body_baseline_pt(
 /// The variants settle the spacing rule: the first `w:before` is kept, an
 /// adjacent 12pt `w:after` against a 6, 12 or 18pt `w:before` gives 12, 12 and
 /// 18pt (never their sum), and the last paragraph's `w:after` is reserved below
-/// it. A 1.5 multiple on every paragraph scales each 13.8pt line. The
-/// zero-spacing control sits 2.75pt low through issue #2065, and a 0.5
-/// multiple, which lets Word's story fit its band, through the drawn story's
-/// natural lines (issue #2062); neither is listed.
+/// it. A 1.5 or 0.5 multiple on every paragraph scales each 13.8pt line; at
+/// 0.5 Word's story fits its band and the body returns to the 72pt `w:top`,
+/// which the story drawn as Word's line boxes now matches (issue #2062). The
+/// zero-spacing control, which stays flowed, sits 2.75pt low through issue
+/// #2065 and is not listed.
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn header_spacing_probe_variants_start_the_body_where_word_does() {
     let fixture: &[u8] =
         include_bytes!("../../../../tests/fixtures/docx/issue-2056-header-spacing.docx");
     type Vary = fn(&mut [crate::ir::HeaderFooterParagraph]);
-    let variants: [(&str, Vary, f64); 9] = [
+    let variants: [(&str, Vary, f64); 10] = [
         (
             "first-before-120",
             |p| p[0].style.space_before = Some(6.0),
@@ -6016,6 +6017,15 @@ fn header_spacing_probe_variants_start_the_body_where_word_does() {
                 }
             },
             109.44,
+        ),
+        (
+            "line-120-auto",
+            |p| {
+                for paragraph in p {
+                    paragraph.style.line_spacing = Some(crate::ir::LineSpacing::Proportional(0.5));
+                }
+            },
+            83.28,
         ),
     ];
     for (name, vary, word_pt) in variants {
@@ -8576,4 +8586,399 @@ fn test_no_document_language_sets_none() {
         !result.contains("lang:"),
         "no language may be invented: {result}"
     );
+}
+
+/// Which story of a native Word probe's base fixture a test varies.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Clone, Copy)]
+enum ProbeStory {
+    Header,
+    Footer,
+}
+
+/// The first baseline of each line `labels` names, top to bottom, in a native
+/// Word probe's base fixture once `vary` has varied the chosen story's
+/// paragraphs as the probe's one-factor XML patch does, or `None` where
+/// `face` does not shape them on this runner. A label that wraps or repeats
+/// contributes every distinct baseline it takes.
+#[cfg(not(target_arch = "wasm32"))]
+fn probe_story_baselines_pt(
+    fixture: &[u8],
+    story: ProbeStory,
+    face: &str,
+    labels: &[&str],
+    vary: impl FnOnce(&mut Vec<crate::ir::HeaderFooterParagraph>),
+) -> Option<Vec<f64>> {
+    let (mut document, _warnings) = crate::parser::Parser::parse(
+        &crate::parser::docx::DocxParser,
+        fixture,
+        &crate::config::ConvertOptions::default(),
+    )
+    .expect("the probe base fixture should parse");
+    let Page::Flow(page) = &mut document.pages[0] else {
+        panic!("the probe base fixture is a flow document");
+    };
+    let hf: &mut HeaderFooter = match story {
+        ProbeStory::Header => page.header.as_mut(),
+        ProbeStory::Footer => page.footer.as_mut(),
+    }
+    .expect("the probe base fixture has the story it varies");
+    vary(&mut hf.paragraphs);
+    if !shaped_by(&document, labels[0], &[face]) {
+        return None; // the face is unavailable on this runner
+    }
+    Some(
+        labels
+            .iter()
+            .flat_map(|label| baselines_of(&document, label))
+            .collect(),
+    )
+}
+
+/// An empty paragraph the parser would read from a probe's added `w:p`, its
+/// mark in the face and size of `like`'s first run.
+#[cfg(not(target_arch = "wasm32"))]
+fn empty_probe_paragraph(
+    like: &crate::ir::HeaderFooterParagraph,
+) -> crate::ir::HeaderFooterParagraph {
+    let mut paragraph = like.clone();
+    let mark: TextStyle = match like.elements.first() {
+        Some(HFInline::Run(run)) => run.style.clone(),
+        _ => panic!("the probe paragraph starts with a run"),
+    };
+    paragraph.elements.clear();
+    paragraph.style.paragraph_mark_text_style = Some(Box::new(mark));
+    paragraph
+}
+
+/// Assert each probe variant's baselines against Word's.
+///
+/// Word puts every baseline on its 0.24pt export grid, so each must land
+/// within one grid step. The line that carries a `w:before` gets one more:
+/// Word drew each such line one 0.24pt device pixel higher than the gap it
+/// states, in headers and footers alike, where the next line keeps the full
+/// gap (recorded in #1874).
+#[cfg(not(target_arch = "wasm32"))]
+fn assert_probe_baselines(name: &str, got: &[f64], word: &[f64], carries_before: Option<usize>) {
+    assert_eq!(
+        got.len(),
+        word.len(),
+        "{name}: lines {got:?} against Word's {word:?}"
+    );
+    for (index, (got_pt, word_pt)) in got.iter().zip(word).enumerate() {
+        let tolerance_pt: f64 = if carries_before == Some(index) {
+            0.35
+        } else {
+            0.25
+        };
+        assert!(
+            (got_pt - word_pt).abs() < tolerance_pt,
+            "{name}: line {index} at {got_pt}pt where Word draws it at {word_pt}pt \
+             (all lines {got:?} against {word:?})"
+        );
+    }
+}
+
+type ProbeVary = fn(&mut Vec<crate::ir::HeaderFooterParagraph>);
+
+/// The drawn header keeps Word's paragraph gaps and line multiples.
+///
+/// Word for Mac 16.114.3 exports of `scripts/probes/issue-2056-header-spacing.json`:
+/// three Arial 12pt header paragraphs `w:header` 36pt below the page top. Word
+/// lowers each later line by the first `w:before` and by the larger of each
+/// adjacent `w:after`/`w:before` pair, and spaces lines by their multiple of
+/// the 13.8pt line; at 0.5 the first baseline rises as well and the body
+/// returns to the 72pt `w:top`. The flowed story drew all of these bunched at
+/// 47.25, 61.05 and 74.85pt (issue #2062).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn drawn_header_lines_keep_words_paragraph_gaps_and_multiples() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/issue-2056-header-spacing.docx");
+    fn scale(paragraphs: &mut [crate::ir::HeaderFooterParagraph], factor: f64) {
+        for paragraph in paragraphs {
+            paragraph.style.line_spacing = Some(crate::ir::LineSpacing::Proportional(factor));
+        }
+    }
+    let variants: [(&str, ProbeVary, [f64; 4], Option<usize>); 7] = [
+        ("control", |_| {}, [47.28, 60.96, 74.88, 91.31], None),
+        (
+            "first-before-120",
+            |p| p[0].style.space_before = Some(6.0),
+            [53.04, 66.96, 80.88, 94.56],
+            Some(0),
+        ),
+        (
+            "first-after-240",
+            |p| p[0].style.space_after = Some(12.0),
+            [47.28, 72.96, 86.88, 100.56],
+            None,
+        ),
+        (
+            "second-before-240",
+            |p| p[1].style.space_before = Some(12.0),
+            [47.28, 72.72, 86.88, 100.56],
+            Some(1),
+        ),
+        (
+            "first-after-240-second-before-360",
+            |p| {
+                p[0].style.space_after = Some(12.0);
+                p[1].style.space_before = Some(18.0);
+            },
+            [47.28, 78.72, 92.88, 106.56],
+            Some(1),
+        ),
+        (
+            "line-360-auto",
+            |p| scale(p, 1.5),
+            [47.28, 67.92, 88.56, 109.44],
+            None,
+        ),
+        (
+            "line-120-auto",
+            |p| scale(p, 0.5),
+            [41.76, 48.48, 55.44, 83.28],
+            None,
+        ),
+    ];
+    for (name, vary, word, carries_before) in variants {
+        let Some(got) = probe_story_baselines_pt(
+            fixture,
+            ProbeStory::Header,
+            "Arial",
+            &["One", "Two", "Three", "Body"],
+            vary,
+        ) else {
+            return;
+        };
+        // The zero-spacing control's body still sits 2.75pt below Word's
+        // 88.56pt through the flowed story's band shift (#2065); its row
+        // states this build's 91.31pt.
+        assert_probe_baselines(name, &got, &word, carries_before);
+    }
+}
+
+/// The drawn header keeps an empty paragraph's line and scales wrapped and
+/// empty lines by their multiple.
+///
+/// Word for Mac 16.114.3 exports of `scripts/probes/issue-2056-header-multiples.json`:
+/// an Arial 12pt header paragraph wrapping to three lines, two empty
+/// paragraphs and `Last`. Word leaves the two empty lines above `Last`, where
+/// the flowed story drew it directly under the wrapped lines at 88.66pt
+/// (issue #2062).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn drawn_header_keeps_empty_lines_and_scales_them_with_wrapped_lines() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/issue-2056-header-multiples.docx");
+    fn scale(paragraph: &mut crate::ir::HeaderFooterParagraph, factor: f64) {
+        paragraph.style.line_spacing = Some(crate::ir::LineSpacing::Proportional(factor));
+    }
+    let variants: [(&str, ProbeVary, [f64; 5]); 6] = [
+        ("control", |_| {}, [47.28, 60.96, 74.88, 116.16, 130.08]),
+        (
+            "empty-after-240",
+            |p| {
+                p[1..3]
+                    .iter_mut()
+                    .for_each(|paragraph| paragraph.style.space_after = Some(12.0));
+            },
+            [47.28, 60.96, 74.88, 140.16, 154.08],
+        ),
+        (
+            "empty-line-120-auto",
+            |p| {
+                p[1..3]
+                    .iter_mut()
+                    .for_each(|paragraph| scale(paragraph, 0.5))
+            },
+            [47.28, 60.96, 74.88, 102.48, 116.16],
+        ),
+        (
+            "empty-line-360-auto",
+            |p| {
+                p[1..3]
+                    .iter_mut()
+                    .for_each(|paragraph| scale(paragraph, 1.5))
+            },
+            [47.28, 60.96, 74.88, 130.08, 143.76],
+        ),
+        (
+            "wrapped-line-120-auto",
+            |p| scale(&mut p[0], 0.5),
+            [41.76, 48.48, 55.44, 95.52, 109.44],
+        ),
+        (
+            "wrapped-line-360-auto",
+            |p| scale(&mut p[0], 1.5),
+            [47.28, 67.92, 88.56, 137.04, 150.72],
+        ),
+    ];
+    for (name, vary, word) in variants {
+        let Some(got) = probe_story_baselines_pt(
+            fixture,
+            ProbeStory::Header,
+            "Arial",
+            &["Header", "Last", "Body"],
+            vary,
+        ) else {
+            return;
+        };
+        assert_probe_baselines(name, &got, &word, None);
+    }
+}
+
+/// A `w:lineRule="auto"` multiple below 1 scales a header line's whole box.
+///
+/// Word for Mac 16.114.3 exports of
+/// `scripts/probes/issue-2062-header-multiple-seat.json`: two Courier New 48pt
+/// header lines, whose 39.96pt ascent share of a 54.38pt line separates the
+/// candidate rules. At 0.5 Word seats the first baseline 19.92pt below the
+/// band top and at 0.75 30.00pt: the multiple times the natural seat, not the
+/// exact line's four-fifths share (21.75 and 32.63pt) nor the natural seat
+/// less the lost height (12.77 and 26.37pt). At 1.5 the extra goes below the
+/// line.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn a_header_multiple_below_one_scales_the_whole_line_box() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/issue-2062-header-multiple-seat.docx");
+    fn scale(paragraph: &mut crate::ir::HeaderFooterParagraph, factor: f64) {
+        paragraph.style.line_spacing = Some(crate::ir::LineSpacing::Proportional(factor));
+    }
+    let variants: [(&str, ProbeVary, [f64; 3]); 4] = [
+        (
+            "seat-line-120-auto",
+            |p| scale(&mut p[0], 0.5),
+            [55.92, 103.20, 128.88],
+        ),
+        (
+            "seat-line-180-auto",
+            |p| scale(&mut p[0], 0.75),
+            [66.00, 116.64, 142.32],
+        ),
+        (
+            "seat-line-360-auto",
+            |p| scale(&mut p[0], 1.5),
+            [76.08, 157.44, 183.12],
+        ),
+        (
+            "next-line-120-auto",
+            |p| scale(&mut p[1], 0.5),
+            [76.08, 110.40, 128.88],
+        ),
+    ];
+    for (name, vary, word) in variants {
+        let Some(got) = probe_story_baselines_pt(
+            fixture,
+            ProbeStory::Header,
+            "Courier New",
+            &["Seat", "Next", "Body"],
+            vary,
+        ) else {
+            return;
+        };
+        assert_probe_baselines(name, &got, &word, None);
+    }
+}
+
+/// The drawn footer stacks Word's line boxes, gaps and empty lines up from its
+/// anchor.
+///
+/// Word for Mac 16.114.3 exports of `scripts/probes/issue-2062-footer-spacing.json`:
+/// three Arial 12pt footer paragraphs over a 36pt `w:footer`. An empty
+/// paragraph or an interior gap lifts every line above it; a multiple above 1
+/// adds its extra below each line, lifting the lines above it too, and one
+/// below 1 shrinks each box; a first `w:before` moves no line. The flowed
+/// story dropped all of these (issue #2062).
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn drawn_footer_lines_stack_words_boxes_gaps_and_empty_lines_up_from_the_anchor() {
+    let fixture: &[u8] =
+        include_bytes!("../../../../tests/fixtures/docx/issue-2062-footer-spacing.docx");
+    fn scale(paragraph: &mut crate::ir::HeaderFooterParagraph, factor: f64) {
+        paragraph.style.line_spacing = Some(crate::ir::LineSpacing::Proportional(factor));
+    }
+    let variants: [(&str, ProbeVary, [f64; 3], Option<usize>); 11] = [
+        ("control", |_| {}, [775.68, 789.60, 803.28], None),
+        (
+            "trailing-empty",
+            |p| {
+                let empty = empty_probe_paragraph(&p[2]);
+                p.push(empty);
+            },
+            [762.00, 775.68, 789.60],
+            None,
+        ),
+        (
+            "interior-empty",
+            |p| {
+                let empty = empty_probe_paragraph(&p[0]);
+                p.insert(1, empty);
+            },
+            [762.00, 789.60, 803.28],
+            None,
+        ),
+        (
+            "first-before-240",
+            |p| p[0].style.space_before = Some(12.0),
+            [775.44, 789.60, 803.28],
+            Some(0),
+        ),
+        (
+            "first-after-240",
+            |p| p[0].style.space_after = Some(12.0),
+            [763.68, 789.60, 803.28],
+            None,
+        ),
+        (
+            "second-before-240",
+            |p| p[1].style.space_before = Some(12.0),
+            [763.68, 789.36, 803.28],
+            Some(1),
+        ),
+        (
+            "last-after-240",
+            |p| p[2].style.space_after = Some(12.0),
+            [763.68, 777.60, 791.28],
+            None,
+        ),
+        (
+            "line-360-auto",
+            |p| p.iter_mut().for_each(|paragraph| scale(paragraph, 1.5)),
+            [755.04, 775.68, 796.56],
+            None,
+        ),
+        (
+            "line-120-auto",
+            |p| p.iter_mut().for_each(|paragraph| scale(paragraph, 0.5)),
+            [790.80, 797.76, 804.72],
+            None,
+        ),
+        (
+            "last-line-360-auto",
+            |p| scale(&mut p[2], 1.5),
+            [768.96, 782.64, 796.56],
+            None,
+        ),
+        (
+            "first-line-120-auto",
+            |p| scale(&mut p[0], 0.5),
+            [777.12, 789.60, 803.28],
+            None,
+        ),
+    ];
+    for (name, vary, word, carries_before) in variants {
+        let Some(got) = probe_story_baselines_pt(
+            fixture,
+            ProbeStory::Footer,
+            "Arial",
+            &["One", "Two", "Three"],
+            vary,
+        ) else {
+            return;
+        };
+        assert_probe_baselines(name, &got, &word, carries_before);
+    }
 }
