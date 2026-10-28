@@ -1971,3 +1971,72 @@ fn issue_2159_style_reference_alpha_composites_in_the_generated_source() {
 fn issue_2159_style_ref_alpha_smoke() {
     assert_produces_valid_pdf("issue_2159_style_ref_alpha.pptx");
 }
+
+// ---------------------------------------------------------------------------
+// issue_2158_nofill_shadow.pptx — the issue's two-slide deck. Each slide holds
+// one rectangle with an explicit `<a:noFill/>`, the theme's line style 1
+// (0.75pt on slide 1, overridden to 7pt on slide 2) and theme effect style 2,
+// a 35% black `a:outerShdw` (issue #2158). The native PowerPoint export casts
+// that shadow from the outline alone: its flattened bitmap is a blurred ring
+// with a zero interior, so the rectangle stays white inside.
+// ---------------------------------------------------------------------------
+
+/// Each slide's shadow source is the stroked outline, never a filled box.
+#[test]
+fn issue_2158_unfilled_rectangle_casts_its_shadow_from_the_outline() {
+    let data = load_fixture("issue_2158_nofill_shadow.pptx");
+    let (document, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let output = generate_typst(&document).unwrap();
+    let svgs: Vec<&str> = output
+        .images
+        .iter()
+        .filter_map(|asset| std::str::from_utf8(&asset.data).ok())
+        .filter(|data| data.contains("<feGaussianBlur"))
+        .collect();
+
+    assert_eq!(svgs.len(), 2, "one shadow per slide");
+    for (svg, width) in svgs.iter().zip(["0.75", "7"]) {
+        assert!(
+            svg.contains("fill=\"none\"") && !svg.contains("fill=\"rgb("),
+            "the interior casts nothing: {svg}"
+        );
+        assert!(
+            svg.contains(&format!("stroke-width=\"{width}\"")),
+            "the {width}pt outline casts the ring: {svg}"
+        );
+    }
+}
+
+#[test]
+fn issue_2158_nofill_shadow_smoke() {
+    assert_produces_valid_pdf("issue_2158_nofill_shadow.pptx");
+}
+
+/// #2159's slide-2 shapes paint fill and outline at 50% alpha, and PowerPoint
+/// halves their shadow with them (its bitmap peaks at 45/255 where slide 1's
+/// opaque copies peak at 89/255). Each shadow source carries both alphas.
+#[test]
+fn issue_2159_translucent_shapes_cast_their_shadows_at_their_alpha() {
+    let data = load_fixture("issue_2159_style_ref_alpha.pptx");
+    let (document, _warnings) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let output = generate_typst(&document).unwrap();
+    let svgs: Vec<&str> = output
+        .images
+        .iter()
+        .filter_map(|asset| std::str::from_utf8(&asset.data).ok())
+        .filter(|data| data.contains("<feGaussianBlur"))
+        .collect();
+
+    assert_eq!(svgs.len(), 4, "one shadow per shape");
+    let translucent: usize = svgs
+        .iter()
+        .filter(|svg| {
+            svg.contains("fill-opacity=\"0.5\"") && svg.contains("stroke-opacity=\"0.5\"")
+        })
+        .count();
+    assert_eq!(translucent, 2, "slide 2's two shadows: {svgs:?}");
+    assert!(
+        svgs[..2].iter().all(|svg| !svg.contains("-opacity=")),
+        "slide 1's opaque shapes cast at full strength: {svgs:?}"
+    );
+}

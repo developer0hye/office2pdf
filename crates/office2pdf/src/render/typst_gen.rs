@@ -2415,6 +2415,7 @@ fn generate_fixed_element(
                         (elem.width, elem.height),
                         &img.stroke,
                         shadow,
+                        shapes::ShadowSource::OPAQUE,
                         (dx, dy),
                     );
                 } else {

@@ -1436,6 +1436,177 @@ fn test_blurred_open_subpath_filters_its_stroke_without_filling_it() {
     );
 }
 
+/// A 200x150pt rectangle under a 35% black theme shadow, with the given fill
+/// and a 7pt outline (or none).
+fn shadowed_rectangle(
+    fill: Option<Color>,
+    opacity: Option<f64>,
+    stroke_opacity: Option<f64>,
+    blur_radius: f64,
+    outlined: bool,
+) -> FixedElement {
+    use crate::ir::Shadow;
+
+    FixedElement {
+        x: 10.0,
+        y: 20.0,
+        width: 200.0,
+        height: 150.0,
+        kind: FixedElementKind::Shape(Shape {
+            kind: ShapeKind::Rectangle,
+            fill,
+            gradient_fill: None,
+            pattern_fill: None,
+            stroke: outlined.then(|| BorderSide {
+                width: 7.0,
+                color: Color::new(79, 129, 189),
+                style: BorderLineStyle::Solid,
+                join: LineJoin::Round,
+                cap: LineCap::Flat,
+            }),
+            rotation_deg: None,
+            opacity,
+            stroke_opacity,
+            shadow: Some(Shadow {
+                blur_radius,
+                distance: 1.8,
+                direction: 90.0,
+                color: Color::new(0, 0, 0),
+                opacity: 0.35,
+            }),
+            top_bevel: None,
+        }),
+    }
+}
+
+/// The SVG sources of every generated shadow asset.
+fn shadow_svgs(element: FixedElement) -> Vec<String> {
+    let output = generate_typst(&make_doc(vec![make_fixed_page(
+        720.0,
+        540.0,
+        vec![element],
+    )]))
+    .unwrap();
+    output
+        .images
+        .iter()
+        .filter_map(|asset| std::str::from_utf8(&asset.data).ok())
+        .filter(|data| data.starts_with("<svg"))
+        .map(str::to_string)
+        .collect()
+}
+
+/// PowerPoint casts an outer shadow from what the shape paints. Native
+/// exports of a `noFill` rectangle (and of a fill at alpha 0) flatten the
+/// shadow to a blurred ring under the outline with a zero interior (issue
+/// #2158), so the shadow source must not fill the interior.
+#[test]
+fn unfilled_shape_casts_its_shadow_from_the_outline_alone() {
+    let svgs = shadow_svgs(shadowed_rectangle(None, None, None, 3.15, true));
+
+    assert_eq!(svgs.len(), 1, "one blurred shadow asset");
+    let svg = &svgs[0];
+    assert!(
+        svg.contains("<feGaussianBlur")
+            && svg.contains("fill=\"none\"")
+            && svg.contains("stroke-width=\"7\""),
+        "the Gaussian source is the stroked outline only: {svg}"
+    );
+    assert!(
+        !svg.contains("fill=\"rgb("),
+        "an unfilled rectangle must not cast a filled silhouette: {svg}"
+    );
+}
+
+/// A translucent fill or outline casts its shadow at that alpha. PowerPoint's
+/// shadow bitmap reads 45/255 under a 50% fill and 89/255 under an opaque one
+/// at a 35% shadow, and where a 50% outline overlaps a 50% fill it reads
+/// 66/255: the two paints composite before the blur (issue #2158).
+#[test]
+fn translucent_fill_and_outline_cast_their_shadow_at_their_alpha() {
+    let svgs = shadow_svgs(shadowed_rectangle(
+        Some(Color::new(79, 129, 189)),
+        Some(0.5),
+        Some(0.25),
+        3.15,
+        true,
+    ));
+
+    assert_eq!(svgs.len(), 1);
+    let svg = &svgs[0];
+    assert!(
+        svg.contains("fill-opacity=\"0.5\"") && svg.contains("stroke-opacity=\"0.25\""),
+        "each paint casts at its own alpha: {svg}"
+    );
+    assert!(
+        svg.contains("opacity=\"0.35\""),
+        "the shadow colour's own alpha still scales the composite: {svg}"
+    );
+}
+
+/// An opaque shape's shadow source carries no extra alpha.
+#[test]
+fn opaque_shape_shadow_source_has_no_paint_alpha() {
+    let svgs = shadow_svgs(shadowed_rectangle(
+        Some(Color::new(79, 129, 189)),
+        None,
+        None,
+        3.15,
+        true,
+    ));
+
+    assert_eq!(svgs.len(), 1);
+    assert!(
+        !svgs[0].contains("fill-opacity") && !svgs[0].contains("stroke-opacity"),
+        "{}",
+        svgs[0]
+    );
+}
+
+/// A shape that paints nothing casts nothing.
+#[test]
+fn unfilled_unoutlined_shape_casts_no_shadow() {
+    let output = generate_typst(&make_doc(vec![make_fixed_page(
+        720.0,
+        540.0,
+        vec![shadowed_rectangle(None, None, None, 3.15, false)],
+    )]))
+    .unwrap();
+
+    assert!(output.images.is_empty());
+    assert!(
+        !output.source.contains("rgb(0, 0, 0, 89)"),
+        "{}",
+        output.source
+    );
+}
+
+/// A crisp shadow follows the same rule: an unfilled rectangle's offset copy
+/// is its outline, a plain vector stroke, not a solid box.
+#[test]
+fn unfilled_shape_casts_a_crisp_shadow_from_the_outline_alone() {
+    let output = generate_typst(&make_doc(vec![make_fixed_page(
+        720.0,
+        540.0,
+        vec![shadowed_rectangle(None, None, None, 0.0, true)],
+    )]))
+    .unwrap();
+
+    assert!(
+        !output.source.contains("fill: rgb(0, 0, 0, 89)"),
+        "no solid shadow box under an unfilled rectangle: {}",
+        output.source
+    );
+    assert!(
+        output.source.contains(
+            "#rect(width: 200pt, height: 150pt, stroke: (paint: rgb(0, 0, 0, 89), thickness: 7pt"
+        ),
+        "the crisp copy is the outline in the shadow colour: {}",
+        output.source
+    );
+    assert!(output.images.is_empty(), "no generated asset is needed");
+}
+
 #[test]
 fn test_shape_no_shadow_no_extra_output() {
     let elem = FixedElement {

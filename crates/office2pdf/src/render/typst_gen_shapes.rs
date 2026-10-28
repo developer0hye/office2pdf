@@ -391,6 +391,59 @@ pub(super) fn shadow_silhouette_corner_radius(stroke: &Option<BorderSide>) -> f6
         .map_or(0.0, |stroke| (stroke.width / 2.0).max(0.0))
 }
 
+/// How strongly each of a shape's own paints casts its outer shadow.
+///
+/// PowerPoint casts an `a:outerShdw` from what the shape actually paints: the
+/// fill and the outline, each at its own alpha, composited before the blur.
+/// One-factor native probes of #2158's rectangle (35% shadow, 7pt outline)
+/// flatten the shadow to a bitmap reading 89/255 under an opaque fill, 45
+/// under a 50% fill, 0 inside a `noFill` or alpha-0 fill (a ring under the
+/// outline alone), 45 under a 50% outline, and 66 where a 50% outline overlaps
+/// a 50% fill — `1 - 0.5 * 0.5` of the opaque 89.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(super) struct ShadowSource {
+    /// Alpha of the fill, zero when the shape paints none.
+    fill_alpha: f64,
+    /// Alpha of the outline, where the shape has one.
+    stroke_alpha: f64,
+}
+
+impl ShadowSource {
+    /// A picture: its pixels and its frame both cast at full strength.
+    pub(super) const OPAQUE: Self = Self {
+        fill_alpha: 1.0,
+        stroke_alpha: 1.0,
+    };
+
+    fn of_shape(shape: &Shape) -> Self {
+        let fill_alpha: f64 = if shape.pattern_fill.is_some() {
+            // The pattern writer paints both its colours opaque.
+            1.0
+        } else if shape.gradient_fill.is_some() || shape.fill.is_some() {
+            shape.opacity.unwrap_or(1.0).clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+        Self {
+            fill_alpha,
+            stroke_alpha: shape.stroke_opacity.unwrap_or(1.0).clamp(0.0, 1.0),
+        }
+    }
+
+    /// Whether the shape's silhouette is cast solid, the case the crisp
+    /// filled-copy renderer draws.
+    fn is_solid(self, stroke: &Option<BorderSide>) -> bool {
+        self.fill_alpha >= 1.0 && (casting_stroke(stroke).is_none() || self.stroke_alpha >= 1.0)
+    }
+}
+
+/// The outline that paints, if any.
+fn casting_stroke(stroke: &Option<BorderSide>) -> Option<&BorderSide> {
+    stroke
+        .as_ref()
+        .filter(|stroke| stroke.style != BorderLineStyle::None && stroke.width > 0.0)
+}
+
 /// A corner arc can never bite deeper than half the box it turns; Typst would
 /// clamp it anyway.
 pub(super) fn clamp_ring_corner_radius(radius: f64, width: f64, height: f64) -> f64 {
@@ -417,7 +470,16 @@ fn write_shadow_shape(
     let dx = shadow.distance * dir_rad.cos();
     let dy = shadow.distance * dir_rad.sin();
     let outline_outset: f64 = shadow_outline_outset(&shape.stroke);
-    if shadow.blur_radius > 0.0 {
+    let source: ShadowSource = ShadowSource::of_shape(shape);
+    if shadow.blur_radius <= 0.0 && source.fill_alpha <= 0.0 {
+        // An unfilled shape's crisp shadow is its outline alone, one paint,
+        // so it stays a plain vector stroke (issue #2158).
+        write_crisp_outline_shadow(out, shape, width, height, shadow, source, (dx, dy), ctx);
+        return;
+    }
+    // A blurred shadow, or one whose fill and outline must composite at
+    // different alphas, takes the generated SVG (issue #2158).
+    if shadow.blur_radius > 0.0 || !source.is_solid(&shape.stroke) {
         write_blurred_shadow_asset(
             out,
             ctx,
@@ -425,6 +487,7 @@ fn write_shadow_shape(
             (width, height),
             &shape.stroke,
             shadow,
+            source,
             (dx, dy),
         );
         return;
@@ -453,13 +516,14 @@ fn write_shadow_shape(
                 );
             }
             if let ShapeKind::Path { subpaths } = &shape.kind {
-                write_crisp_open_path_shadow(
+                write_crisp_path_stroke_shadow(
                     out,
                     subpaths,
-                    width,
-                    height,
+                    (width, height),
                     &shape.stroke,
                     shadow,
+                    CastSubpaths::OpenOnly,
+                    1.0,
                     (dx, dy),
                 );
             }
@@ -530,35 +594,101 @@ fn write_shadow_shape(
     }
 }
 
-/// Write the offset stroke cast by every unclosed custom-geometry subpath.
+/// Write the crisp shadow of a shape that paints no fill: an offset copy of
+/// its outline in the shadow colour, at the outline's alpha.
+#[allow(clippy::too_many_arguments)]
+fn write_crisp_outline_shadow(
+    out: &mut String,
+    shape: &Shape,
+    width: f64,
+    height: f64,
+    shadow: &Shadow,
+    source: ShadowSource,
+    offset: (f64, f64),
+    ctx: &mut GenCtx,
+) {
+    let Some(stroke) = casting_stroke(&shape.stroke).filter(|_| source.stroke_alpha > 0.0) else {
+        return;
+    };
+    if let ShapeKind::Path { subpaths } = &shape.kind {
+        write_crisp_path_stroke_shadow(
+            out,
+            subpaths,
+            (width, height),
+            &shape.stroke,
+            shadow,
+            CastSubpaths::All,
+            source.stroke_alpha,
+            offset,
+        );
+        return;
+    }
+    let outline = Shape {
+        kind: shape.kind.clone(),
+        fill: None,
+        gradient_fill: None,
+        pattern_fill: None,
+        stroke: Some(BorderSide {
+            color: shadow.color,
+            ..stroke.clone()
+        }),
+        rotation_deg: None,
+        opacity: None,
+        stroke_opacity: Some(shadow.opacity.clamp(0.0, 1.0) * source.stroke_alpha),
+        shadow: None,
+        top_bevel: None,
+    };
+    let _ = write!(
+        out,
+        "#place(top + left, dx: {}pt, dy: {}pt)[",
+        format_f64(offset.0),
+        format_f64(offset.1),
+    );
+    generate_shape(out, &outline, width, height, ctx);
+    out.push_str("]\n");
+}
+
+/// Which subpaths of a custom geometry cast a stroked crisp shadow.
+#[derive(Clone, Copy, PartialEq)]
+enum CastSubpaths {
+    /// Only the open ones: a filled shape's closed rings already cast the
+    /// filled silhouette.
+    OpenOnly,
+    /// Every one: an unfilled shape casts its whole outline (issue #2158).
+    All,
+}
+
+/// Write the offset stroke cast by a custom geometry's subpaths.
 ///
 /// Typst closes an open curve for filling, so this copy deliberately has no
 /// fill and retains the source line's width, dash, and join. That leaves an
 /// elbow connector open while painting the grey band PowerPoint places under
-/// each of its legs (issues #1205, #1305).
-fn write_crisp_open_path_shadow(
+/// each of its legs (issues #1205, #1305). `stroke_alpha` is the outline's
+/// own paint alpha, which scales the shadow it casts.
+#[allow(clippy::too_many_arguments)]
+fn write_crisp_path_stroke_shadow(
     out: &mut String,
     subpaths: &[Subpath],
-    width: f64,
-    height: f64,
+    size: (f64, f64),
     stroke: &Option<BorderSide>,
     shadow: &Shadow,
+    cast: CastSubpaths,
+    stroke_alpha: f64,
     offset: (f64, f64),
 ) {
-    let Some(stroke) = stroke
-        .as_ref()
-        .filter(|stroke| stroke.style != BorderLineStyle::None && stroke.width > 0.0)
-    else {
+    let (width, height): (f64, f64) = size;
+    let Some(stroke) = casting_stroke(stroke) else {
         return;
     };
-    if !subpaths
-        .iter()
-        .any(|subpath| !subpath.closed && subpath.vertices.len() >= 2)
-    {
+    let casts = |subpath: &&Subpath| -> bool {
+        subpath.vertices.len() >= 2 && (cast == CastSubpaths::All || !subpath.closed)
+    };
+    if !subpaths.iter().any(|subpath| casts(&subpath)) {
         return;
     }
 
-    let paint: String = rgb_with_alpha(&shadow.color, shadow_alpha(shadow));
+    let alpha: f64 = shadow.opacity.clamp(0.0, 1.0) * stroke_alpha;
+    let paint: String = rgb_with_alpha(&shadow.color, opacity_byte(alpha));
     let _ = write!(
         out,
         "#place(top + left, dx: {}pt, dy: {}pt)[#curve(stroke: {}",
@@ -566,10 +696,7 @@ fn write_crisp_open_path_shadow(
         format_f64(offset.1),
         drawingml_stroke_value_with_paint(stroke, &paint),
     );
-    for subpath in subpaths
-        .iter()
-        .filter(|subpath| !subpath.closed && subpath.vertices.len() >= 2)
-    {
+    for subpath in subpaths.iter().filter(casts) {
         write_curve_subpath(out, width, height, subpath);
     }
     out.push_str(")]\n");
@@ -579,6 +706,11 @@ fn write_crisp_open_path_shadow(
 /// Gaussian. Typst (0.14 and 0.15 alike) rasterises SVG filters at four samples per output
 /// point, so the PDF receives a continuous 288-DPI ramp instead of one flat
 /// alpha plateau per duplicate (issue #1309).
+///
+/// The silhouette is what the shape paints, each paint at its own alpha
+/// (`source`), composited inside the group before the filter sees it. A crisp
+/// shadow (`blurRad` 0) takes the same SVG without the filter.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn write_blurred_shadow_asset(
     out: &mut String,
     ctx: &mut GenCtx,
@@ -586,16 +718,17 @@ pub(super) fn write_blurred_shadow_asset(
     size: (f64, f64),
     stroke: &Option<BorderSide>,
     shadow: &Shadow,
+    source: ShadowSource,
     offset: (f64, f64),
 ) {
     let (width, height): (f64, f64) = size;
     let sigma: f64 = shadow_blur_sigma(shadow);
-    if sigma <= 0.0 {
+    let source_stroke: Option<&BorderSide> =
+        casting_stroke(stroke).filter(|_| source.stroke_alpha > 0.0);
+    if source.fill_alpha <= 0.0 && source_stroke.is_none() {
+        // Nothing painted, so nothing to cast.
         return;
     }
-    let source_stroke: Option<&BorderSide> = stroke
-        .as_ref()
-        .filter(|stroke| stroke.style != BorderLineStyle::None && stroke.width > 0.0);
     let source_outset: f64 = source_stroke.map_or(0.0, |stroke| {
         let half_width: f64 = stroke.width / 2.0;
         if stroke.join == LineJoin::Miter {
@@ -625,19 +758,36 @@ pub(super) fn write_blurred_shadow_asset(
     };
     let opacity: f64 = shadow.opacity.clamp(0.0, 1.0);
     let mut svg = format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{}\" height=\"{}\" viewBox=\"0 0 {} {}\"><defs><filter id=\"blur\" filterUnits=\"userSpaceOnUse\" x=\"0\" y=\"0\" width=\"{}\" height=\"{}\" color-interpolation-filters=\"sRGB\"><feGaussianBlur stdDeviation=\"{}\"/></filter></defs><g filter=\"url(#blur)\" opacity=\"{}\" fill=\"rgb({}, {}, {})\"",
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{}\" height=\"{}\" viewBox=\"0 0 {} {}\">",
         format_f64(asset_width),
         format_f64(asset_height),
         format_f64(asset_width),
         format_f64(asset_height),
-        format_f64(asset_width),
-        format_f64(asset_height),
-        format_f64(sigma),
-        format_f64(opacity),
-        shadow.color.r,
-        shadow.color.g,
-        shadow.color.b,
     );
+    if sigma > 0.0 {
+        let _ = write!(
+            svg,
+            "<defs><filter id=\"blur\" filterUnits=\"userSpaceOnUse\" x=\"0\" y=\"0\" width=\"{}\" height=\"{}\" color-interpolation-filters=\"sRGB\"><feGaussianBlur stdDeviation=\"{}\"/></filter></defs><g filter=\"url(#blur)\"",
+            format_f64(asset_width),
+            format_f64(asset_height),
+            format_f64(sigma),
+        );
+    } else {
+        svg.push_str("<g");
+    }
+    let _ = write!(svg, " opacity=\"{}\"", format_f64(opacity));
+    if source.fill_alpha > 0.0 {
+        let _ = write!(
+            svg,
+            " fill=\"rgb({}, {}, {})\"",
+            shadow.color.r, shadow.color.g, shadow.color.b,
+        );
+        if source.fill_alpha < 1.0 {
+            let _ = write!(svg, " fill-opacity=\"{}\"", format_f64(source.fill_alpha));
+        }
+    } else {
+        svg.push_str(" fill=\"none\"");
+    }
     if let Some(stroke) = source_stroke {
         let join = match stroke.join {
             LineJoin::Round => "round",
@@ -653,6 +803,13 @@ pub(super) fn write_blurred_shadow_asset(
             format_f64(stroke.width.max(0.0)),
             join,
         );
+        if source.stroke_alpha < 1.0 {
+            let _ = write!(
+                svg,
+                " stroke-opacity=\"{}\"",
+                format_f64(source.stroke_alpha)
+            );
+        }
     } else {
         svg.push_str(" stroke=\"none\"");
     }
