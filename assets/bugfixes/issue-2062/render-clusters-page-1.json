@@ -1,0 +1,567 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 37.3248,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 7.2,
+        "x": 456.96,
+        "y": 51.84
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-f1194b5e13c7",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 34.3296,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 485.28,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-1800164255fe",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 34.0992,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 442.56,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-08b2f8918f36",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 34.0992,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 399.84,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-ad2f9501d047",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 34.0992,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 357.12,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-1c8e1ee1f2ea",
+      "region": "top"
+    },
+    {
+      "area_pt2": 34.0992,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 314.4,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-32852c3cc5b0",
+      "region": "top"
+    },
+    {
+      "area_pt2": 33.408,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 81.12,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-d1310fb74523",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 33.1776,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 123.36,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-4f716d098715",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 271.68,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-2c576cdfb082",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 422.4,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-51c42673a2cc",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 465.12,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-b74fb7d71a6c",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 100.8,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-dd21ff62af80",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 143.52,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-a7252bc23d76",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 166.08,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-d34454591533",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 186.24,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-da4742b4d28b",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 208.8,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-fb41f98ab89b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 228.96,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-6cac5fcd33fc",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 251.52,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-e6308fc92733",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 294.24,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-132ea6b00034",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 336.96,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-93f4a3c047f8",
+      "region": "top"
+    },
+    {
+      "area_pt2": 32.7168,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 379.68,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-211325f51e40",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.5648,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 300.96,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-cfe7ba8f51c2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.5648,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 386.4,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-87a8c07c0ed2",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.5648,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 343.68,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-d4935839327e",
+      "region": "top"
+    },
+    {
+      "area_pt2": 31.5648,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 258.24,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-84146c6eeb23",
+      "region": "top"
+    },
+    {
+      "area_pt2": 30.6432,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 6.24,
+        "x": 429.12,
+        "y": 53.76
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-6fb63abc1092",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 7.68,
+        "width": 5.76,
+        "x": 85.44,
+        "y": 108.96
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of 'Last', whose baseline sits 0.09pt below Word's 116.16pt, under Word's 0.24pt export grid; text, face and position otherwise match."
+      },
+      "id": "p1-f316a0ad54c2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 30.1824,
+      "bbox_pt": {
+        "height": 9.6,
+        "width": 5.76,
+        "x": 179.52,
+        "y": 51.84
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-0f0c2237ac12",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.736,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 5.76,
+        "x": 471.84,
+        "y": 56.64
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-54cb6e8d1e26",
+      "region": "top-right"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 6.24,
+        "x": 130.08,
+        "y": 56.64
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-18173c21d6f6",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 6.24,
+        "x": 78.72,
+        "y": 111.84
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of 'Last', whose baseline sits 0.09pt below Word's 116.16pt, under Word's 0.24pt export grid; text, face and position otherwise match."
+      },
+      "id": "p1-71879fd6cdd2",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 6.24,
+        "x": 215.52,
+        "y": 56.64
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-f3a32c5afa64",
+      "region": "top"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 6.24,
+        "x": 172.8,
+        "y": 56.64
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-250e56373a5f",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.5056,
+      "bbox_pt": {
+        "height": 4.8,
+        "width": 6.24,
+        "x": 87.36,
+        "y": 56.64
+      },
+      "disposition": {
+        "class": "glyph-edge-rasterization",
+        "kind": "accepted-rendering",
+        "note": "Glyph outlines of the wrapped header's lines, chiefly the second: its baseline sits 0.10pt below Word's 60.96pt (the first and third within 0.03pt), under Word's 0.24pt export grid; the 300 DPI GT/after crops show the same words, spacing and wrap."
+      },
+      "id": "p1-e8aaa4a37b32",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 34,
+    "duplicate": 0,
+    "total": 34,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
