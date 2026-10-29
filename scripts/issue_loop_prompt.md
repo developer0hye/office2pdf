@@ -16,6 +16,13 @@ replace those documents.
 - Test-driven: write the failing test first, then the minimal fix, then refactor. The
   test must pin the general rule, not the one input from the issue.
 - Sign off every commit (`git commit -s`) with the repository's configured identity.
+- CI's WASM job also compiles the unit tests for wasm32 (`wasm-pack test`), which a
+  plain `cargo check --target wasm32-unknown-unknown` skips. Before pushing a Rust
+  change, run this (add the target with `rustup target add wasm32-unknown-unknown`
+  if it is missing):
+  `cargo check --locked --tests --target wasm32-unknown-unknown -p office2pdf --features wasm`
+  It catches compile errors, such as a test that calls a native-only helper; a
+  wasm32 runtime panic still shows up only on CI.
 - Merge only when every check on the pull request passes, including one that also
   fails on `main`: an inherited failure is a red main to fix first (the `main-red`
   issue), never a reason to merge. Read the full `gh pr checks` output, unfiltered.
