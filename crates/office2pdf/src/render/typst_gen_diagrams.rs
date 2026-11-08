@@ -778,23 +778,29 @@ fn plots_as_line(chart: &Chart, series: &crate::ir::ChartSeries) -> bool {
 /// [`SERIES_MARKER_SIZE_PT`] the key's baseline offset is calibrated against,
 /// so ordinary-size legends keep their seat whatever the series declares
 /// (issue #1617).
+///
+/// `centre_below_baseline_pt` seats the sample's centre that far below the
+/// label baseline instead, where the row's key centre is measured (#1748).
 fn line_legend_key(
     series_index: usize,
     series: &crate::ir::ChartSeries,
     color: &str,
     legend_text_pt: f64,
+    centre_below_baseline_pt: Option<f64>,
 ) -> String {
     let marker_cap: f64 = legend_marker_cap_pt(legend_text_pt);
     let marker_size: f64 = series_marker_size_pt(series).min(marker_cap);
     let box_height: f64 = SERIES_MARKER_SIZE_PT.min(marker_cap);
     let key_mid: f64 = box_height / 2.0;
+    let baseline_pt: f64 =
+        centre_below_baseline_pt.map_or(LEGEND_KEY_BASELINE_PT, |centre| centre + key_mid);
     format!(
         "#box(width: {}pt, height: {}pt, baseline: {}pt)[\
          #place(top + left, dx: 0pt, dy: {}pt, line(end: ({}pt, 0pt), stroke: {}))\
          {}]",
         format_f64(LEGEND_KEY_LEN_PT),
         format_f64(box_height),
-        format_f64(LEGEND_KEY_BASELINE_PT),
+        format_f64(baseline_pt),
         format_f64(key_mid),
         format_f64(LEGEND_KEY_LEN_PT),
         series_stroke(series, color),
@@ -1942,6 +1948,23 @@ const EXCEL_CATEGORY_LABEL_BASE_Y_SHIFT_PT: f64 = -3.644;
 /// -0.438pt (#1607).
 const EXCEL_BOTTOM_LEGEND_BASE_Y_SHIFT_PT: f64 = -0.438;
 const EXCEL_BOTTOM_LEGEND_Y_SHIFT_GROWTH_EM: f64 = 37.0 / 60.0;
+
+/// Vertical seat of a framed Excel worksheet column chart's bottom legend
+/// row, as [`excel_bottom_legend_seat`] composes it (#1748).
+///
+/// Native Excel for Mac 16.112 exports of the #982 workbook with only the
+/// legend size changed centre every filled key and the line sample 9pt above
+/// the frame's bottom edge, less 0.495 of the legend face's `hhea` line box,
+/// whose 0.45 share is the filled key's height. Nine Segoe UI sizes from 6 to
+/// 18pt and six Verdana sizes from 6 to 14pt fit that one intercept within
+/// 0.003pt (`assets/validation/issue-1748/`). The label's line box is
+/// centred on that key and raised by 1pt; Excel rounds its top to a whole
+/// sheet point and adds the separately rounded ascent. Any rise from 0.958 to 1.222pt reproduces the six Segoe UI
+/// baselines measured at 6, 7, 9, 11, 14 and 18pt; it is the rounded ascent
+/// that keeps the 6pt row on the 9pt baseline.
+const EXCEL_BOTTOM_LEGEND_KEY_BOTTOM_PAD_PT: f64 = 9.0;
+const EXCEL_BOTTOM_LEGEND_KEY_LINE_BOX_SHARE: f64 = 0.495;
+const EXCEL_BOTTOM_LEGEND_LABEL_RISE_PT: f64 = 1.0;
 
 /// Clearance under the longest 45deg category label in a framed column plot.
 ///
@@ -3442,6 +3465,10 @@ fn excel_bar_category_label_x_shift_pt(chart: &Chart) -> f64 {
 /// down by 0.7pt per text point inside the unchanged automatic legend band.
 /// Cancelling that response and restoring Excel's three-point grid cadence
 /// reproduces the native seats while leaving the plot and category band alone.
+///
+/// A framed column chart whose legend face is measurable takes
+/// [`excel_bottom_legend_seat`] instead: this cadence puts a 6pt row one chart
+/// point below native, and it seats the key on the label baseline (#1748).
 fn excel_bottom_legend_y_shift_pt(chart: &Chart) -> f64 {
     if chart.host != crate::ir::ChartHost::Spreadsheet
         || chart.legend_position != LegendPosition::Bottom
@@ -3452,6 +3479,59 @@ fn excel_bottom_legend_y_shift_pt(chart: &Chart) -> f64 {
     let from_nine_pt: f64 = chart_legend_text_pt(chart) - 9.0;
     EXCEL_BOTTOM_LEGEND_BASE_Y_SHIFT_PT + EXCEL_BOTTOM_LEGEND_Y_SHIFT_GROWTH_EM * from_nine_pt
         - (from_nine_pt / 3.0).round()
+}
+
+/// Where a framed Excel worksheet column chart seats its bottom legend row.
+struct ExcelBottomLegendSeat {
+    /// Chart-local top of the label's line box, on a whole sheet point.
+    label_top_pt: f64,
+    /// The label's rounded ascent, from that top down to its baseline.
+    label_ascent_pt: f64,
+    /// How far every key's centre sits below the label baseline; the filled
+    /// keys and a line sample share one row centre.
+    key_centre_below_baseline_pt: f64,
+}
+
+/// The bottom-legend seat native Excel composes from the frame and the legend
+/// face, or `None` where the band or the face is unmeasured.
+///
+/// Rounding happens in sheet space, the way [`column_value_chrome_y`] snaps
+/// the plot chrome; without a sheet origin the frame's own origin stands in.
+/// See [`EXCEL_BOTTOM_LEGEND_KEY_BOTTOM_PAD_PT`] for the measurements.
+fn excel_bottom_legend_seat(
+    chart: &Chart,
+    frame_h: Option<f64>,
+    sheet_frame_top_pt: Option<f64>,
+) -> Option<ExcelBottomLegendSeat> {
+    if chart.host != crate::ir::ChartHost::Spreadsheet
+        || !matches!(chart.chart_type, ChartType::Column)
+        || chart.legend_position != LegendPosition::Bottom
+        || (chart.legend_text_style.size_pt.is_none() && chart.text_style.size_pt.is_none())
+    {
+        return None;
+    }
+    let frame_h: f64 = frame_h?;
+    let family: &str = chart
+        .text_font_family
+        .as_deref()
+        .unwrap_or(crate::defaults::TYPST_DEFAULT_FONT_FAMILY);
+    let (ascent_em, descent_em) =
+        chart_face_line_metrics_em(family, chart_legend_text_is_bold(chart))?;
+    let size_pt: f64 = chart_legend_text_pt(chart);
+    let line_box_pt: f64 = (ascent_em + descent_em) * size_pt;
+    let key_centre: f64 = frame_h
+        - EXCEL_BOTTOM_LEGEND_KEY_BOTTOM_PAD_PT
+        - EXCEL_BOTTOM_LEGEND_KEY_LINE_BOX_SHARE * line_box_pt;
+    let origin: f64 = sheet_frame_top_pt.unwrap_or(0.0);
+    let label_top_pt: f64 =
+        (origin + key_centre - line_box_pt / 2.0 - EXCEL_BOTTOM_LEGEND_LABEL_RISE_PT).round()
+            - origin;
+    let label_ascent_pt: f64 = (ascent_em * size_pt).round();
+    Some(ExcelBottomLegendSeat {
+        label_top_pt,
+        label_ascent_pt,
+        key_centre_below_baseline_pt: key_centre - (label_top_pt + label_ascent_pt),
+    })
 }
 
 /// Left coordinate of a rotated category-label box whose trailing end pins to
@@ -6080,6 +6160,8 @@ fn generate_chart_axis(
         excel_bottom_legend_row_adjustment(chart, key.width_pt, key.label_gap_pt, &legend_names);
     let right_inset =
         powerpoint_right_legend_inset(chart, frame, &legend_names, key.width_pt, key.label_gap_pt);
+    let excel_seat: Option<ExcelBottomLegendSeat> =
+        excel_bottom_legend_seat(chart, frame.map(|(_, height)| height), sheet_frame_top_pt);
     let legend_entries: usize = if chart.has_legend { series.len() } else { 0 };
     for (s_index, s) in series.iter().enumerate().take(legend_entries) {
         let color: String = series_color(s, s_index, 0, &chart.theme_accent_colors);
@@ -6131,12 +6213,31 @@ fn generate_chart_axis(
                 horizontal_x_shift,
             },
         );
-        let entry_y: f64 = entry_y + excel_bottom_legend_y_shift_pt(chart);
+        // A measured Excel row fixes the label's top-edge to its rounded ascent,
+        // so the baseline lands where Excel puts it whichever face renders.
+        let (entry_y, label_top_edge): (f64, String) = match &excel_seat {
+            Some(seat) => (
+                seat.label_top_pt,
+                format!(", top-edge: {}pt", format_f64(seat.label_ascent_pt)),
+            ),
+            None => (
+                entry_y + excel_bottom_legend_y_shift_pt(chart),
+                String::new(),
+            ),
+        };
         // Each series' key is drawn the way its family plots it: a filled
         // swatch for a column, a stroke-and-marker sample for a line laid over
         // them (issue #1067).
         let key_markup: String = if overlaid[s_index] {
-            line_legend_key(s_index, s, &color, chart_legend_text_pt(chart))
+            line_legend_key(
+                s_index,
+                s,
+                &color,
+                chart_legend_text_pt(chart),
+                excel_seat
+                    .as_ref()
+                    .map(|seat| seat.key_centre_below_baseline_pt),
+            )
         } else {
             let fill: &str = if s.fill_mode == crate::ir::ChartFillMode::Suppressed {
                 "none"
@@ -6144,6 +6245,9 @@ fn generate_chart_axis(
                 &color
             };
             let baseline: String = powerpoint_right_legend_key_baseline_pt(chart)
+                .or(excel_seat
+                    .as_ref()
+                    .map(|seat| seat.key_centre_below_baseline_pt + key.height_pt / 2.0))
                 .map(|value| format!(", baseline: {}pt", format_f64(value)))
                 .unwrap_or_default();
             format!(
@@ -6156,11 +6260,12 @@ fn generate_chart_axis(
         };
         let _ = writeln!(
             out,
-            "#place(top + left, dx: {}pt, dy: {}pt, box[{key_markup}#h({}pt)#text(size: {}pt{})[{}]])",
+            "#place(top + left, dx: {}pt, dy: {}pt, box[{key_markup}#h({}pt)#text(size: {}pt{}{})[{}]])",
             format_f64(entry_x),
             format_f64(entry_y),
             format_f64(key.label_gap_pt),
             format_f64(chart_legend_text_pt(chart)),
+            label_top_edge,
             chart_legend_text_attrs(chart),
             escape_typst(name)
         );
@@ -6940,7 +7045,7 @@ fn generate_chart_line_plot(
                 horizontal_x_shift: 0.0,
             },
         );
-        let key: String = line_legend_key(s_index, s, &color, chart_legend_text_pt(chart));
+        let key: String = line_legend_key(s_index, s, &color, chart_legend_text_pt(chart), None);
         let _ = writeln!(
             out,
             "#place(top + left, dx: {}pt, dy: {}pt, box[{key}#h({}pt)#text(size: {}pt{})[{}]])",
@@ -7225,8 +7330,13 @@ fn generate_chart_radar_plot(
                     horizontal_x_shift: 0.0,
                 },
             );
-            let key: String =
-                line_legend_key(series_index, series, &color, chart_legend_text_pt(chart));
+            let key: String = line_legend_key(
+                series_index,
+                series,
+                &color,
+                chart_legend_text_pt(chart),
+                None,
+            );
             let _ = writeln!(
                 out,
                 "#place(top + left, dx: {}pt, dy: {}pt, box[{key}#h({}pt)#text(size: {}pt{})[{}]])",

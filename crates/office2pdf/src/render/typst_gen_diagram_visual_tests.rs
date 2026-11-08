@@ -6088,6 +6088,23 @@ fn excel_gift_column_chart(size_pt: f64, number_format: Option<&str>) -> Chart {
 /// chart's own points. The sheet prints at a 0.82 fit-to-page scale, so on the
 /// page it measures 833.10 x 252.54pt.
 const EXCEL_GIFT_CHART_FRAME: (f64, f64) = (1015.9784, 307.9732);
+
+/// The sheet-space top of that frame at the workbook's 0.82 fit: the
+/// converter places it at 117.27033pt on the printed page (#1607), the same
+/// grid phase native Excel's whole-point legend baselines land on (#1748).
+const EXCEL_GIFT_SHEET_FRAME_TOP_PT: f64 = 117.270_330_708_661_4 / 0.82;
+
+/// The chart drawn in the gift workbook's frame at its fitted sheet origin.
+fn gift_sheet_chart_source(chart: &Chart) -> String {
+    let mut source = String::new();
+    generate_sheet_chart_in(
+        &mut source,
+        chart,
+        EXCEL_GIFT_CHART_FRAME,
+        (289.449_669_291_338_5 / 0.82, EXCEL_GIFT_SHEET_FRAME_TOP_PT),
+    );
+    source
+}
 const EXCEL_GIFT_PRINT_SCALE: f64 = 0.82;
 /// The frame's top edge in sheet points, where native Excel paints it: the
 /// fitted export's 117.2703pt page seat undone by the 0.82 scale (#1542).
@@ -6950,15 +6967,23 @@ fn an_excel_worksheet_chart_seats_its_category_and_bottom_legend_bands() {
     let source = framed_chart_source(&chart, EXCEL_GIFT_CHART_FRAME.0, EXCEL_GIFT_CHART_FRAME.1);
 
     let category_top = placed_box_holding(&source, "May").dy;
-    let legend_top = legend_entry_y(&source, "Birthday Budget");
 
     assert!(
         (category_top - 257.536).abs() <= 0.02,
         "category-label band top {category_top}pt, native-derived 257.536pt; got:\n{source}"
     );
+
+    // The legend seat is composed from the face's own line box and rounded on
+    // the sheet grid (#1748), so it is asserted in the measured face itself,
+    // whose metrics the crate also holds, at the frame's fitted sheet origin.
+    // 359.980 printed points is sheet point 439.
+    chart.text_font_family = Some("Segoe UI".to_string());
+    let source = gift_sheet_chart_source(&chart);
+    let legend_baseline =
+        EXCEL_GIFT_SHEET_FRAME_TOP_PT + legend_entry_baseline(&source, "Birthday Budget");
     assert!(
-        (legend_top - 289.685).abs() <= 0.02,
-        "bottom-legend band top {legend_top}pt, native-derived 289.685pt; got:\n{source}"
+        (legend_baseline - 439.0).abs() <= 0.001,
+        "bottom-legend baseline at sheet point {legend_baseline}, native 439; got:\n{source}"
     );
 }
 
@@ -6989,25 +7014,28 @@ fn excel_worksheet_band_seats_follow_the_native_size_probes() {
         );
     }
 
-    let legend_tops = [
-        (7.0, 292.0852),
-        (9.0, 289.6852),
-        (11.0, 287.2852),
-        (14.0, 284.1852),
-        (18.0, 280.3852),
+    // Native legend baselines on the sheet grid, in the probes' own Segoe UI:
+    // the #1240 probes and the 6pt row of #1748.
+    let legend_baselines = [
+        (6.0, 439.0),
+        (7.0, 440.0),
+        (9.0, 439.0),
+        (11.0, 438.0),
+        (14.0, 437.0),
+        (18.0, 436.0),
     ];
-    for (size_pt, expected_top) in legend_tops {
+    for (size_pt, expected_baseline) in legend_baselines {
         let mut chart = combo_budget_chart();
-        chart.text_font_family = Some("Calibri".to_string());
+        chart.text_font_family = Some("Segoe UI".to_string());
         chart.category_axis_text_style.size_pt = Some(9.0);
         chart.legend_text_style.size_pt = Some(size_pt);
         chart.value_axis_text_style.size_pt = Some(9.0);
-        let source =
-            framed_chart_source(&chart, EXCEL_GIFT_CHART_FRAME.0, EXCEL_GIFT_CHART_FRAME.1);
-        let actual_top = legend_entry_y(&source, "Birthday Budget");
+        let source = gift_sheet_chart_source(&chart);
+        let actual_baseline: f64 =
+            EXCEL_GIFT_SHEET_FRAME_TOP_PT + legend_entry_baseline(&source, "Birthday Budget");
         assert!(
-            (actual_top - expected_top).abs() <= 0.001,
-            "{size_pt}pt legend top {actual_top}pt, expected {expected_top}pt"
+            (actual_baseline - expected_baseline).abs() <= 0.001,
+            "{size_pt}pt legend baseline at sheet point {actual_baseline}, native {expected_baseline}"
         );
     }
 }
@@ -7464,6 +7492,21 @@ fn legend_entry_y(source: &str, label: &str) -> f64 {
         .expect("the entry is placed")
 }
 
+/// The baseline a legend entry's label is placed on: the entry's `dy` plus
+/// the `top-edge` its text declares.
+fn legend_entry_baseline(source: &str, label: &str) -> f64 {
+    let marker: String = format!("[{label}]])");
+    let index: usize = source.find(&marker).expect("the entry is drawn");
+    let line_start: usize = source[..index].rfind('\n').map_or(0, |at| at + 1);
+    let top_edge: f64 = source[line_start..index]
+        .split("top-edge: ")
+        .nth(1)
+        .and_then(|rest| rest.split("pt").next())
+        .and_then(|value| value.trim().parse::<f64>().ok())
+        .expect("the label declares its top-edge");
+    legend_entry_y(source, label) + top_edge
+}
+
 fn horizontal_value_axis_label_y(source: &str, label: &str) -> f64 {
     let marker: String = format!(")[{label}]]])");
     let line = source
@@ -7837,6 +7880,128 @@ fn gift_budget_compiled_six_point_legend_keys_match_native_bounds() {
             (left, top, right, bottom)
         );
         assert!(((actual.3 - actual.1) - (bottom - top)).abs() < 0.01);
+    }
+}
+
+/// The public workbook with only the legend's `a:defRPr/@sz` changed, compiled
+/// at its 0.82 fit, against native Excel for Mac 16.112 exports of the same
+/// one-factor packages (#1748).
+///
+/// Native centres the filled keys on a continuous row and puts the label
+/// baselines on whole chart points, so the key does not sit on the label: its
+/// bottom is 0.68 printed points below a 6pt baseline but above a 9pt or 18pt
+/// one, and the line series' sample stroke shares the keys' centre. Centres
+/// and key heights are the #1617 batch's sample lines and filled keys
+/// (`assets/validation/issue-1617/native-legend-marker-measurements.json`, in
+/// chart points), which the #1603 filled-key bounds match at 6, 9, 12 and
+/// 18pt; baselines are the #1748 filing's 6/9/18pt rows and the #1240 probes'
+/// whole-point moves at 7, 11 and 14pt.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn gift_budget_compiled_bottom_legend_seats_labels_and_keys_like_native() {
+    const FIT: f64 = 0.82;
+    // (legend size, native label baseline in chart points, native key centre
+    // and height in chart points)
+    let native: [(u32, Option<f64>, f64, f64); 9] = [
+        (600, Some(439.0), 438.036, 3.591),
+        (700, Some(440.0), 437.377, 4.190),
+        (800, None, 436.716, 4.790),
+        (900, Some(439.0), 436.061, 5.386),
+        (1000, None, 435.402, 5.985),
+        (1100, Some(438.0), 434.744, 6.583),
+        (1200, None, 434.086, 7.182),
+        (1400, Some(437.0), 432.769, 8.379),
+        (1800, Some(436.0), 430.133, 10.775),
+    ];
+    let data = include_bytes!("../../../../tests/fixtures/xlsx/issue_1603_gift_budget.xlsx");
+    for (size, native_baseline, native_centre, native_height) in native {
+        // The 9pt row is the unchanged workbook.
+        let package: Vec<u8> = if size == 900 {
+            data.to_vec()
+        } else {
+            repackaged_with_part(data, "xl/charts/chart1.xml", |xml| {
+                let legend_start: usize = xml.find("<c:legend>").expect("the chart has a legend");
+                let legend_end: usize = xml.find("</c:legend>").expect("the legend closes");
+                let legend: &str = &xml[legend_start..legend_end];
+                assert_eq!(legend.matches("sz=\"900\"").count(), 1);
+                format!(
+                    "{}{}{}",
+                    &xml[..legend_start],
+                    legend.replacen("sz=\"900\"", &format!("sz=\"{size}\""), 1),
+                    &xml[legend_end..]
+                )
+            })
+        };
+        let (doc, _) = crate::parser::Parser::parse(
+            &crate::parser::xlsx::XlsxParser,
+            &package,
+            &crate::config::ConvertOptions::default(),
+        )
+        .expect("the controlled package parses");
+        let output = generate_typst(&doc).unwrap();
+        let pages =
+            crate::render::pdf::compiled_page_paint_sequences(&output.source, &output.images)
+                .expect("the controlled package compiles");
+        let keys: Vec<(f64, f64, f64, f64)> = pages[1]
+            .iter()
+            .filter(|paint| {
+                let (left, top, right, bottom) = paint.bounds;
+                paint.rectangle_fill.is_some()
+                    && (right - left - 15.744).abs() < 0.01
+                    && top > 340.0
+                    && bottom < 365.0
+            })
+            .map(|paint| paint.bounds)
+            .collect();
+        assert_eq!(keys.len(), 3, "{size}: three filled keys");
+        for (_, top, _, bottom) in keys {
+            let centre: f64 = (top + bottom) / 2.0;
+            assert!(
+                (centre - native_centre * FIT).abs() < 0.05,
+                "{size}: native key centre {}, got {centre}",
+                native_centre * FIT
+            );
+            assert!(((bottom - top) - native_height * FIT).abs() < 0.01);
+        }
+        // The overlaid line series' sample stroke shares the keys' row centre.
+        let samples: Vec<f64> = pages[1]
+            .iter()
+            .filter(|paint| {
+                let (left, top, right, bottom) = paint.bounds;
+                paint.stroke.is_some()
+                    && (right - left - 15.744).abs() < 0.01
+                    && top > 340.0
+                    && bottom < 365.0
+            })
+            .map(|paint| (paint.bounds.1 + paint.bounds.3) / 2.0)
+            .collect();
+        assert_eq!(samples.len(), 1, "{size}: one line-series sample");
+        assert!(
+            (samples[0] - native_centre * FIT).abs() < 0.05,
+            "{size}: native sample line {}, got {}",
+            native_centre * FIT,
+            samples[0]
+        );
+
+        let runs =
+            crate::render::pdf::compiled_text_runs_with_images(&output.source, &output.images, 1)
+                .expect("the controlled package compiles");
+        let labels: Vec<_> = runs
+            .iter()
+            .filter(|run| run.text.contains("Budget") || run.text.contains("Spent"))
+            .collect();
+        assert_eq!(labels.len(), 4, "{size}: four legend labels");
+        if let Some(native_baseline) = native_baseline {
+            for label in labels {
+                assert!(
+                    (label.baseline_pt - native_baseline * FIT).abs() < 0.1,
+                    "{size}: {} native baseline {}, got {}",
+                    label.text,
+                    native_baseline * FIT,
+                    label.baseline_pt
+                );
+            }
+        }
     }
 }
 
