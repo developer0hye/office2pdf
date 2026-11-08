@@ -167,6 +167,15 @@ sys.exit(int(os.environ.get('AGENT_EXIT', '0')))
         self.assertIn('--max-turns', call['args'])
         self.assertNotIn('division by 0', done.stderr)
 
+    def test_claude_default_turn_cap_fits_the_longest_completed_runs(self):
+        # Six runs on 2026-10-19/20 stopped at exactly 200 assistant turns, four
+        # leaving a pull request or its issue unfinished; two others finished at
+        # 220 and 271 only because a queued notification restarted the session.
+        done = self.run_loop('--max-issues', '1')
+        self.assertEqual(done.returncode, 0, done.stderr)
+        args = self.records('claude')[0]['args']
+        self.assertEqual(args[args.index('--max-turns') + 1], '300')
+
     def test_claude_reflection_still_uses_claude(self):
         done = self.run_loop('--max-issues', '1', '--reflect-every', '1')
         self.assertEqual(done.returncode, 0, done.stderr)

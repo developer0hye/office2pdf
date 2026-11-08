@@ -246,5 +246,35 @@ class HostNoteTest(unittest.TestCase):
         self.assertNotIn(self.NOTE, self.prompt_on("Darwin"))
 
 
+class TurnBudgetNoteTest(unittest.TestCase):
+    """A Claude prompt states the session's turn cap.
+
+    No transcript up to 2026-10-20 mentions a turn budget, and the prompt never
+    stated one. Four runs stopped at the cap after opening a pull request, leaving
+    it or its issue unfinished; a fresh attempt took 20-45 turns to finish each.
+    """
+
+    def prompt(self, *extra: str) -> str:
+        with tempfile.TemporaryDirectory() as tmp:
+            done = subprocess.run(
+                ["bash", str(SCRIPT), "--log-dir", str(Path(tmp) / "logs"), *extra, "--print-prompt", "2223"],
+                capture_output=True,
+                text=True,
+            )
+        self.assertEqual(done.returncode, 0, done.stderr)
+        return done.stdout
+
+    def test_the_default_cap_is_stated_in_assistant_turns(self):
+        self.assertIn("after 300 assistant turns", self.prompt())
+
+    def test_a_chosen_cap_is_the_one_stated(self):
+        prompt = self.prompt("--max-turns", "57")
+        self.assertIn("after 57 assistant turns", prompt)
+        self.assertNotIn("300 assistant turns", prompt)
+
+    def test_codex_has_no_turn_cap_to_state(self):
+        self.assertNotIn("assistant turns", self.prompt("--agent", "codex"))
+
+
 if __name__ == "__main__":
     unittest.main()

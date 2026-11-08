@@ -32,7 +32,7 @@
 #
 #   scripts/issue_loop.sh --agent codex --max-issues 1  # one Codex attempt
 #   --agent claude|codex (default claude), --model NAME, --label LABEL
-#   --max-turns N (Claude only, default 200)
+#   --max-turns N (Claude only, default 300)
 #   --max-runtime SECONDS (Codex only, default 7200)
 #   --codex-sandbox read-only|workspace-write|danger-full-access (default danger-full-access)
 #   --log-dir DIR, --expect-user LOGIN, --cargo-target-dir DIR, --min-free-gb N
@@ -56,7 +56,7 @@ AGENT="claude"
 CODEX_SANDBOX="danger-full-access"
 MAX_RUNTIME=7200
 MODEL=""                          # empty = the selected CLI default
-MAX_TURNS=200
+MAX_TURNS=300
 MAX_ATTEMPTS_PER_ISSUE=2          # attempts that produce no merged PR
 MAX_CONSECUTIVE_FAILURES=3        # across issues; trips the circuit breaker
 USAGE_LIMIT_SLEEP=3600
@@ -91,7 +91,7 @@ while (( $# )); do
     --skip-label) shift; SKIP_LABEL="${1:-}" ;;
     --prompt-file) shift; PROMPT_FILE="${1:-}" ;;
     --model) shift; MODEL="${1:-}" ;;
-    --max-turns) shift; MAX_TURNS="${1:-200}" ;;
+    --max-turns) shift; MAX_TURNS="${1:-300}" ;;
     --log-dir) shift; LOG_DIR="${1:-}" ;;
     --expect-user) shift; EXPECT_USER="${1:-}" ;;
     --cargo-target-dir) shift; CARGO_TARGET_DIR_OVERRIDE="${1:-}" ;;
@@ -328,6 +328,13 @@ For developer0hye-owned repositories, verify 'gh auth status' and 'gh api user -
 
 Hard rules: never commit or push to the default branch directly, and never force-push.
 EOF
+  # Stated because no run knew its budget: six stopped at exactly 200 turns, and
+  # four of them left a pull request or its issue unfinished for a fresh attempt
+  # to rediscover and finish in 20-45 turns. Codex is bounded by runtime instead.
+  if [[ "$AGENT" == claude ]]; then
+    printf '\nTurn budget: this session stops after %s assistant turns; one response counts once, however many tool calls it makes. A session stopped before its merge procedure ends leaves the rest to a fresh attempt that must rediscover its state, so batch independent commands into one response.\n' \
+      "$MAX_TURNS"
+  fi
   # Stated per host because a Mac can export native PDFs; without it, every run on
   # Linux rediscovered the gap with disk-wide searches for a native export. Only an
   # external corpus the issue names (docxide-pdf's references) is worth looking in.
