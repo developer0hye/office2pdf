@@ -2392,15 +2392,18 @@ const EXCEL_DEFAULT_ROW_HEIGHT_PT: f64 = 15.0;
 /// same probe read the heights back through AppleScript, which reports 15.0
 /// for a declared 30 — the hint never reaches the row.
 ///
-/// Keyed on size within a face, not on `family`: with
+/// Keyed on size within the resolved face, not on `family`: with
 /// `<scheme val="minor"/>` Excel resolves the Normal font through the
 /// theme's font scheme, which on the reference machine renders even ASCII
 /// text in the locale UI face. Both an 11pt "Calibri" and a 10pt "Arial"
 /// scheme font exported as Malgun Gothic there, at 17pt and 15pt rows —
 /// while removing `scheme` from the same package, changing nothing else,
-/// dropped the 11pt rows to 15pt. So the scheme fonts share one table, while
-/// scheme-less Calibri and Aptos each use their own measured series; a size
-/// none of those tables measures keeps the declared hint.
+/// dropped the 11pt rows to 15pt. So scheme fonts over a theme naming a
+/// UI-script face share one table. A scheme font over a theme naming none
+/// stays on its declared family and takes that face's series, as a
+/// scheme-less font does: Trebuchet MS 10 over such a theme prints 13pt, not
+/// the UI face's 15pt (issue #1723). A size none of those tables measures
+/// keeps the declared hint.
 ///
 /// | scheme font size | recomputed row | printed track |
 /// | ---: | ---: | ---: |
@@ -2439,10 +2442,10 @@ pub(super) fn recomputed_default_row_height_pt(
 /// *names* (issue #1550); only a cell font naming no family inherits the
 /// Normal font's series here.
 fn measured_row_height_pt(font: &NormalFont, size_pt: f64) -> Option<f64> {
-    if font.uses_theme_scheme() {
+    if font.resolves_through_theme_script_faces() {
         return measured_series_row_height_pt(&UI_SCRIPT_FACE_ROW_HEIGHTS, size_pt);
     }
-    measured_family_row_height_pt(&font.family, size_pt)
+    measured_family_row_height_pt(font.resolved_family(), size_pt)
 }
 
 /// The row a face named outright recomputes for a `size_pt` line, or `None`
@@ -2470,9 +2473,10 @@ fn measured_series_row_height_pt(measured: &[(f64, f64)], size_pt: f64) -> Optio
         .map(|(_, height_pt)| *height_pt)
 }
 
-/// The series measured for a Normal font that names `family` outright — and
-/// that a cell font naming the same face takes (issue #1550) — or `None`
-/// where no sweep has covered it.
+/// The series measured for a Normal font that resolves to `family` — named
+/// outright, or a scheme font over a theme naming no script face (issue
+/// #1723) — and that a cell font naming the same face takes (issue #1550),
+/// or `None` where no sweep has covered it.
 ///
 /// Matched on the whole name, case-insensitively — never as a prefix. The
 /// Calibri and Aptos recompute tables above follow the same rule; prefix
@@ -2593,7 +2597,8 @@ struct NamedFaceRowHeights {
 }
 
 /// What Excel recomputes for a dimension-less row under a Normal font that
-/// names its face outright, for every family swept in issue #1150.
+/// resolves to the face it names, for every family swept in issue #1150 and
+/// the one Trebuchet MS point below.
 ///
 /// Same method as the two tables above and the same base package
 /// (`issue_1066_blip_effect_picture.xlsx`, which declares
@@ -2647,9 +2652,17 @@ struct NamedFaceRowHeights {
 /// falls at 13pt (16 at 12, 15 at 13) and at 18pt, reproducibly, so it is left
 /// to the declared hint rather than lent the Korean spelling's series.
 ///
+/// Trebuchet MS is not from that sweep and carries one point only. Issue
+/// #1723 probed the instruction sheet of `issue_1181_fit_to_height.xlsx`
+/// (Trebuchet MS 10 Normal, a theme naming no script face) with
+/// `scripts/probe_harness.py --backend office`, re-zip control identical: an
+/// auto row holding nothing taller than the Normal font prints a 13pt track.
+/// Trebuchet MS is not a face the printed grid compacts, so the track is the
+/// worksheet row. Its other sizes await a `measure_excel_row_height.py` sweep.
+///
 /// A size a family's series skips keeps the declared hint: nothing here
 /// interpolates.
-const NAMED_FACE_ROW_HEIGHTS: [NamedFaceRowHeights; 7] = [
+const NAMED_FACE_ROW_HEIGHTS: [NamedFaceRowHeights; 8] = [
     NamedFaceRowHeights {
         families: &["Arial", "Times New Roman", "Verdana"],
         heights: &[
@@ -2767,6 +2780,10 @@ const NAMED_FACE_ROW_HEIGHTS: [NamedFaceRowHeights; 7] = [
     NamedFaceRowHeights {
         families: &["맑은 고딕", "Malgun Gothic"],
         heights: &UI_SCRIPT_FACE_ROW_HEIGHTS,
+    },
+    NamedFaceRowHeights {
+        families: &["Trebuchet MS"],
+        heights: &[(10.0, 13.0)],
     },
 ];
 
