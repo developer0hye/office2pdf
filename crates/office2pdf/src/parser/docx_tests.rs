@@ -1317,7 +1317,10 @@ fn test_hyperlink_single_link_in_paragraph() {
 
     assert_eq!(para.runs.len(), 1);
     assert_eq!(para.runs[0].text, "Click here");
-    assert_eq!(para.runs[0].href, Some("https://example.com".to_string()));
+    assert_eq!(
+        para.runs[0].href,
+        Some(LinkTarget::Url("https://example.com".to_string()))
+    );
 }
 
 #[test]
@@ -1349,7 +1352,10 @@ fn test_hyperlink_mixed_text_and_link() {
     assert_eq!(para.runs[0].href, None);
 
     assert_eq!(para.runs[1].text, "Rust");
-    assert_eq!(para.runs[1].href, Some("https://rust-lang.org".to_string()));
+    assert_eq!(
+        para.runs[1].href,
+        Some(LinkTarget::Url("https://rust-lang.org".to_string()))
+    );
 
     assert_eq!(para.runs[2].text, " for more.");
     assert_eq!(para.runs[2].href, None);
@@ -1382,13 +1388,19 @@ fn test_hyperlink_multiple_links_in_paragraph() {
     assert_eq!(para.runs.len(), 3);
 
     assert_eq!(para.runs[0].text, "First");
-    assert_eq!(para.runs[0].href, Some("https://first.com".to_string()));
+    assert_eq!(
+        para.runs[0].href,
+        Some(LinkTarget::Url("https://first.com".to_string()))
+    );
 
     assert_eq!(para.runs[1].text, " and ");
     assert_eq!(para.runs[1].href, None);
 
     assert_eq!(para.runs[2].text, "Second");
-    assert_eq!(para.runs[2].href, Some("https://second.com".to_string()));
+    assert_eq!(
+        para.runs[2].href,
+        Some(LinkTarget::Url("https://second.com".to_string()))
+    );
 }
 
 #[path = "docx_notes_textbox_tests.rs"]

@@ -919,6 +919,7 @@ fn test_gradient_background_codegen() {
             ],
             angle: 90.0,
         }),
+        links: Vec::new(),
     });
     let doc = make_doc(vec![page]);
     let output = generate_typst(&doc).unwrap();
@@ -972,6 +973,7 @@ fn test_gradient_background_no_angle_codegen() {
             ],
             angle: 0.0,
         }),
+        links: Vec::new(),
     });
     let doc = make_doc(vec![page]);
     let output = generate_typst(&doc).unwrap();
@@ -1705,6 +1707,7 @@ fn test_gradient_prefers_over_solid_fill() {
             ],
             angle: 180.0,
         }),
+        links: Vec::new(),
     });
     let doc = make_doc(vec![page]);
     let output = generate_typst(&doc).unwrap();
@@ -1746,6 +1749,7 @@ fn test_gradient_unsorted_stops_rendered_in_sorted_order() {
             ],
             angle: 90.0,
         }),
+        links: Vec::new(),
     });
     let doc = make_doc(vec![page]);
     let output = generate_typst(&doc).unwrap();

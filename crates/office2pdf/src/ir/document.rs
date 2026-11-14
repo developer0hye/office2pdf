@@ -204,6 +204,19 @@ pub struct FixedPage {
     pub background_color: Option<super::style::Color>,
     /// Optional gradient background (takes precedence over `background_color` when present).
     pub background_gradient: Option<super::elements::GradientFill>,
+    /// Clickable areas over the page, such as a slide shape's click action.
+    /// They paint nothing.
+    pub links: Vec<LinkArea>,
+}
+
+/// A clickable rectangle on a fixed page, in points from the page's top-left.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LinkArea {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+    pub target: super::elements::LinkTarget,
 }
 
 /// An element with fixed position on a page.

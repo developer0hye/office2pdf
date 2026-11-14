@@ -141,6 +141,7 @@ fn make_fixed_page(width: f64, height: f64, elements: Vec<FixedElement>) -> Page
         elements,
         background_color: None,
         background_gradient: None,
+        links: Vec::new(),
     })
 }
 

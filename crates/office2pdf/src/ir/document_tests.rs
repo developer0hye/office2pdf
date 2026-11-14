@@ -22,6 +22,7 @@ fn test_fixed_page_background_color() {
         elements: vec![],
         background_color: Some(Color::new(255, 0, 0)),
         background_gradient: None,
+        links: Vec::new(),
     };
     assert_eq!(page.background_color, Some(Color::new(255, 0, 0)));
 }
@@ -33,6 +34,7 @@ fn test_fixed_page_no_background_color() {
         elements: vec![],
         background_color: None,
         background_gradient: None,
+        links: Vec::new(),
     };
     assert!(page.background_color.is_none());
 }

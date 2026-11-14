@@ -82,8 +82,9 @@ fn parse_layer_elements<R: Read + std::io::Seek>(
     slide_number: u32,
     default_text_size_pt: Option<f64>,
     background: &ResolvedBackground,
+    links: Option<&super::links::PartLinks<'_>>,
     archive: &mut ZipArchive<R>,
-) -> (Vec<FixedElement>, Vec<ConvertWarning>) {
+) -> ParsedSlidePart {
     let images: SlideImageMap = load_slide_images(layer.path, archive);
     let empty_table_styles: table_styles::TableStyleMap = table_styles::TableStyleMap::new();
     let ctx = SlideParseContext {
@@ -96,6 +97,7 @@ fn parse_layer_elements<R: Read + std::io::Seek>(
         table_styles: &empty_table_styles,
         default_text_size_pt,
         background,
+        links,
     };
     // Skip placeholder shapes in master/layout layers.
     parse_slide_xml_inner(layer.xml, &ctx, true, None).unwrap_or_default()
@@ -253,10 +255,11 @@ pub(super) fn parse_cached_drawing(
         table_styles: &table_styles,
         default_text_size_pt: None,
         background: &background,
+        links: None,
     };
-    let (elements, warnings) = parse_slide_xml_inner(&drawing_xml, &ctx, false, None)?;
-    preset_warnings.extend(warnings);
-    Ok((elements, preset_warnings))
+    let parsed: ParsedSlidePart = parse_slide_xml_inner(&drawing_xml, &ctx, false, None)?;
+    preset_warnings.extend(parsed.warnings);
+    Ok((parsed.elements, preset_warnings))
 }
 
 fn apply_cached_text_transform(
@@ -484,7 +487,7 @@ fn build_background_image_element<R: Read + std::io::Seek>(
 
 /// True when the slide's root `<p:sld>` element carries `show="0"` or
 /// `show="false"` — PowerPoint omits such hidden slides from PDF export.
-fn is_hidden_slide(slide_xml: &str) -> bool {
+pub(super) fn is_hidden_slide(slide_xml: &str) -> bool {
     let mut reader: Reader<&[u8]> = Reader::from_str(slide_xml);
     loop {
         match reader.read_event() {
@@ -517,6 +520,7 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
         theme,
         table_styles,
         default_text_size_pt,
+        deck,
     } = *presentation;
     let chain: SlideInheritanceChain = resolve_inheritance_chain(slide_path, theme, archive)?;
 
@@ -526,6 +530,22 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
     }
 
     let background: ResolvedBackground = resolve_slide_background(&chain, slide_path, theme);
+
+    // Each layer resolves its click actions through its own relationships,
+    // on the page this slide prints on (issue #2473).
+    let page: usize = deck.page_by_slide.get(slide_path).copied().unwrap_or(0);
+    let part_links = |path: &str, archive: &mut ZipArchive<R>| {
+        super::links::PartLinks::new(path, &read_part_relationships(path, archive), deck, page)
+    };
+    let slide_links = part_links(slide_path, archive);
+    let layout_links = chain
+        .layout_path
+        .as_deref()
+        .map(|path| part_links(path, archive));
+    let master_links = chain
+        .master_path
+        .as_deref()
+        .map(|path| part_links(path, archive));
 
     let slide_images: SlideImageMap = load_slide_images(slide_path, archive);
     let mut warnings: Vec<ConvertWarning> = Vec::new();
@@ -552,19 +572,21 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
         table_styles,
         default_text_size_pt,
         background: &background,
+        links: Some(&slide_links),
     };
-    let (slide_elements, slide_warnings) =
-        parse_slide_xml(&chain.slide_xml, &slide_ctx, Some(&placeholder_geometry))?;
-    warnings.extend(slide_warnings);
+    let slide_part: ParsedSlidePart =
+        parse_slide_xml_with_links(&chain.slide_xml, &slide_ctx, Some(&placeholder_geometry))?;
+    warnings.extend(slide_part.warnings);
 
     let mut elements: Vec<FixedElement> = Vec::new();
+    let mut links: Vec<crate::ir::LinkArea> = Vec::new();
 
     // Master layer (bottom)
     if let Some(ref path) = chain.master_path
         && let Some(ref xml) = chain.master_xml
     {
         let master_label: String = format!("{slide_label} master");
-        let (master_elems, master_warnings) = parse_layer_elements(
+        let master_part: ParsedSlidePart = parse_layer_elements(
             SlideLayer {
                 path,
                 xml,
@@ -576,10 +598,12 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
             slide_number,
             default_text_size_pt,
             &background,
+            master_links.as_ref(),
             archive,
         );
-        elements.extend(master_elems);
-        warnings.extend(master_warnings);
+        elements.extend(master_part.elements);
+        warnings.extend(master_part.warnings);
+        links.extend(master_part.links);
     }
 
     // Layout layer (middle)
@@ -588,7 +612,7 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
         && let Some(ref color_map) = chain.layout_color_map
     {
         let layout_label: String = format!("{slide_label} layout");
-        let (layout_elems, layout_warnings) = parse_layer_elements(
+        let layout_part: ParsedSlidePart = parse_layer_elements(
             SlideLayer {
                 path,
                 xml,
@@ -600,14 +624,17 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
             slide_number,
             default_text_size_pt,
             &background,
+            layout_links.as_ref(),
             archive,
         );
-        elements.extend(layout_elems);
-        warnings.extend(layout_warnings);
+        elements.extend(layout_part.elements);
+        warnings.extend(layout_part.warnings);
+        links.extend(layout_part.links);
     }
 
     // Slide layer (top)
-    elements.extend(slide_elements);
+    elements.extend(slide_part.elements);
+    links.extend(slide_part.links);
 
     // Embedded objects
     elements.extend(collect_smartart_elements(
@@ -639,9 +666,25 @@ pub(super) fn parse_single_slide<R: Read + std::io::Seek>(
             elements,
             background_color: background.color,
             background_gradient: background.gradient,
+            links,
         }),
         warnings,
     )))
+}
+
+/// The `.rels` part beside `part_path` (`ppt/slides/_rels/slide1.xml.rels`),
+/// or an empty string when the part has none.
+fn read_part_relationships<R: Read + std::io::Seek>(
+    part_path: &str,
+    archive: &mut ZipArchive<R>,
+) -> String {
+    let (dir, file) = part_path.rsplit_once('/').unwrap_or(("", part_path));
+    let rels_path: String = if dir.is_empty() {
+        format!("_rels/{file}.rels")
+    } else {
+        format!("{dir}/_rels/{file}.rels")
+    };
+    read_zip_entry(archive, &rels_path).unwrap_or_default()
 }
 
 fn describe_assets(assets: impl IntoIterator<Item = String>) -> String {
@@ -1945,6 +1988,8 @@ pub(super) struct PresentationResources<'a> {
     /// `p:defaultTextStyle/a:lvl1pPr/a:defRPr/@sz`, the size a text body falls
     /// back to when its own chain declares none (issue #675).
     pub(super) default_text_size_pt: Option<f64>,
+    /// The page each printed slide occupies, for slide links (issue #2473).
+    pub(super) deck: &'a super::links::DeckPages,
 }
 
 /// Shared read-only inputs for parsing one slide-layer XML part.
@@ -1966,6 +2011,9 @@ pub(super) struct SlideParseContext<'a> {
     pub(super) default_text_size_pt: Option<f64>,
     /// Resolved slide fill for shapes that set `useBgFill="1"`.
     background: &'a ResolvedBackground,
+    /// Click actions of the part being parsed, as shown on the page it prints
+    /// on. `None` where no link can be resolved (embedded drawings).
+    pub(super) links: Option<&'a super::links::PartLinks<'a>>,
 }
 
 /// Bundles the 20+ mutable state variables of the slide XML event loop
@@ -2028,6 +2076,8 @@ struct SlideXmlParser<'a> {
     run_text: String,
     run_has_explicit_underline: bool,
     run_marker_style_before_hyperlink: Option<TextStyle>,
+    /// Where the current run's `a:hlinkClick` leads (issue #2473).
+    run_href: Option<crate::ir::LinkTarget>,
     first_run_marker_style_override: Option<TextStyle>,
     /// `<a:fld type>` of the run being read; `None` for a literal `<a:r>`.
     run_field_type: Option<String>,
@@ -2100,6 +2150,7 @@ impl<'a> SlideXmlParser<'a> {
             run_text: String::new(),
             run_has_explicit_underline: false,
             run_marker_style_before_hyperlink: None,
+            run_href: None,
             first_run_marker_style_override: None,
 
             in_text: false,
@@ -2158,6 +2209,7 @@ impl<'a> SlideXmlParser<'a> {
                     self.ctx.color_map,
                     self.ctx.table_styles,
                     self.ctx.default_text_size_pt,
+                    self.ctx.links,
                 ) {
                     scale_pptx_table_columns_to_frame(&mut table, emu_to_pt(self.gf.cx));
                     // PowerPoint treats each `a:tr/@h` as a floor and grows
@@ -2546,6 +2598,7 @@ impl<'a> SlideXmlParser<'a> {
                 self.run_text.clear();
                 self.run_has_explicit_underline = false;
                 self.run_marker_style_before_hyperlink = None;
+                self.run_href = None;
             }
             b"r" if self.in_para => {
                 self.in_run = true;
@@ -2554,6 +2607,7 @@ impl<'a> SlideXmlParser<'a> {
                 self.run_text.clear();
                 self.run_has_explicit_underline = false;
                 self.run_marker_style_before_hyperlink = None;
+                self.run_href = None;
             }
             // `<a:fld>` carries an optional `<a:rPr>` and `<a:t>` the way
             // `<a:r>` does, so it is read as a run whose text may be
@@ -2571,6 +2625,7 @@ impl<'a> SlideXmlParser<'a> {
                 self.run_text.clear();
                 self.run_has_explicit_underline = false;
                 self.run_marker_style_before_hyperlink = None;
+                self.run_href = None;
             }
             b"rPr" if self.in_run => {
                 self.in_rpr = true;
@@ -3468,7 +3523,7 @@ impl<'a> SlideXmlParser<'a> {
                         Run {
                             text: std::mem::take(&mut self.run_text),
                             style: self.run_style.clone(),
-                            href: None,
+                            href: self.run_href.clone(),
                             footnote: None,
                             inline_box: None,
                         },
@@ -3616,6 +3671,120 @@ pub(super) fn parse_slide_xml<'a>(
     placeholder_geometry: Option<&'a PlaceholderGeometryMap>,
 ) -> Result<(Vec<FixedElement>, Vec<ConvertWarning>), ConvertError> {
     parse_slide_xml_inner(xml, ctx, false, placeholder_geometry)
+        .map(|parsed| (parsed.elements, parsed.warnings))
+}
+
+/// A parsed slide part: its elements, warnings and clickable areas.
+#[derive(Default)]
+pub(super) struct ParsedSlidePart {
+    pub(super) elements: Vec<FixedElement>,
+    pub(super) warnings: Vec<ConvertWarning>,
+    pub(super) links: Vec<crate::ir::LinkArea>,
+}
+
+/// As [`parse_slide_xml`], keeping the shapes' click actions as link areas.
+pub(super) fn parse_slide_xml_with_links<'a>(
+    xml: &'a str,
+    ctx: &SlideParseContext<'a>,
+    placeholder_geometry: Option<&'a PlaceholderGeometryMap>,
+) -> Result<ParsedSlidePart, ConvertError> {
+    parse_slide_xml_inner(xml, ctx, false, placeholder_geometry)
+}
+
+/// Shape elements whose `p:cNv*Pr` can carry a click action.
+fn is_linkable_shape(local_name: &[u8]) -> bool {
+    matches!(local_name, b"sp" | b"cxnSp" | b"pic" | b"graphicFrame")
+}
+
+/// Shape-level click actions (`p:cNvPr/a:hlinkClick`), followed beside the
+/// element handlers so they need not know about links (issue #2473).
+///
+/// A shape's link covers whatever elements it produced, so its area is their
+/// bounding box, after placeholder inheritance and group transforms have
+/// already been applied by the handlers.
+#[derive(Default)]
+struct ShapeLinkTracker {
+    /// Open linkable shapes: where their elements start, and their action.
+    open: Vec<(usize, Option<crate::ir::LinkTarget>)>,
+    /// Depth inside `p:cNvPr`, whose `a:hlinkClick` is the shape's own action.
+    in_non_visual_props: usize,
+    areas: Vec<crate::ir::LinkArea>,
+}
+
+impl ShapeLinkTracker {
+    fn open_shape(&mut self, elements: &[FixedElement]) {
+        self.open.push((elements.len(), None));
+    }
+
+    fn close_shape(&mut self, elements: &[FixedElement]) {
+        if let Some((start, Some(target))) = self.open.pop() {
+            self.add_area(&elements[start.min(elements.len())..], target);
+        }
+    }
+
+    fn add_area(&mut self, produced: &[FixedElement], target: crate::ir::LinkTarget) {
+        let Some((left, top, right, bottom)) = produced.iter().fold(None, |bounds, element| {
+            let (x, y) = (element.x, element.y);
+            let (r, b) = (element.x + element.width, element.y + element.height);
+            Some(match bounds {
+                None => (x, y, r, b),
+                Some((l, t, rr, bb)) => (
+                    f64::min(l, x),
+                    f64::min(t, y),
+                    f64::max(rr, r),
+                    f64::max(bb, b),
+                ),
+            })
+        }) else {
+            return;
+        };
+        self.areas.push(crate::ir::LinkArea {
+            x: left,
+            y: top,
+            width: right - left,
+            height: bottom - top,
+            target,
+        });
+    }
+}
+
+/// Read an `a:hlinkClick`'s target through the part's relationships.
+fn resolve_click_action(
+    ctx: &SlideParseContext<'_>,
+    e: &BytesStart<'_>,
+) -> Option<crate::ir::LinkTarget> {
+    let links = ctx.links?;
+    let rid: Option<String> = get_attr_str(e, b"r:id");
+    let action: Option<String> = get_attr_str(e, b"action");
+    links.resolve(rid.as_deref(), action.as_deref())
+}
+
+/// The click action of a group about to be consumed whole by its handler: the
+/// `a:hlinkClick` in the group's own `p:nvGrpSpPr`, read ahead in the source.
+fn group_click_action(
+    ctx: &SlideParseContext<'_>,
+    xml: &str,
+    group_body_start: usize,
+) -> Option<crate::ir::LinkTarget> {
+    ctx.links?;
+    let rest: &str = xml.get(group_body_start..)?;
+    // The group's first child is `p:nvGrpSpPr`; read up to its end tag, the
+    // second `nvGrpSpPr` after the opening one.
+    let opening: usize = rest.find("nvGrpSpPr")?;
+    let closing: usize = opening + 1 + rest[opening + 1..].find("nvGrpSpPr>")?;
+    let non_visual: &str = &rest[..closing];
+    let mut reader = Reader::from_str(non_visual);
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e))
+                if e.local_name().as_ref() == b"hlinkClick" =>
+            {
+                return resolve_click_action(ctx, e);
+            }
+            Ok(Event::Eof) | Err(_) => return None,
+            _ => {}
+        }
+    }
 }
 
 fn parse_slide_xml_inner<'a>(
@@ -3623,18 +3792,44 @@ fn parse_slide_xml_inner<'a>(
     ctx: &SlideParseContext<'a>,
     skip_placeholders: bool,
     placeholder_geometry: Option<&'a PlaceholderGeometryMap>,
-) -> Result<(Vec<FixedElement>, Vec<ConvertWarning>), ConvertError> {
+) -> Result<ParsedSlidePart, ConvertError> {
     let mut reader = Reader::from_str(xml);
     let mut parser = SlideXmlParser::new(xml, *ctx);
     parser.skip_placeholders = skip_placeholders;
     parser.placeholder_geometry = placeholder_geometry;
+    let mut shape_links = ShapeLinkTracker::default();
 
     loop {
         match reader.read_event() {
             Ok(Event::Start(ref e)) => {
+                let local = e.local_name();
+                let local = local.as_ref();
+                if local == b"grpSp" {
+                    // The group handler consumes the whole subtree, so its
+                    // action is read ahead and its area is what it produced.
+                    let start: usize = parser.elements.len();
+                    let action = group_click_action(ctx, xml, reader.buffer_position() as usize);
+                    parser.handle_start(&mut reader, e);
+                    if let Some(target) = action {
+                        shape_links.add_area(&parser.elements[start..], target);
+                    }
+                    continue;
+                }
+                if is_linkable_shape(local) {
+                    shape_links.open_shape(&parser.elements);
+                } else if local == b"cNvPr" && !shape_links.open.is_empty() {
+                    shape_links.in_non_visual_props += 1;
+                } else if local == b"hlinkClick" {
+                    observe_click_action(ctx, e, &mut parser, &mut shape_links);
+                } else if matches!(local, b"r" | b"fld") {
+                    parser.run_href = None;
+                }
                 parser.handle_start(&mut reader, e);
             }
             Ok(Event::Empty(ref e)) => {
+                if e.local_name().as_ref() == b"hlinkClick" {
+                    observe_click_action(ctx, e, &mut parser, &mut shape_links);
+                }
                 parser.handle_empty(e);
             }
             Ok(Event::Text(ref t)) => {
@@ -3648,7 +3843,14 @@ fn parse_slide_xml_inner<'a>(
                 }
             }
             Ok(Event::End(ref e)) => {
-                parser.handle_end(e.local_name().as_ref());
+                let local = e.local_name();
+                let local = local.as_ref();
+                parser.handle_end(local);
+                if is_linkable_shape(local) {
+                    shape_links.close_shape(&parser.elements);
+                } else if local == b"cNvPr" && shape_links.in_non_visual_props > 0 {
+                    shape_links.in_non_visual_props -= 1;
+                }
             }
             Ok(Event::Eof) => break,
             Err(error) => {
@@ -3660,7 +3862,30 @@ fn parse_slide_xml_inner<'a>(
         }
     }
 
-    Ok(parser.finish())
+    let (elements, warnings) = parser.finish();
+    Ok(ParsedSlidePart {
+        elements,
+        warnings,
+        links: shape_links.areas,
+    })
+}
+
+/// Route an `a:hlinkClick` to the shape it belongs to (inside `p:cNvPr`) or
+/// to the run being read (inside `a:rPr`). Elsewhere, such as a list style's
+/// `a:defRPr`, it is a style default rather than an action.
+fn observe_click_action(
+    ctx: &SlideParseContext<'_>,
+    e: &BytesStart<'_>,
+    parser: &mut SlideXmlParser<'_>,
+    shape_links: &mut ShapeLinkTracker,
+) {
+    if shape_links.in_non_visual_props > 0 {
+        if let Some((_, action)) = shape_links.open.last_mut() {
+            *action = resolve_click_action(ctx, e);
+        }
+    } else if parser.in_rpr {
+        parser.run_href = resolve_click_action(ctx, e);
+    }
 }
 
 #[cfg(test)]
