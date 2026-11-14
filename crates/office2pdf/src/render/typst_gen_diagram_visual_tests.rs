@@ -11813,8 +11813,9 @@ fn budget_month_axis_uses_its_major_theme_font() {
 /// the grid paint. These left edges are from a fresh Excel for Mac 16.112.3
 /// export of the reported #1719 workbook, page 2; keeping the physical margin
 /// origin leaves a fractional-point residual at scale 0.78. The page-level
-/// move must carry both axes, with no inverse text move restoring the old
-/// physical origin.
+/// offset must carry both axes, with no inverse text move restoring the old
+/// physical origin. The offset is a breakable `#pad` so a fitted sheet longer
+/// than one page still continues onto the next (issue #2472).
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn fitted_budget_cell_text_uses_the_snapped_sheet_origin() {
@@ -11834,21 +11835,27 @@ fn fitted_budget_cell_text_uses_the_snapped_sheet_origin() {
         crate::render::pdf::compiled_text_runs_with_images(&output.source, &output.images, 1)
             .expect("the fitted budget sheet compiles");
 
+    assert!(
+        output.source.lines().any(|line| line
+            .contains("#pad(left: 0.64pt, right: -0.64pt, top: -0.18pt, bottom: 0.18pt)[")),
+        "the fitted paint group must use the snapped two-axis origin"
+    );
     let move_lines: Vec<&str> = output
         .source
         .lines()
         .filter(|line| line.contains("#move("))
         .collect();
     assert!(
-        move_lines
-            .iter()
-            .any(|line| line.contains("dx: 0.64pt") && line.contains("dy: -0.18pt")),
-        "the fitted paint group must use the snapped two-axis origin"
-    );
-    assert!(
         !move_lines
             .iter()
             .any(|line| line.contains("dx: -0.64pt") && line.contains("dy: 0.18pt")),
+        "cell text must not countershift back to the physical margin origin"
+    );
+    assert!(
+        !output
+            .source
+            .lines()
+            .any(|line| line.contains("#pad(left: -0.64pt") && line.contains("top: 0.18pt")),
         "cell text must not countershift back to the physical margin origin"
     );
 

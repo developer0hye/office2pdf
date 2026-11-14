@@ -1612,3 +1612,177 @@ fn worksheet_namespace_prefixes_preserve_body_and_header_footer() {
         }
     }
 }
+
+/// A scaled sheet longer than one page keeps every row (issue #2472).
+#[cfg(not(target_arch = "wasm32"))]
+mod scaled_sheet_pagination {
+    use super::*;
+
+    const ROWS: u32 = 400;
+    /// US Letter portrait with the 1in top and bottom margins written below.
+    const PAGE_HEIGHT_PT: f64 = 792.0;
+    const BOTTOM_MARGIN_PT: f64 = 72.0;
+
+    /// The issue's workbook shape: `ROWS` rows of three 20-character columns,
+    /// `row N colA`..`row N colC`, under the given print scaling. It carries
+    /// the styles part every Excel or openpyxl workbook writes, so the cells
+    /// take the declared 11pt Normal font.
+    fn build_scaled_sheet(fit: Option<(u32, u32)>, scale: Option<u32>) -> Vec<u8> {
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let options = zip::write::SimpleFileOptions::default();
+        let mut write = |path: &str, body: &str| {
+            zip.start_file(path, options).unwrap();
+            std::io::Write::write_all(&mut zip, body.as_bytes()).unwrap();
+        };
+        write(
+            "[Content_Types].xml",
+            r#"<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>"#,
+        );
+        write(
+            "_rels/.rels",
+            r#"<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>"#,
+        );
+        write(
+            "xl/workbook.xml",
+            r#"<?xml version="1.0" encoding="UTF-8"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets>
+</workbook>"#,
+        );
+        write(
+            "xl/_rels/workbook.xml.rels",
+            r#"<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>"#,
+        );
+        write(
+            "xl/styles.xml",
+            r#"<?xml version="1.0" encoding="UTF-8"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="1"><font><sz val="11"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font></fonts>
+<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
+<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>"#,
+        );
+        let rows: String = (1..=ROWS)
+            .map(|row| {
+                let cells: String = ["A", "B", "C"]
+                    .iter()
+                    .map(|column| {
+                        format!(
+                            r#"<c r="{column}{row}" t="inlineStr"><is><t>row {row} col{column}</t></is></c>"#
+                        )
+                    })
+                    .collect();
+                format!(r#"<row r="{row}">{cells}</row>"#)
+            })
+            .collect();
+        let sheet_pr: &str = if fit.is_some() {
+            r#"<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>"#
+        } else {
+            ""
+        };
+        let mut page_setup_attributes: Vec<String> = Vec::new();
+        if let Some(scale) = scale {
+            page_setup_attributes.push(format!(r#"scale="{scale}""#));
+        }
+        if let Some((wide, tall)) = fit {
+            page_setup_attributes.push(format!(r#"fitToWidth="{wide}" fitToHeight="{tall}""#));
+        }
+        write(
+            "xl/worksheets/sheet1.xml",
+            &format!(
+                r#"<?xml version="1.0" encoding="UTF-8"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+{sheet_pr}<cols><col min="1" max="3" width="20" customWidth="1"/></cols>
+<sheetData>{rows}</sheetData>
+<pageMargins left="0.75" right="0.75" top="1" bottom="1" header="0.5" footer="0.5"/>
+<pageSetup paperSize="1" {}/>
+</worksheet>"#,
+                page_setup_attributes.join(" ")
+            ),
+        );
+        zip.finish().unwrap().into_inner()
+    }
+
+    /// The rows each compiled page prints inside its bottom margin, page by
+    /// page. A row label placed below the printable area is not printed: the
+    /// PDF clips it at the paper edge, or it sits in the footer band.
+    fn printed_rows_per_page(data: &[u8]) -> Vec<Vec<u32>> {
+        let (document, _warnings) = XlsxParser.parse(data, &ConvertOptions::default()).unwrap();
+        let output = crate::render::typst_gen::generate_typst(&document).unwrap();
+        let mut pages: Vec<Vec<u32>> = Vec::new();
+        while let Ok(runs) = crate::render::pdf::compiled_text_runs(&output.source, pages.len()) {
+            let mut rows: Vec<u32> = runs
+                .iter()
+                .filter(|run| run.baseline_pt <= PAGE_HEIGHT_PT - BOTTOM_MARGIN_PT + 1.0)
+                .filter_map(|run| {
+                    let label = run
+                        .text
+                        .trim()
+                        .strip_prefix("row ")?
+                        .strip_suffix(" colA")?;
+                    label.parse::<u32>().ok()
+                })
+                .collect();
+            rows.sort_unstable();
+            pages.push(rows);
+        }
+        pages
+    }
+
+    fn assert_prints_every_row_once(case: &str, pages: &[Vec<u32>]) {
+        let printed: Vec<u32> = pages.iter().flatten().copied().collect();
+        let expected: Vec<u32> = (1..=ROWS).collect();
+        assert_eq!(
+            printed,
+            expected,
+            "{case}: every row must print once, in order, inside the printable area; \
+             got {} pages holding {} rows",
+            pages.len(),
+            printed.len()
+        );
+    }
+
+    /// `scale="50"` shrinks the sheet; it does not bound the page count. Half
+    /// the row pitch fits about twice the rows per page, so 400 rows still
+    /// span several pages. Rendering it on one page ran rows 77-85 into the
+    /// bottom margin and off the paper edge, and lost rows 86-400.
+    #[test]
+    fn an_explicit_percentage_below_100_paginates_down_the_sheet() {
+        let pages = printed_rows_per_page(&build_scaled_sheet(None, Some(50)));
+        assert!(pages.len() > 1, "400 rows at 50% need more than one page");
+        assert_prints_every_row_once("scale=50", &pages);
+    }
+
+    /// `fitToHeight="2"` asks for the sheet on exactly two pages, not one.
+    #[test]
+    fn a_two_page_tall_fit_prints_on_two_pages() {
+        let pages = printed_rows_per_page(&build_scaled_sheet(Some((1, 2)), None));
+        assert_eq!(pages.len(), 2, "fitToHeight=2 prints two pages");
+        assert_prints_every_row_once("fit 1x2", &pages);
+    }
+
+    /// The control: fitting onto one page tall keeps the single page.
+    #[test]
+    fn a_one_page_fit_stays_on_one_page() {
+        let pages = printed_rows_per_page(&build_scaled_sheet(Some((1, 1)), None));
+        assert_eq!(pages.len(), 1, "fitToHeight=1 prints one page");
+        assert_prints_every_row_once("fit 1x1", &pages);
+    }
+}

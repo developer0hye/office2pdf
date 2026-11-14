@@ -1862,8 +1862,8 @@ fn generate_table_page(
     let centering_inset_pt: Option<f64> = horizontal_centering_inset_pt(page, &size);
 
     // Excel paints a fitted sheet against a paper box constructed in declared
-    // sheet space and then scaled. The move applies to its grid and cell text;
-    // floating drawing paint uses the same sheet origin (#1538, #1719).
+    // sheet space and then scaled. The offset applies to its grid and cell
+    // text; floating drawing paint uses the same sheet origin (#1538, #1719).
     let paint_offset_pt: Option<(f64, f64)> =
         scaled_sheet_paint_offset_pt(page, &size, centering_inset_pt);
 
@@ -1889,12 +1889,21 @@ fn generate_table_page(
     );
     out.push('\n');
 
+    // Opposite paddings translate each laid-out page like `move` while
+    // leaving every region its full size, but `pad` is breakable. A `move`
+    // lays its body out as one frame, so a scaled sheet taller than its first
+    // page ran off the paper instead of continuing on the next: one page
+    // printed and every later row was lost (issue #2472, the same trap as
+    // #2217). Each continuation page takes the same offset, which is where
+    // Excel's sheet-space paper box puts every page's origin.
     if let Some((dx_pt, dy_pt)) = paint_offset_pt {
         let _ = writeln!(
             out,
-            "#move(dx: {}pt, dy: {}pt)[",
+            "#pad(left: {}pt, right: {}pt, top: {}pt, bottom: {}pt)[",
             format_f64(dx_pt),
+            format_f64(-dx_pt),
             format_f64(dy_pt),
+            format_f64(-dy_pt),
         );
     }
 
@@ -2136,7 +2145,7 @@ fn sheet_drawing_layer(
     let marker: String =
         format!("#block(width: 100%, height: 0pt, spacing: 0pt)[#metadata(none)<{label}>]");
 
-    // The page foreground does not inherit the table body's move. Apply its
+    // The page foreground does not inherit the table body's offset. Apply its
     // fitted sheet-space origin explicitly to every drawing (#1542). A chart's
     // content shares that origin with its frame: Excel lays the plot out in
     // sheet points inside the frame it paints, so seating the content on the
