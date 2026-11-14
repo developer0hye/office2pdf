@@ -267,11 +267,14 @@ fn cell_carries_ink(cell: &TableCell) -> bool {
 /// removed are trailing ones, which leaves every earlier band boundary where
 /// the renderer would have placed it.
 ///
-/// Printed gridlines and headings paint every row of the range and no probe
-/// has measured whether Excel still ends the sequence early then, so such a
-/// sheet keeps all of its rows. A last page-column that carries a chart
-/// continuation and no inked cell keeps its rows too: the chart is ink and
-/// the tile prints.
+/// This trims only the last page-column's own blank tail. Without a print
+/// area or drawings, rows below the sheet's last inked row are already
+/// outside the printed range, whatever prints (`inferred_printed_max_row`,
+/// issue #2475). Printed gridlines and headings paint every row of the range,
+/// and no probe has measured whether Excel still ends a page-column's tail
+/// early then, so such a sheet keeps the rest of its rows here. A last
+/// page-column that carries a chart continuation and no inked cell keeps its
+/// rows too: the chart is ink and the tile prints.
 fn end_sequence_at_last_inked_row(pages: &mut Vec<SheetPage>, last_inked_row_count: usize) {
     if pages.len() <= 1 {
         return;

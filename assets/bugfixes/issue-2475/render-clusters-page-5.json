@@ -1,0 +1,119 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 39.8592,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 8.64,
+        "x": 72.48,
+        "y": 93.6
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is one or two glyphs inside a label (at most 9.12 x 8.64pt); GT and output show the same text at the same baseline. The difference is the sub-pixel glyph advance drift recorded under #1874: on page 2 'of' starts 0.23pt left and 'item' 0.15pt right of Excel's."
+      },
+      "id": "p5-b1deeffa42ea",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 39.8592,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 8.64,
+        "x": 72.48,
+        "y": 110.4
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is one or two glyphs inside a label (at most 9.12 x 8.64pt); GT and output show the same text at the same baseline. The difference is the sub-pixel glyph advance drift recorded under #1874: on page 2 'of' starts 0.23pt left and 'item' 0.15pt right of Excel's."
+      },
+      "id": "p5-75b392d0846a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 39.8592,
+      "bbox_pt": {
+        "height": 8.16,
+        "width": 8.64,
+        "x": 72.48,
+        "y": 76.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is one or two glyphs inside a label (at most 9.12 x 8.64pt); GT and output show the same text at the same baseline. The difference is the sub-pixel glyph advance drift recorded under #1874: on page 2 'of' starts 0.23pt left and 'item' 0.15pt right of Excel's."
+      },
+      "id": "p5-ca784f9f6c7d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.76,
+        "x": 192.0,
+        "y": 79.2
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is one or two glyphs inside a label (at most 9.12 x 8.64pt); GT and output show the same text at the same baseline. The difference is the sub-pixel glyph advance drift recorded under #1874: on page 2 'of' starts 0.23pt left and 'item' 0.15pt right of Excel's."
+      },
+      "id": "p5-68be23b8d87e",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.76,
+        "x": 192.0,
+        "y": 112.8
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is one or two glyphs inside a label (at most 9.12 x 8.64pt); GT and output show the same text at the same baseline. The difference is the sub-pixel glyph advance drift recorded under #1874: on page 2 'of' starts 0.23pt left and 'item' 0.15pt right of Excel's."
+      },
+      "id": "p5-407fb3175fda",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 5.76,
+        "width": 5.76,
+        "x": 192.0,
+        "y": 96.0
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is one or two glyphs inside a label (at most 9.12 x 8.64pt); GT and output show the same text at the same baseline. The difference is the sub-pixel glyph advance drift recorded under #1874: on page 2 'of' starts 0.23pt left and 'item' 0.15pt right of Excel's."
+      },
+      "id": "p5-ff7f2ddcd53b",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 5,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 6,
+    "duplicate": 0,
+    "total": 6,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

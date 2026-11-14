@@ -4055,6 +4055,53 @@ fn inferred_printed_max_col(
     cell_max.max(table_max).max(conditional_max)
 }
 
+/// Last row that contributes visible sheet ink, by the same test
+/// [`inferred_printed_max_col`] applies to columns.
+///
+/// The worksheet dimension also counts cells that carry only a font or number
+/// format. Excel does not print those rows: the workbook attached to issue
+/// #2472 declares `A1:Y1061` but paints nothing below row 111, and Excel for
+/// Mac 16.115 ends its export at row 111 whether gridlines print or not, and
+/// with row and column headings printed too. Reading the dimension printed
+/// 950 blank rows as dozens of blank pages (issue #2475).
+///
+/// A formula counts even when its cached result is empty: Excel's export of a
+/// 400-row `=IF(A1="","",A1)` column over five values prints all 400 rows.
+fn inferred_printed_max_row(
+    sheet: &umya_spreadsheet::Worksheet,
+    theme: Option<&umya_spreadsheet::structs::drawing::Theme>,
+    table_styles: &[crate::parser::xlsx::tables::TableStyleRange],
+    cond_fmt_overrides: &HashMap<(u32, u32), crate::parser::cond_fmt::CondFmtOverride>,
+) -> u32 {
+    let cell_max: u32 = sheet
+        .get_cell_collection()
+        .iter()
+        .filter(|cell| {
+            !cell.get_cell_value().get_raw_value().is_empty()
+                || cell.get_cell_value().is_formula()
+                || extract_cell_background(cell, theme).is_some()
+                || extract_cell_borders(cell, theme).is_some()
+        })
+        .map(|cell| *cell.get_coordinate().get_row_num())
+        .max()
+        .unwrap_or(0);
+    let table_max: u32 = table_styles
+        .iter()
+        .filter_map(|style| style.painted_end_row())
+        .max()
+        .unwrap_or(0);
+    let conditional_max: u32 = cond_fmt_overrides
+        .iter()
+        .filter(|(_, ovr)| {
+            ovr.background.is_some() || ovr.data_bar.is_some() || ovr.icon_text.is_some()
+        })
+        .map(|(&(_, row), _)| row)
+        .max()
+        .unwrap_or(0);
+
+    cell_max.max(table_max).max(conditional_max)
+}
+
 /// The last printed column once unwrapped text overflow is honoured.
 ///
 /// Excel extends a sheet's printed range past its used range to every column
@@ -4186,6 +4233,7 @@ pub(super) fn prepare_sheet_context(
     sparklines: Option<&HashMap<(u32, u32), crate::ir::SparklineInfo>>,
     indexed_colors: Option<&[Option<Color>]>,
     has_sheet_format_properties: bool,
+    has_drawings: bool,
 ) -> Option<(SheetContext, u32, u32)> {
     let (worksheet_max_col, mut max_row) = sheet.get_highest_column_and_row();
     let sparklines = sparklines.cloned().unwrap_or_default();
@@ -4207,6 +4255,14 @@ pub(super) fn prepare_sheet_context(
     .max(sparkline_max_col);
     if max_col == 0 && print_area.is_none() {
         return None;
+    }
+    // A drawing can hang over rows below the last inked cell, and its extent
+    // is only known once the grid is measured, so a sheet with drawings keeps
+    // the dimension's rows. TODO(#2479): bound those rows by the drawings'
+    // bottom edge as well.
+    if print_area.is_none() && !has_drawings {
+        max_row = inferred_printed_max_row(sheet, theme, &table_styles, &cond_fmt_overrides)
+            .max(sparkline_max_row);
     }
 
     // Expand grid to include the extent of all merged ranges

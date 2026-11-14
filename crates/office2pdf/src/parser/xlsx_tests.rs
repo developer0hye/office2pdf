@@ -3874,6 +3874,114 @@ fn a_painted_value_less_trailing_cell_still_extends_the_printed_grid() {
     );
 }
 
+/// Rows below the last inked row that carry only a font or number format
+/// widen the worksheet dimension but paint nothing, and Excel does not print
+/// them. The workbook attached to issue #2472 declares `A1:Y1061` with values
+/// and borders through row 111 and style-only cells below; Excel for Mac
+/// 16.115 ends its export at row 111 with gridlines on or off and with
+/// headings printed. Reading the dimension printed the rest as blank pages
+/// (issue #2475). A fill or a border on an empty cell is ink, so it still
+/// extends the printed rows, and so does a formula whose cached result is
+/// empty: Excel prints every row of such a column.
+#[test]
+fn style_only_trailing_rows_do_not_extend_the_printed_rows() {
+    enum Ink {
+        Fill,
+        Border,
+        /// `=IF(…="","",…)` filled down past the data caches an empty string.
+        EmptyFormula,
+    }
+    for (case, last_ink, expected_rows) in [
+        ("font only below the values", None, 5),
+        ("a filled empty cell", Some(("B40", Ink::Fill)), 40),
+        ("a bordered empty cell", Some(("C120", Ink::Border)), 120),
+        (
+            "a formula with an empty result",
+            Some(("D200", Ink::EmptyFormula)),
+            200,
+        ),
+    ] {
+        let mut book = umya_spreadsheet::new_file();
+        let sheet = book.get_sheet_mut(&0).unwrap();
+        for row in 1..=5 {
+            sheet
+                .get_cell_mut((1, row))
+                .set_value(format!("value {row}"));
+        }
+        // Style-only cells down to row 300, as a template formatted ahead of
+        // its data leaves them.
+        for row in 6..=300 {
+            sheet
+                .get_cell_mut((2, row))
+                .get_style_mut()
+                .get_font_mut()
+                .set_bold(true);
+        }
+        match last_ink {
+            None => {}
+            Some((coordinate, Ink::Fill)) => {
+                sheet
+                    .get_cell_mut(coordinate)
+                    .get_style_mut()
+                    .set_background_color("FFFFFF00");
+            }
+            Some((coordinate, Ink::Border)) => {
+                sheet
+                    .get_cell_mut(coordinate)
+                    .get_style_mut()
+                    .get_borders_mut()
+                    .get_bottom_mut()
+                    .set_border_style(umya_spreadsheet::Border::BORDER_THIN);
+            }
+            Some((coordinate, Ink::EmptyFormula)) => {
+                sheet
+                    .get_cell_mut(coordinate)
+                    .get_cell_value_mut()
+                    .set_formula("IF(A200=\"\",\"\",A200)");
+            }
+        }
+        let mut cursor = Cursor::new(Vec::new());
+        umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+
+        let (doc, _warnings) = XlsxParser
+            .parse(&cursor.into_inner(), &ConvertOptions::default())
+            .unwrap();
+        let printed_rows: usize = doc
+            .pages
+            .iter()
+            .map(|page| match page {
+                Page::Sheet(sheet_page) => sheet_page.table.rows.len(),
+                _ => 0,
+            })
+            .sum();
+        assert_eq!(printed_rows, expected_rows, "{case}");
+    }
+}
+
+/// An explicit print area is exact: it prints its blank rows too.
+#[test]
+fn a_print_area_keeps_its_style_only_rows() {
+    let mut book = umya_spreadsheet::new_file();
+    let sheet = book.get_sheet_mut(&0).unwrap();
+    sheet.get_cell_mut("A1").set_value("value");
+    sheet
+        .get_cell_mut("A30")
+        .get_style_mut()
+        .get_font_mut()
+        .set_bold(true);
+    sheet
+        .add_defined_name("_xlnm.Print_Area", "Sheet1!$A$1:$A$30")
+        .unwrap();
+    let mut cursor = Cursor::new(Vec::new());
+    umya_spreadsheet::writer::xlsx::write_writer(&book, &mut cursor).unwrap();
+
+    let (doc, _warnings) = XlsxParser
+        .parse(&cursor.into_inner(), &ConvertOptions::default())
+        .unwrap();
+
+    assert_eq!(get_sheet_page(&doc, 0).table.rows.len(), 30);
+}
+
 /// Rows 1, 3 and 4 of SH107 end at a thick border, while rows 1, 2, 4 and 5
 /// start at one.
 /// A row receives one printed point when it begins with `thickTop`, plus one
