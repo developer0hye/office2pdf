@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "kind": "issue",
+      "issue": "#1874",
+      "cluster_ids": [
+        "p5-b1deeffa42ea",
+        "p5-75b392d0846a",
+        "p5-ca784f9f6c7d",
+        "p5-68be23b8d87e",
+        "p5-407fb3175fda",
+        "p5-ff7f2ddcd53b"
+      ],
+      "note": "Every cluster is one or two glyphs inside a label (at most 9.12 x 8.64pt); GT and output show the same text at the same baseline. The difference is the sub-pixel glyph advance drift recorded under #1874: on page 2 'of' starts 0.23pt left and 'item' 0.15pt right of Excel's."
+    }
+  ]
+}

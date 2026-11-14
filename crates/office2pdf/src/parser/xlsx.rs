@@ -280,6 +280,30 @@ fn sheet_fit(
     fit
 }
 
+/// Whether any worksheet drawing anchors to the sheet: a chart, picture,
+/// text box or line shape. Such a sheet keeps its dimension's rows, because a
+/// drawing can hang below the last inked cell (issue #2475).
+fn sheet_has_drawings(
+    sheet_name: &str,
+    charts: &std::collections::HashMap<String, Vec<RawChartAnchor>>,
+    images: &std::collections::HashMap<String, Vec<RawImageAnchor>>,
+    text_boxes: &std::collections::HashMap<String, Vec<RawTextBoxAnchor>>,
+    line_shapes: &std::collections::HashMap<String, Vec<RawLineAnchor>>,
+) -> bool {
+    charts
+        .get(sheet_name)
+        .is_some_and(|anchors| !anchors.is_empty())
+        || images
+            .get(sheet_name)
+            .is_some_and(|anchors| !anchors.is_empty())
+        || text_boxes
+            .get(sheet_name)
+            .is_some_and(|anchors| !anchors.is_empty())
+        || line_shapes
+            .get(sheet_name)
+            .is_some_and(|anchors| !anchors.is_empty())
+}
+
 /// Row-height sum used to choose the sheet's fit-to-page scale.
 ///
 /// Keep the existing aggregation policy (`false`) while #1632 corrects the
@@ -980,6 +1004,13 @@ impl XlsxParser {
                 sparklines_by_sheet.get(sheet.get_name()),
                 indexed_colors.as_deref(),
                 !format_properties_less_sheets.contains(sheet.get_name()),
+                sheet_has_drawings(
+                    sheet.get_name(),
+                    &chart_map,
+                    &image_map,
+                    &text_box_map,
+                    &line_shape_map,
+                ),
             ) else {
                 // A sheet without used cells can still carry drawings; give
                 // its images a page instead of dropping them.
@@ -1358,6 +1389,13 @@ impl Parser for XlsxParser {
                 sparklines_by_sheet.get(sheet.get_name()),
                 indexed_colors.as_deref(),
                 !format_properties_less_sheets.contains(sheet.get_name()),
+                sheet_has_drawings(
+                    sheet.get_name(),
+                    &chart_map,
+                    &image_map,
+                    &text_box_map,
+                    &line_shape_map,
+                ),
             ) else {
                 // A sheet without used cells can still carry drawings; give
                 // its images a page instead of dropping them.

@@ -1,0 +1,103 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 24.6528,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 148.32,
+        "y": 197.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is one or two glyphs inside a label (at most 9.12 x 8.64pt); GT and output show the same text at the same baseline. The difference is the sub-pixel glyph advance drift recorded under #1874: on page 2 'of' starts 0.23pt left and 'item' 0.15pt right of Excel's."
+      },
+      "id": "p1-802f26bcfaab",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 171.84,
+        "y": 197.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is one or two glyphs inside a label (at most 9.12 x 8.64pt); GT and output show the same text at the same baseline. The difference is the sub-pixel glyph advance drift recorded under #1874: on page 2 'of' starts 0.23pt left and 'item' 0.15pt right of Excel's."
+      },
+      "id": "p1-9c50338e69bd",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 5.28,
+        "x": 223.2,
+        "y": 197.76
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is one or two glyphs inside a label (at most 9.12 x 8.64pt); GT and output show the same text at the same baseline. The difference is the sub-pixel glyph advance drift recorded under #1874: on page 2 'of' starts 0.23pt left and 'item' 0.15pt right of Excel's."
+      },
+      "id": "p1-e97acb6b2ffd",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 21.4272,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 7.68,
+        "x": 73.44,
+        "y": 195.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is one or two glyphs inside a label (at most 9.12 x 8.64pt); GT and output show the same text at the same baseline. The difference is the sub-pixel glyph advance drift recorded under #1874: on page 2 'of' starts 0.23pt left and 'item' 0.15pt right of Excel's."
+      },
+      "id": "p1-db3694aa0f95",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 20.0448,
+      "bbox_pt": {
+        "height": 8.64,
+        "width": 5.28,
+        "x": 86.4,
+        "y": 195.36
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Every cluster is one or two glyphs inside a label (at most 9.12 x 8.64pt); GT and output show the same text at the same baseline. The difference is the sub-pixel glyph advance drift recorded under #1874: on page 2 'of' starts 0.23pt left and 'item' 0.15pt right of Excel's."
+      },
+      "id": "p1-4844ad34831f",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 5,
+    "duplicate": 0,
+    "total": 5,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

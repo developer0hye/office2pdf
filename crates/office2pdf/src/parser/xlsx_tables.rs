@@ -41,12 +41,21 @@ impl TableStyleRange {
     /// still print. Printed-range inference must therefore retain its full
     /// width whenever the resolved style contributes any paint at all.
     pub(super) fn painted_end_col(&self) -> Option<u32> {
-        (self.body.is_some()
+        self.paints_anything().then_some(self.end_col)
+    }
+
+    /// Last row the table style can visibly paint, for the same reason as
+    /// [`Self::painted_end_col`] in the other direction (issue #2475).
+    pub(super) fn painted_end_row(&self) -> Option<u32> {
+        self.paints_anything().then_some(self.end_row)
+    }
+
+    fn paints_anything(&self) -> bool {
+        self.body.is_some()
             || self.stripe.is_some()
             || self.total_row.is_some()
             || self.rule.is_some()
-            || self.header.is_some())
-        .then_some(self.end_col)
+            || self.header.is_some()
     }
 
     /// The fill at `(col, row)`, or `None` where the table paints none.
