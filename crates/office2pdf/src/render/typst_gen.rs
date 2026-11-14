@@ -13,13 +13,13 @@ use crate::ir::{
     FrameAnchor, GradientFill, HFInline, HeaderFooter, HeaderFooterFrame, HeaderFooterShapeContent,
     HorizontalRule, HorizontalRulePaint, HorizontalRuleWidth, IconShading, ImageCrop, ImageData,
     ImageFormat, ImageParagraphIndent, ImageParagraphSpacing, InlineTextBox, Insets,
-    LegendPosition, LineBox, LineCap, LineJoin, LineSpacing, List, ListKind, Margins, MathEquation,
-    Metadata, PAGE_NUMBER_FIELD_CHAR, Page, PageNumberFormat, PageSize, PairKerning, Paragraph,
-    ParagraphStyle, PatternFill, PatternPreset, PositionedTabAlignment, PositionedTabRelativeTo,
-    Run, Shadow, Shape, ShapeKind, SheetPage, SmartArt, SparklineInfo, TOTAL_PAGES_FIELD_CHAR,
-    TabAlignment, TabLeader, TabStop, Table, TableBorderPaintModel, TableCell, TableOfContents,
-    TableRow, TextBoxData, TextBoxVerticalAlign, TextDirection, TextFrame, TextStyle,
-    VerticalTextAlign, WrapMode,
+    LegendPosition, LineBox, LineCap, LineJoin, LineSpacing, LinkArea, LinkTarget, List, ListKind,
+    Margins, MathEquation, Metadata, PAGE_NUMBER_FIELD_CHAR, Page, PageNumberFormat, PageSize,
+    PairKerning, Paragraph, ParagraphStyle, PatternFill, PatternPreset, PositionedTabAlignment,
+    PositionedTabRelativeTo, Run, Shadow, Shape, ShapeKind, SheetPage, SmartArt, SparklineInfo,
+    TOTAL_PAGES_FIELD_CHAR, TabAlignment, TabLeader, TabStop, Table, TableBorderPaintModel,
+    TableCell, TableOfContents, TableRow, TextBoxData, TextBoxVerticalAlign, TextDirection,
+    TextFrame, TextStyle, VerticalTextAlign, WrapMode,
 };
 
 use self::diagrams::{
@@ -789,6 +789,28 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
     ctx.document_default_tab_stop_pt = doc.styles.default_tab_stop_pt;
     ctx.document_default_text = doc.styles.default_text.clone();
     let alignment_plan = section_alignment::alignment_plan(&doc.pages);
+    let linkable_pages: usize = doc
+        .pages
+        .iter()
+        .take_while(|page| matches!(page, Page::Fixed(_)))
+        .count();
+    with_linkable_pages(linkable_pages, || {
+        generate_page_sequence(doc, &alignment_plan, &mut out, &mut ctx, options)
+    })?;
+    Ok(TypstOutput {
+        source: out,
+        images: ctx.images,
+    })
+}
+
+/// Generate every page of `doc` in order.
+fn generate_page_sequence(
+    doc: &Document,
+    alignment_plan: &[Vec<crate::ir::PageVerticalAlignment>],
+    out: &mut String,
+    ctx: &mut GenCtx,
+    options: &ConvertOptions,
+) -> Result<(), ConvertError> {
     for (index, page) in doc.pages.iter().enumerate() {
         let begins_continuously: bool = matches!(page, Page::FlowContinuous(_));
         let ends_continuously: bool = doc
@@ -812,27 +834,24 @@ fn generate_pages(doc: &Document, options: &ConvertOptions) -> Result<TypstOutpu
                         _ => false,
                     });
                 generate_flow_page(
-                    &mut out,
+                    out,
                     flow,
                     begins_continuously && index > 0,
                     ends_continuously,
                     &alignment_plan[index],
-                    &mut ctx,
+                    ctx,
                     options,
                 )?;
                 ctx.flow_section_index += 1;
             }
-            Page::Fixed(fixed) => generate_fixed_page(&mut out, fixed, &mut ctx, options)?,
+            Page::Fixed(fixed) => generate_fixed_page(out, fixed, ctx, options)?,
             Page::Sheet(sheet_page) => {
-                generate_table_page(&mut out, sheet_page, &mut ctx, options)?;
+                generate_table_page(out, sheet_page, ctx, options)?;
             }
         }
         ctx.at_document_start = false;
     }
-    Ok(TypstOutput {
-        source: out,
-        images: ctx.images,
-    })
+    Ok(())
 }
 
 fn generate_flow_page(
@@ -1773,7 +1792,32 @@ fn generate_fixed_page(
             generate_fixed_element(out, elem, size.height, ctx)?;
         }
         Ok(())
-    })
+    })?;
+    write_link_areas(out, &page.links);
+    Ok(())
+}
+
+/// Lay each clickable area over the page as an invisible box inside a link.
+///
+/// They follow every element so the annotations sit on top, as a slide's click
+/// targets do. A target the document does not print writes nothing.
+fn write_link_areas(out: &mut String, links: &[LinkArea]) {
+    for area in links {
+        if area.width <= 0.0 || area.height <= 0.0 {
+            continue;
+        }
+        let Some(destination) = link_destination(&area.target) else {
+            continue;
+        };
+        let _ = writeln!(
+            out,
+            "#place(top + left, dx: {}pt, dy: {}pt)[#link({destination})[#box(width: {}pt, height: {}pt)]]",
+            format_f64(area.x),
+            format_f64(area.y),
+            format_f64(area.width),
+            format_f64(area.height),
+        );
+    }
 }
 
 /// Whether a raster can safely stand in for the full slide when deciding that

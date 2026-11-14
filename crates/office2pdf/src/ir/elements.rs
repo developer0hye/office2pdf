@@ -1534,13 +1534,24 @@ pub struct Paragraph {
     pub runs: Vec<Run>,
 }
 
+/// Where a hyperlink leads.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LinkTarget {
+    /// An external address, written into the PDF as a URI action.
+    Url(String),
+    /// A page of the same document, by its index in [`super::Document::pages`].
+    /// It becomes a GoTo action; a link to a page the document does not print
+    /// is dropped rather than left dangling.
+    Page(usize),
+}
+
 /// A run of text with uniform formatting.
 #[derive(Debug, Clone)]
 pub struct Run {
     pub text: String,
     pub style: TextStyle,
-    /// Optional hyperlink URL. When present, the run is rendered as a clickable link.
-    pub href: Option<String>,
+    /// Optional hyperlink. When present, the run is rendered as a clickable link.
+    pub href: Option<LinkTarget>,
     /// Optional footnote/endnote content. When present, a footnote marker is emitted and
     /// the content is rendered at the bottom of the page.
     pub footnote: Option<Vec<Run>>,

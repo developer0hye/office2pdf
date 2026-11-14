@@ -417,6 +417,7 @@ fn test_fixed_page_with_background_color() {
         elements: vec![],
         background_color: Some(Color::new(255, 0, 0)),
         background_gradient: None,
+        links: Vec::new(),
     });
     let doc = make_doc(vec![page]);
     let output = generate_typst(&doc).unwrap();
@@ -433,6 +434,7 @@ fn test_fixed_page_without_background_color() {
         elements: vec![],
         background_color: None,
         background_gradient: None,
+        links: Vec::new(),
     });
     let doc = make_doc(vec![page]);
     let output = generate_typst(&doc).unwrap();
@@ -497,6 +499,7 @@ fn test_fixed_page_table_element() {
         }],
         background_color: None,
         background_gradient: None,
+        links: Vec::new(),
     });
 
     let doc = make_doc(vec![page]);
@@ -520,7 +523,9 @@ fn test_hyperlink_generates_typst_link() {
         runs: vec![Run {
             text: "Click me".to_string(),
             style: TextStyle::default(),
-            href: Some("https://example.com".to_string()),
+            href: Some(crate::ir::LinkTarget::Url(
+                "https://example.com".to_string(),
+            )),
             footnote: None,
             inline_box: None,
         }],
@@ -544,7 +549,9 @@ fn test_hyperlink_with_styled_text() {
                 bold: Some(true),
                 ..TextStyle::default()
             },
-            href: Some("https://example.com".to_string()),
+            href: Some(crate::ir::LinkTarget::Url(
+                "https://example.com".to_string(),
+            )),
             footnote: None,
             inline_box: None,
         }],
@@ -570,7 +577,9 @@ fn test_hyperlink_mixed_with_plain_text() {
             Run {
                 text: "Rust".to_string(),
                 style: TextStyle::default(),
-                href: Some("https://rust-lang.org".to_string()),
+                href: Some(crate::ir::LinkTarget::Url(
+                    "https://rust-lang.org".to_string(),
+                )),
                 footnote: None,
                 inline_box: None,
             },
@@ -601,7 +610,9 @@ fn test_hyperlink_url_with_special_chars_escaped() {
         runs: vec![Run {
             text: "Link".to_string(),
             style: TextStyle::default(),
-            href: Some("https://example.com/path?q=1&r=2".to_string()),
+            href: Some(crate::ir::LinkTarget::Url(
+                "https://example.com/path?q=1&r=2".to_string(),
+            )),
             footnote: None,
             inline_box: None,
         }],

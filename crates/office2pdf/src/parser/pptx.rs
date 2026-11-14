@@ -66,6 +66,8 @@ mod cached_presets;
 pub(crate) mod custom_geometry;
 #[path = "pptx_geometry_guides.rs"]
 pub(crate) mod geometry_guides;
+#[path = "pptx_links.rs"]
+mod links;
 #[path = "pptx_package.rs"]
 mod package;
 #[path = "pptx_placeholders.rs"]
@@ -490,13 +492,21 @@ impl Parser for PptxParser {
         let table_styles: table_styles::TableStyleMap =
             load_table_styles(&mut archive, &theme, &master_color_map);
 
+        // The pages a slide link can lead to, known before any slide is parsed
+        // because a slide can link forward (issue #2473).
+        let deck: links::DeckPages =
+            predict_deck_pages(&slide_rids, &rel_map, options, &mut archive);
+
         let presentation_resources = PresentationResources {
             theme: &theme,
             table_styles: &table_styles,
             default_text_size_pt,
+            deck: &deck,
         };
 
         let mut warnings = Vec::new();
+        // The predicted page of each slide that actually printed, in order.
+        let mut printed_predicted_pages: Vec<usize> = Vec::with_capacity(deck.page_count);
 
         // Parse each slide in order, skipping broken slides with warnings
         let mut pages = Vec::with_capacity(slide_rids.len());
@@ -510,11 +520,7 @@ impl Parser for PptxParser {
             }
 
             if let Some(target) = rel_map.get(rid) {
-                let slide_path = if let Some(stripped) = target.strip_prefix('/') {
-                    stripped.to_string()
-                } else {
-                    format!("ppt/{target}")
-                };
+                let slide_path: String = slide_part_path(target);
 
                 let slide_label = format!("slide {slide_number}");
                 match parse_single_slide(
@@ -563,6 +569,9 @@ impl Parser for PptxParser {
                                 }
                             }
                         }
+                        if let Some(predicted) = deck.page_by_slide.get(&slide_path) {
+                            printed_predicted_pages.push(*predicted);
+                        }
                         pages.push(page);
                     }
                     Err(e) => {
@@ -579,6 +588,8 @@ impl Parser for PptxParser {
             }
         }
 
+        renumber_page_links_after_skipped_slides(&mut pages, &printed_predicted_pages, &deck);
+
         Ok((
             Document {
                 metadata,
@@ -591,6 +602,73 @@ impl Parser for PptxParser {
             },
             warnings,
         ))
+    }
+}
+
+/// The page each printable slide will occupy, before the slides are parsed.
+///
+/// A slide prints when it is inside `--slide-range` and is not hidden (unless
+/// hidden slides are included), the same tests the slide loop applies.
+fn predict_deck_pages<R: std::io::Read + std::io::Seek>(
+    slide_rids: &[String],
+    rel_map: &HashMap<String, String>,
+    options: &ConvertOptions,
+    archive: &mut ZipArchive<R>,
+) -> links::DeckPages {
+    let mut deck = links::DeckPages::default();
+    for (slide_idx, rid) in slide_rids.iter().enumerate() {
+        let slide_number = (slide_idx as u32) + 1;
+        if options
+            .slide_range
+            .as_ref()
+            .is_some_and(|range| !range.contains(slide_number))
+        {
+            continue;
+        }
+        let Some(target) = rel_map.get(rid) else {
+            continue;
+        };
+        let slide_path: String = slide_part_path(target);
+        let Ok(slide_xml) = read_zip_entry(archive, &slide_path) else {
+            continue;
+        };
+        if !options.include_hidden_slides && slides::is_hidden_slide(&slide_xml) {
+            continue;
+        }
+        deck.page_by_slide.insert(slide_path, deck.page_count);
+        deck.page_count += 1;
+    }
+    deck
+}
+
+/// The package path of a slide named by a `presentation.xml.rels` target.
+fn slide_part_path(target: &str) -> String {
+    match target.strip_prefix('/') {
+        Some(stripped) => stripped.to_string(),
+        None => format!("ppt/{target}"),
+    }
+}
+
+/// Shift page links down past slides that were predicted to print but failed
+/// to parse, and drop links to them.
+fn renumber_page_links_after_skipped_slides(
+    pages: &mut [Page],
+    printed_predicted_pages: &[usize],
+    deck: &links::DeckPages,
+) {
+    if printed_predicted_pages.len() == deck.page_count {
+        return;
+    }
+    let actual_by_predicted: HashMap<usize, usize> = printed_predicted_pages
+        .iter()
+        .enumerate()
+        .map(|(actual, predicted)| (*predicted, actual))
+        .collect();
+    let remap = |predicted: usize| actual_by_predicted.get(&predicted).copied();
+    for page in pages {
+        if let Page::Fixed(fixed) = page {
+            links::remap_page_links(fixed, &remap);
+        }
     }
 }
 

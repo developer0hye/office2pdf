@@ -305,6 +305,7 @@ fn test_generate_fixed_page_empty_elements() {
         elements: vec![],
         background_color: None,
         background_gradient: None,
+        links: Vec::new(),
     })]);
     let output = generate_typst(&doc).unwrap();
     assert!(!output.source.is_empty());
@@ -417,6 +418,7 @@ fn test_generate_shape_shadow_all_kinds() {
             }],
             background_color: None,
             background_gradient: None,
+            links: Vec::new(),
         })]);
         let output = generate_typst(&doc);
         assert!(
@@ -509,6 +511,7 @@ fn test_gradient_single_stop_fallback_to_solid() {
             }],
             angle: 0.0,
         }),
+        links: Vec::new(),
     });
     let doc = make_doc(vec![page]);
     let output = generate_typst(&doc).unwrap();
@@ -546,6 +549,7 @@ fn test_gradient_two_stops_still_works() {
             ],
             angle: 90.0,
         }),
+        links: Vec::new(),
     });
     let doc = make_doc(vec![page]);
     let output = generate_typst(&doc).unwrap();
@@ -1774,7 +1778,9 @@ fn a_docx_table_cell_breaks_only_an_overlong_latin_token() {
         color: Some(color),
         ..TextStyle::default()
     };
-    let href = Some("https://example.com/event".to_string());
+    let href = Some(crate::ir::LinkTarget::Url(
+        "https://example.com/event".to_string(),
+    ));
     let cell = TableCell {
         content: vec![Block::Paragraph(Paragraph {
             style: ParagraphStyle {

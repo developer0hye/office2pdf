@@ -12,10 +12,10 @@ use crate::ir::{
     Alignment, Block, BorderLineStyle, BorderSide, Caption, CellBorder, CellVerticalAlign, Color,
     ColumnLayout, Document, DocumentLanguage, FloatingImage, FloatingImageVerticalAnchor,
     FloatingTable, FloatingTextBox, HorizontalRule, ImageData, ImageFormat, ImageParagraphIndent,
-    ImageParagraphSpacing, InlineTextBox, Insets, Ligatures, LineCap, LineJoin, LineSpacing, Page,
-    PageNumbering, PairKerning, Paragraph, ParagraphStyle, Run, StyleSheet, TabAlignment,
-    TabLeader, TabStop, Table, TableCell, TableOfContents, TableRow, TextDirection, TextFrame,
-    TextStyle, VerticalTextAlign, WordCompatibilityMode,
+    ImageParagraphSpacing, InlineTextBox, Insets, Ligatures, LineCap, LineJoin, LineSpacing,
+    LinkTarget, Page, PageNumbering, PairKerning, Paragraph, ParagraphStyle, Run, StyleSheet,
+    TabAlignment, TabLeader, TabStop, Table, TableCell, TableOfContents, TableRow, TextDirection,
+    TextFrame, TextStyle, VerticalTextAlign, WordCompatibilityMode,
 };
 use crate::parser::Parser;
 
@@ -1236,7 +1236,7 @@ fn build_text_run(
             style_map,
             theme_fonts,
         ),
-        href,
+        href: href.map(LinkTarget::Url),
         footnote: None,
         inline_box: None,
     })

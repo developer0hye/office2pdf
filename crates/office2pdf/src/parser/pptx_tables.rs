@@ -19,6 +19,10 @@ enum BorderDir {
 struct PptxTableParser<'a> {
     // External context (immutable references)
     theme: &'a ThemeData,
+    /// Click actions of the part the table sits on (issue #2473).
+    links: Option<&'a super::links::PartLinks<'a>>,
+    /// Where the current run's `a:hlinkClick` leads.
+    run_href: Option<crate::ir::LinkTarget>,
     color_map: &'a ColorMapData,
     table_styles: &'a table_styles::TableStyleMap,
 
@@ -109,10 +113,13 @@ impl<'a> PptxTableParser<'a> {
         color_map: &'a ColorMapData,
         table_styles: &'a table_styles::TableStyleMap,
         default_text_size_pt: Option<f64>,
+        links: Option<&'a super::links::PartLinks<'a>>,
     ) -> Self {
         Self {
             default_text_size_pt,
             theme,
+            links,
+            run_href: None,
             color_map,
             table_styles,
 
@@ -370,6 +377,12 @@ impl<'a> PptxTableParser<'a> {
                 );
             }
             b"hlinkClick" if self.is_in_run_properties => {
+                self.run_href = self.links.and_then(|links| {
+                    links.resolve(
+                        get_attr_str(e, b"r:id").as_deref(),
+                        get_attr_str(e, b"action").as_deref(),
+                    )
+                });
                 if self.run_marker_style_before_hyperlink.is_none() {
                     self.run_marker_style_before_hyperlink = Some(self.run_style.clone());
                 }
@@ -686,7 +699,7 @@ impl<'a> PptxTableParser<'a> {
                 Run {
                     text: std::mem::take(&mut self.run_text),
                     style,
-                    href: None,
+                    href: self.run_href.clone(),
                     footnote: None,
                     inline_box: None,
                 },
@@ -775,6 +788,7 @@ impl<'a> PptxTableParser<'a> {
                 self.run_text.clear();
                 self.run_has_explicit_underline = false;
                 self.run_marker_style_before_hyperlink = None;
+                self.run_href = None;
             }
             b"rPr" if self.is_in_run => {
                 self.is_in_run_properties = true;
@@ -814,6 +828,12 @@ impl<'a> PptxTableParser<'a> {
                 self.is_in_text = true;
             }
             b"hlinkClick" if self.is_in_run_properties => {
+                self.run_href = self.links.and_then(|links| {
+                    links.resolve(
+                        get_attr_str(e, b"r:id").as_deref(),
+                        get_attr_str(e, b"action").as_deref(),
+                    )
+                });
                 if self.run_marker_style_before_hyperlink.is_none() {
                     self.run_marker_style_before_hyperlink = Some(self.run_style.clone());
                 }
@@ -980,8 +1000,10 @@ pub(super) fn parse_pptx_table(
     color_map: &ColorMapData,
     table_styles: &table_styles::TableStyleMap,
     default_text_size_pt: Option<f64>,
+    links: Option<&super::links::PartLinks<'_>>,
 ) -> Result<Table, ConvertError> {
-    let mut state = PptxTableParser::new(theme, color_map, table_styles, default_text_size_pt);
+    let mut state =
+        PptxTableParser::new(theme, color_map, table_styles, default_text_size_pt, links);
 
     loop {
         match reader.read_event() {
