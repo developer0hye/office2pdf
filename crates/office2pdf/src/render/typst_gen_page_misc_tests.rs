@@ -7642,11 +7642,14 @@ fn centered_sheet_page(centers: bool, column_widths: Vec<f64>) -> Page {
     })
 }
 
-/// The inset the emitted `#pad` states, or `None` when the page emits none.
+/// The inset the emitted centring `#pad` states, or `None` when the page emits
+/// none. The centring pad states only `left`; a scaled sheet's paint offset is
+/// a four-sided `#pad` around it and is skipped (issue #2472).
 fn sheet_centering_inset_pt(source: &str) -> Option<f64> {
-    let rest: &str = source.split_once("#pad(left: ")?.1;
-    let value: &str = rest.split_once("pt)[")?.0;
-    value.parse().ok()
+    source.split("#pad(left: ").skip(1).find_map(|rest| {
+        let value: &str = rest.split_once("pt)[")?.0;
+        value.parse().ok()
+    })
 }
 
 #[test]
@@ -7715,7 +7718,7 @@ fn a_fit_scaled_a3_sheet_uses_its_scaled_paper_space_body_seat() {
         .unwrap()
         .source;
     assert!(
-        source.contains("#move(dx: -0.06pt, dy: -0.7pt)["),
+        source.contains("#pad(left: -0.06pt, right: 0.06pt, top: -0.7pt, bottom: 0.7pt)["),
         "the scaled paint must start from Excel's sheet-space paper origin: {source}"
     );
     assert!(
@@ -7750,7 +7753,7 @@ fn a_fit_scaled_a3_portrait_sheet_snaps_its_printable_width_up() {
         .unwrap()
         .source;
     assert!(
-        source.contains("#move(dx: 0.42pt, dy: -0.18pt)["),
+        source.contains("#pad(left: 0.42pt, right: -0.42pt, top: -0.18pt, bottom: 0.18pt)["),
         "the scaled paint must start from Excel's sheet-space paper origin: {source}"
     );
 }
@@ -7771,7 +7774,7 @@ fn an_unscaled_a3_sheet_does_not_take_the_scaled_body_seat() {
         .unwrap()
         .source;
     assert!(
-        !source.contains("#move(dx: -0.06pt, dy: -0.7pt)["),
+        !source.contains("#pad(left: -0.06pt, right: 0.06pt, top: -0.7pt, bottom: 0.7pt)["),
         "an unscaled sheet must keep its existing body origin: {source}"
     );
     let inset_pt = sheet_centering_inset_pt(&source)
