@@ -2015,3 +2015,70 @@ fn test_explicit_print_percentage_obeys_scale_with_doc() {
         assert_eq!(pages[0].table.column_widths, vec![85.0, 85.0]);
     }
 }
+
+/// Excel never fits a sheet below 10%, the floor of `pageSetup/@scale`
+/// (ECMA-376 §18.3.1.63 allows 10-400). A sheet that would need less prints at
+/// 10% and continues onto further pages: the 400-row `fit1x1` workbook from
+/// issue #2474 needs 9.53% to fit one page tall, and Excel's export prints it
+/// at 10% on two pages of 381 and 19 rows.
+#[test]
+fn test_fit_to_page_does_not_shrink_below_ten_percent() {
+    let row_of_height = |height: f64| TableRow {
+        cant_split: false,
+        minimum_height: None,
+        cells: vec![cell("left"), cell("right")],
+        height: Some(height),
+    };
+    // On the 400 x 700pt printable area: 6800pt of rows needs 10.29% (no
+    // floor involved), 14000pt needs 5%, and 8000pt of columns needs 5%.
+    for (case, column_widths, sheet_height_pt, expected_scale) in [
+        (
+            "rows just above the floor",
+            vec![200.0, 200.0],
+            6800.0,
+            0.10,
+        ),
+        ("rows below the floor", vec![200.0, 200.0], 14000.0, 0.10),
+        ("columns below the floor", vec![4000.0, 4000.0], 700.0, 0.10),
+        ("rows at a quarter", vec![200.0, 200.0], 2800.0, 0.25),
+    ] {
+        let fit = SheetFit {
+            fits_to_page: true,
+            pages_wide: Some(1),
+            pages_tall: Some(1),
+            sheet_height_pt,
+            ..SheetFit::default()
+        };
+        let pages = split_sheet_page_by_width(
+            make_page(column_widths.clone(), vec![row_of_height(20.0)]),
+            None,
+            fit,
+            true,
+        );
+        let scale: f64 = pages[0]
+            .table
+            .print_scale
+            .expect("a fitted sheet records its scale");
+        assert!(
+            (scale - expected_scale).abs() < 1e-9,
+            "{case}: expected scale {expected_scale}, got {scale}"
+        );
+        let row_height: f64 = pages[0].table.rows[0]
+            .height
+            .expect("the row keeps its height");
+        assert!(
+            (row_height - 20.0 * expected_scale).abs() < 1e-9,
+            "{case}: expected row height {}, got {row_height}",
+            20.0 * expected_scale
+        );
+        let printed_width: f64 = pages
+            .iter()
+            .flat_map(|page| &page.table.column_widths)
+            .sum();
+        let expected_width: f64 = column_widths.iter().sum::<f64>() * expected_scale;
+        assert!(
+            (printed_width - expected_width).abs() < 1e-9,
+            "{case}: expected {expected_width}pt of columns, got {printed_width}pt"
+        );
+    }
+}

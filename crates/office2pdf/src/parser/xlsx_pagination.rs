@@ -325,6 +325,9 @@ fn end_sequence_at_last_inked_row(pages: &mut Vec<SheetPage>, last_inked_row_cou
 ///
 /// Scaling happens before the column groups are packed, so a shrunk sheet fits
 /// correspondingly more columns and rows on each page, as Excel's does.
+///
+/// A fit never goes below Excel's 10% minimum; a sheet that would need less
+/// prints at 10% across more pages (issue #2474).
 fn fit_page_to_pages(
     page: SheetPage,
     fit: SheetFit,
@@ -359,7 +362,13 @@ fn fit_page_to_pages(
     if scale >= 1.0 {
         return page;
     }
-    scale_sheet_page(page, scale, header_footer_scales_with_doc)
+    // Excel stops shrinking at its 10% minimum, the floor of the percentage
+    // `<pageSetup scale>` may name. A sheet that would need less to meet its
+    // bounds prints at 10% and runs onto further pages instead: the 400-row
+    // sheet of issue #2474 needs 9.53% to fit one page tall, and Excel prints
+    // it at 10% on two pages of 381 and 19 rows.
+    let floor: f64 = f64::from(*super::fit_to_page::PRINT_PERCENTAGE_RANGE.start()) / 100.0;
+    scale_sheet_page(page, scale.max(floor), header_footer_scales_with_doc)
 }
 
 /// The scale that fits `total_pt` of sheet into `pages` pages of `printable_pt`,
@@ -367,7 +376,9 @@ fn fit_page_to_pages(
 /// file (a declared zero is Excel's "as many pages as it takes") or unmeasurable.
 ///
 /// Excel's auto-fit scale is a whole percent, truncated rather than rounded so
-/// the content is guaranteed to fit. Keeping the raw ratio leaves every derived
+/// the content stays within the bound. The caller clamps the result to Excel's
+/// 10% minimum, below which the content no longer fits and runs onto further
+/// pages (issue #2474). Keeping the raw ratio leaves every derived
 /// type size a fraction of a point off the printed sheet — the audited sheet
 /// came out at 7.55pt against Excel's 7.50pt.
 fn fit_scale(pages: Option<u32>, printable_pt: f64, total_pt: f64) -> Option<f64> {

@@ -22,7 +22,7 @@ const DEFAULT_FIT_TO_PAGES: u32 = 1;
 /// Excel's Page Setup dialog clamps the box to this range, and a file naming
 /// anything outside it — including the `0` umya reports for an absent
 /// attribute — is asking for no scaling rather than for a degenerate one.
-const PRINT_PERCENTAGE_RANGE: std::ops::RangeInclusive<u32> = 10..=400;
+pub(super) const PRINT_PERCENTAGE_RANGE: std::ops::RangeInclusive<u32> = 10..=400;
 
 /// The percentage that prints a sheet at its declared size.
 const UNSCALED_PRINT_PERCENTAGE: u32 = 100;
