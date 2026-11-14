@@ -1618,16 +1618,18 @@ fn worksheet_namespace_prefixes_preserve_body_and_header_footer() {
 mod scaled_sheet_pagination {
     use super::*;
 
+    /// The issue's row count.
     const ROWS: u32 = 400;
     /// US Letter portrait with the 1in top and bottom margins written below.
     const PAGE_HEIGHT_PT: f64 = 792.0;
     const BOTTOM_MARGIN_PT: f64 = 72.0;
 
-    /// The issue's workbook shape: `ROWS` rows of three 20-character columns,
+    /// The issue's workbook shape: `rows` rows of three 20-character columns,
     /// `row N colA`..`row N colC`, under the given print scaling. It carries
     /// the styles part every Excel or openpyxl workbook writes, so the cells
     /// take the declared 11pt Normal font.
-    fn build_scaled_sheet(fit: Option<(u32, u32)>, scale: Option<u32>) -> Vec<u8> {
+    fn build_scaled_sheet(rows: u32, fit: Option<(u32, u32)>, scale: Option<u32>) -> Vec<u8> {
+        let row_count: u32 = rows;
         let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
         let options = zip::write::SimpleFileOptions::default();
         let mut write = |path: &str, body: &str| {
@@ -1679,7 +1681,7 @@ mod scaled_sheet_pagination {
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>"#,
         );
-        let rows: String = (1..=ROWS)
+        let rows: String = (1..=row_count)
             .map(|row| {
                 let cells: String = ["A", "B", "C"]
                     .iter()
@@ -1746,9 +1748,9 @@ mod scaled_sheet_pagination {
         pages
     }
 
-    fn assert_prints_every_row_once(case: &str, pages: &[Vec<u32>]) {
+    fn assert_prints_every_row_once(case: &str, rows: u32, pages: &[Vec<u32>]) {
         let printed: Vec<u32> = pages.iter().flatten().copied().collect();
-        let expected: Vec<u32> = (1..=ROWS).collect();
+        let expected: Vec<u32> = (1..=rows).collect();
         assert_eq!(
             printed,
             expected,
@@ -1765,24 +1767,42 @@ mod scaled_sheet_pagination {
     /// bottom margin and off the paper edge, and lost rows 86-400.
     #[test]
     fn an_explicit_percentage_below_100_paginates_down_the_sheet() {
-        let pages = printed_rows_per_page(&build_scaled_sheet(None, Some(50)));
+        let pages = printed_rows_per_page(&build_scaled_sheet(ROWS, None, Some(50)));
         assert!(pages.len() > 1, "400 rows at 50% need more than one page");
-        assert_prints_every_row_once("scale=50", &pages);
+        assert_prints_every_row_once("scale=50", ROWS, &pages);
     }
 
     /// `fitToHeight="2"` asks for the sheet on exactly two pages, not one.
     #[test]
     fn a_two_page_tall_fit_prints_on_two_pages() {
-        let pages = printed_rows_per_page(&build_scaled_sheet(Some((1, 2)), None));
+        let pages = printed_rows_per_page(&build_scaled_sheet(ROWS, Some((1, 2)), None));
         assert_eq!(pages.len(), 2, "fitToHeight=2 prints two pages");
-        assert_prints_every_row_once("fit 1x2", &pages);
+        assert_prints_every_row_once("fit 1x2", ROWS, &pages);
     }
 
-    /// The control: fitting onto one page tall keeps the single page.
+    /// The control: a sheet that fits one page tall above Excel's 10% floor
+    /// keeps the single page. 300 rows of a 15-20pt Normal row need 11-14%.
     #[test]
-    fn a_one_page_fit_stays_on_one_page() {
-        let pages = printed_rows_per_page(&build_scaled_sheet(Some((1, 1)), None));
+    fn a_one_page_fit_above_the_floor_stays_on_one_page() {
+        let rows: u32 = 300;
+        let pages = printed_rows_per_page(&build_scaled_sheet(rows, Some((1, 1)), None));
         assert_eq!(pages.len(), 1, "fitToHeight=1 prints one page");
-        assert_prints_every_row_once("fit 1x1", &pages);
+        assert_prints_every_row_once("fit 1x1, 300 rows", rows, &pages);
+    }
+
+    /// Below Excel's 10% floor a one-page fit runs onto further pages instead
+    /// of shrinking further: 1000 rows would need under 5%, so the sheet
+    /// prints at 10% and continues (issue #2474). Excel's export of the
+    /// issue's 400-row `fit1x1` prints 381 and 19 rows on two pages.
+    #[test]
+    fn a_fit_below_the_ten_percent_floor_continues_onto_more_pages() {
+        let rows: u32 = 1000;
+        let pages = printed_rows_per_page(&build_scaled_sheet(rows, Some((1, 1)), None));
+        assert!(
+            pages.len() > 1,
+            "1000 rows at 10% cannot fit one page; got {} page(s)",
+            pages.len()
+        );
+        assert_prints_every_row_once("fit 1x1, 1000 rows", rows, &pages);
     }
 }
