@@ -331,6 +331,7 @@ fn fixed_raster_image_does_not_round_below_the_exact_bottom_edge() {
             elements: vec![fixed_image(324.0), fixed_image(0.2)],
             background_color: None,
             background_gradient: None,
+            links: Vec::new(),
         })],
         styles: StyleSheet::default(),
     };

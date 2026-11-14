@@ -1196,6 +1196,7 @@ fn test_vert_text_box_remaps_insets() {
         elements: vec![elem],
         background_color: None,
         background_gradient: None,
+        links: Vec::new(),
     });
     let doc = make_doc(vec![page]);
     let output = generate_typst(&doc).unwrap();

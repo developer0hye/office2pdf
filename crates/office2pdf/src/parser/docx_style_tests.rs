@@ -566,7 +566,10 @@ fn test_runs_inherit_document_default_font() {
     assert_eq!(para.runs.len(), 2);
     assert_eq!(para.runs[0].style.font_family.as_deref(), Some("Raleway"));
     assert_eq!(para.runs[0].style.font_size, Some(9.0));
-    assert_eq!(para.runs[1].href.as_deref(), Some("https://example.com"));
+    assert_eq!(
+        para.runs[1].href,
+        Some(LinkTarget::Url("https://example.com".to_string()))
+    );
     assert_eq!(para.runs[1].style.font_family.as_deref(), Some("Raleway"));
     assert_eq!(para.runs[1].style.font_size, Some(9.0));
     assert_eq!(para.runs[1].style.color, Some(Color::new(17, 85, 204)));

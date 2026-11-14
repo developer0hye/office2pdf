@@ -331,6 +331,8 @@ pub(super) fn parse_group_shape<'a>(
                         r#"<r xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">{children_xml}</r>"#
                     );
 
+                    // TODO(#2482): the children's own click actions are dropped here;
+                    // carry their link areas out through the group transform.
                     let (mut child_elements, warnings) = parse_slide_xml(&wrapped, ctx, None)?;
                     for element in &mut child_elements {
                         transform.apply(element);

@@ -1705,6 +1705,7 @@ fn test_document_requests_font_families_true_for_a_chart_only_document() {
             }],
             background_color: None,
             background_gradient: None,
+            links: Vec::new(),
         })],
         styles: crate::ir::StyleSheet::default(),
     };

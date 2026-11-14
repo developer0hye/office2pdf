@@ -465,6 +465,7 @@ fn test_render_document_fixed_textbox_ordered_list_keeps_all_numbers() {
             }],
             background_color: None,
             background_gradient: None,
+            links: Vec::new(),
         })],
         styles: StyleSheet::default(),
     };
@@ -911,6 +912,7 @@ fn test_render_pptx_style_document_size() {
                     shape_rotation_deg: None,
                 }),
             }],
+            links: Vec::new(),
         }));
     }
     let doc = Document {
@@ -974,6 +976,7 @@ fn test_render_document_with_centered_fixed_text_box() {
                     shape_rotation_deg: None,
                 }),
             }],
+            links: Vec::new(),
         })],
         styles: StyleSheet::default(),
     };
@@ -1044,6 +1047,7 @@ fn test_render_document_with_auto_fit_fixed_text_box() {
                     shape_rotation_deg: None,
                 }),
             }],
+            links: Vec::new(),
         })],
         styles: StyleSheet::default(),
     };

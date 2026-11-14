@@ -6854,8 +6854,8 @@ fn collect_formatting_wrappers(run: &Run) -> Vec<String> {
     let style: &TextStyle = &run.style;
     let mut wrappers: Vec<String> = Vec::new();
 
-    if let Some(ref href) = run.href {
-        wrappers.push(format!("#link(\"{href}\")["));
+    if let Some(destination) = run.href.as_ref().and_then(link_destination) {
+        wrappers.push(format!("#link({destination})["));
     }
     if let Some(ref highlight) = style.highlight {
         let edges: Option<(f64, f64)> = DRAWINGML_HIGHLIGHT
@@ -7293,6 +7293,44 @@ thread_local! {
     /// one more token. See [`with_legacy_word_justification`].
     static LEGACY_WORD_JUSTIFICATION: std::cell::Cell<bool> =
         const { std::cell::Cell::new(false) };
+    /// How many of the document's first pages are fixed pages, each printing
+    /// exactly one PDF page. See [`with_linkable_pages`].
+    static LINKABLE_PAGE_COUNT: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Run `operation` with the first `count` IR pages reachable by a
+/// [`LinkTarget::Page`] link, restoring the enclosing state even when
+/// generation panics.
+///
+/// A fixed page always prints exactly one PDF page, so IR page `i` of an
+/// unbroken leading run of fixed pages is PDF page `i + 1`. Past that run a
+/// flow or sheet page may print any number of pages, so no page number can be
+/// derived and such a link is dropped.
+pub(super) fn with_linkable_pages<T>(count: usize, operation: impl FnOnce() -> T) -> T {
+    LINKABLE_PAGE_COUNT.with(|linkable| {
+        let previous: usize = linkable.replace(count);
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(operation));
+        linkable.set(previous);
+        match result {
+            Ok(value) => value,
+            Err(panic) => std::panic::resume_unwind(panic),
+        }
+    })
+}
+
+/// The Typst destination a link points at, or `None` when the document does
+/// not print that page.
+///
+/// A page destination is a position, not a label: Typst silently drops a link
+/// to a page past the end, where a missing label would fail the compile.
+pub(super) fn link_destination(target: &LinkTarget) -> Option<String> {
+    match target {
+        LinkTarget::Url(url) => Some(format!("\"{}\"", super::escape_typst_string(url))),
+        LinkTarget::Page(index) => {
+            let linkable: usize = LINKABLE_PAGE_COUNT.with(std::cell::Cell::get);
+            (*index < linkable).then(|| format!("(page: {}, x: 0pt, y: 0pt)", index + 1))
+        }
+    }
 }
 
 /// Run `operation` with Word's pre-2013 justification in the requested state,

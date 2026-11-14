@@ -12,7 +12,7 @@ No LibreOffice, no Chromium, no Docker — just a single binary powered by [Typs
 ## Features
 
 - **DOCX** — paragraphs, inline formatting (bold/italic/underline/color), tables (including floating tables), Word body-flow inline text boxes with paragraphs/tables/pictures, images, drawing shapes, ordered/nested lists, syntax-highlighted code, headers/footers, page setup
-- **PPTX** — slides, text boxes, shapes, tables (with theme-based table styles), images, slide masters, speaker notes, gradient backgrounds, shadow/reflection effects; hidden slides are omitted by default and can be included explicitly
+- **PPTX** — slides, text boxes, shapes, tables (with theme-based table styles), images, slide masters, speaker notes, gradient backgrounds, shadow/reflection effects, clickable hyperlinks (URLs and slide jumps on text runs and shapes, including those inherited from layouts and masters); hidden slides are omitted by default and can be included explicitly
 - **XLSX** — sheets (hidden ones skipped, as Excel does), chartsheets (one page-sized chart each), cell formatting including accounting currency alignment, merged cells, column widths, row heights, print scaling, Excel tables (built-in style banding, header/foot rules, bold header), conditional formatting (DataBar, IconSet, and formula rules)
 - **PDF/A-2b** — archival-compliant output via `--pdf-a`
 - **Embedded font extraction** — fonts embedded in PPTX/DOCX are automatically extracted, deobfuscated, and used during conversion
@@ -256,7 +256,7 @@ Native Rust callers can use the same per-conversion path through
 | Format | Status | Key Features |
 |--------|--------|-------------|
 | DOCX | Supported | Text, tables (including floating tables), Word body-flow inline text boxes with paragraphs/tables/pictures, images, drawing shapes, lists, code highlighting, headers/footers, page setup |
-| PPTX | Supported | Slides, text boxes, shapes, tables, images, masters, gradients, effects |
+| PPTX | Supported | Slides, text boxes, shapes, tables, images, masters, gradients, effects, hyperlinks |
 | XLSX | Supported | Sheets, formatting, merged cells, column/row sizing, conditional formatting |
 
 An inline DOCX picture that shares its paragraph with text stays on that text's
@@ -386,6 +386,12 @@ PPTX shapes also paint `<a:alpha>` on their outlines and on solid or gradient
 fills, including colours supplied by `<p:style>` fill and line references.
 A shape casts its outer shadow from what it paints, each fill and outline at
 its own alpha, so an unfilled shape's shadow is a ring under its outline.
+PPTX click actions become PDF links: an external URL becomes a URI link, and a
+slide jump or a next/previous/first/last-slide jump becomes a link to the page
+that slide prints on. A jump to a slide that is not printed is dropped. A
+shape's link covers its bounding box. Actions on shapes nested inside a group
+are not yet linked, and neither are links on charts or SmartArt; the group's
+own action and the text runs inside it are.
 
 DOCX body SmartArt imports saved drawing caches as vector shapes and searchable
 text, inline or anchored in Word flow. The IR represents them as `DrawingGroup`

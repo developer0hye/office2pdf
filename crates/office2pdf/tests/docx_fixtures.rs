@@ -550,7 +550,10 @@ fn structure_hyperlinks() {
 
     let http_link = runs
         .iter()
-        .filter_map(|r| r.href.as_deref())
+        .filter_map(|r| match &r.href {
+            Some(office2pdf::ir::LinkTarget::Url(url)) => Some(url.as_str()),
+            _ => None,
+        })
         .any(|href: &str| href.starts_with("http://") || href.starts_with("https://"));
     assert!(http_link, "should have at least one http(s) URL");
 }
