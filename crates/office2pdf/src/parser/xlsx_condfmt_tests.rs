@@ -627,9 +627,13 @@ fn test_cond_fmt_unmeasured_icon_sets_carry_no_shading() {
         let parser = XlsxParser;
         let (doc, _warnings) = parser.parse(&data, &ConvertOptions::default()).unwrap();
         let tp = get_sheet_page(&doc, 0);
-        for row in 0..3 {
+        assert!(
+            tp.table.rows.len() >= 3,
+            "{set_type}: the fixture has three bands"
+        );
+        for (row, table_row) in tp.table.rows.iter().take(3).enumerate() {
             assert_eq!(
-                tp.table.rows[row].cells[0].icon_shading, None,
+                table_row.cells[0].icon_shading, None,
                 "{set_type} band {row} has no export to measure"
             );
         }
