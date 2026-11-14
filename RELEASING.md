@@ -39,6 +39,8 @@ Update every occurrence below to the same version:
 - `crates/office2pdf/Cargo.toml`: package version
 - `crates/office2pdf-cli/Cargo.toml`: package version
 - `crates/office2pdf-cli/Cargo.toml`: `office2pdf` dependency requirement
+- `Cargo.lock`: the `office2pdf` and `office2pdf-cli` entries only, refreshed with `cargo update --workspace --offline`; `git diff Cargo.lock` must show no other package
+- `README.md`: the two `office2pdf` dependency snippets under Installation and `VERSION=v<version>` in the binary install snippet
 
 Add release-process changes to this same PR only when they are required for the release. Verify alignment:
 
