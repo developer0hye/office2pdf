@@ -85,6 +85,9 @@ mod foundation_tests;
 #[path = "docx_namespace_tests.rs"]
 mod namespace_tests;
 
+#[path = "docx_strict_relationships_tests.rs"]
+mod strict_relationships_tests;
+
 // ----- Table parsing tests (US-007) -----
 
 /// Helper: build a DOCX with a table using docx-rs builder.

@@ -14,6 +14,7 @@ Curated open-source projects relevant to office2pdf's architecture (OOXML → IR
 | [excelize](https://github.com/qax-os/excelize) | Go | XLSX (most complete impl) | [excelize.md](excelize.md) |
 | [Open-XML-SDK](https://github.com/dotnet/Open-XML-SDK) | C# | Microsoft's official OOXML SDK | [open-xml-sdk.md](open-xml-sdk.md) |
 | [docxjs](https://github.com/VolodymyrBaydalka/docxjs) | TS | DOCX → HTML renderer | [docxjs.md](docxjs.md) |
+| [LibreOffice oox](https://github.com/LibreOffice/core/blob/022c34f162f94d59499ec48e48edbfd075f583b0/oox/source/core/relations.cxx#L83-L164) | C++ | Strict and Transitional relationship types | [libreoffice-oox-relations.md](libreoffice-oox-relations.md) |
 | [PptxGenJS](https://github.com/gitbrent/PptxGenJS) | TS | PPTX table text layout heuristics | [pptxgenjs.md](pptxgenjs.md) |
 
 ## Document Conversion & IR Design
