@@ -2,7 +2,7 @@
 
 Public synthetic fixture: `tests/fixtures/pptx/office_math_alternate_content.pptx`, from [the original report](https://github.com/developer0hye/office2pdf/issues/2488#issuecomment-7058982614). Creator/last modifier are Synthetic reproduction. All package parts were inspected: no notes, comments, custom XML, embedded objects or external relationships.
 
-Fresh GT: Microsoft PowerPoint 16.115.1 on macOS 27.2.1 (26B131), exported from the unmodified input in PowerPoint's own internal-disk container. `pdfinfo` and `check_gt_integrity.py` passed: two 960 x 540 pt pages. Before is e02eee43 (0.11.0); after changes branch selection. Evidence stacks both full pages vertically at 150 DPI; `compare.jpg` stacks native/before comparisons, and `math-control-compare.jpg` isolates native/after on page 2. JPEGs are progressive quality 86 with metadata stripped.
+Fresh GT: Microsoft PowerPoint 16.115.1 on macOS 27.2.1 (26B131), exported from the unmodified input in PowerPoint's own internal-disk container. `pdfinfo` and `check_gt_integrity.py` passed: two 960 x 540 pt pages. Before is e02eee43 (0.11.0); after changes branch selection. Evidence stacks both full pages vertically at 150 DPI; `compare.jpg` stacks native/before comparisons; its lower row isolates the native-equation typography defect on the control page. JPEGs are progressive quality 86 with metadata stripped.
 
 - Source SHA-256: ae9baa8b22a432fb859830c394cdfbbbe89e50d19c9cb4e6305a43f37d3436e2
 - Native PDF SHA-256: e85c669f9a55a0802730741c1edcebc82d28b452d5b16cbaf4e8c76bd6562db7
