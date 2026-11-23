@@ -942,6 +942,68 @@ fn test_shape_shadow_default_opacity() {
 // ── fillRef style fallback tests ─────────────────────────────────
 
 #[test]
+fn brace_pair_fixture_does_not_inherit_a_zero_fill_reference_color() {
+    let data = include_bytes!("../../../../tests/fixtures/pptx/brace_pair.pptx");
+    let (doc, _) = PptxParser.parse(data, &ConvertOptions::default()).unwrap();
+    let shapes: Vec<&Shape> = first_fixed_page(&doc)
+        .elements
+        .iter()
+        .filter_map(|element| {
+            if let FixedElementKind::Shape(shape) = &element.kind {
+                Some(shape)
+            } else {
+                None
+            }
+        })
+        .collect();
+    assert_eq!(shapes.len(), 2);
+    assert_eq!(shapes[0].fill, None, "brace interior must remain unpainted");
+    assert_eq!(shapes[1].fill, Some(Color::new(0x9c, 0, 0x3b)));
+}
+
+#[test]
+fn absent_style_fill_indices_do_not_paint_the_reference_color() {
+    for index in [0, 1000] {
+        for reference_color in [
+            r#"<a:schemeClr val="accent1"/>"#,
+            r#"<a:srgbClr val="123456"><a:alpha val="50000"/></a:srgbClr>"#,
+        ] {
+            for direct_fill in [None, Some("FF0000")] {
+                let shape_xml = make_shape(
+                    0,
+                    0,
+                    914400,
+                    914400,
+                    "rect",
+                    direct_fill,
+                    Some(25400),
+                    Some("000000"),
+                );
+                let shape_xml = shape_xml.replace("</p:sp>", &format!(
+                    r#"<p:style><a:fillRef idx="{index}">{reference_color}</a:fillRef></p:style></p:sp>"#
+                ));
+                let slide = make_slide_xml(&[shape_xml]);
+                let theme = make_theme_xml(&standard_theme_colors(), "Calibri", "Calibri");
+                let data = build_test_pptx_with_theme(SLIDE_CX, SLIDE_CY, &[slide], &theme);
+                let (doc, _) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+                let shape = get_shape(&first_fixed_page(&doc).elements[0]);
+                assert_eq!(
+                    shape.fill,
+                    direct_fill.map(|_| Color::new(255, 0, 0)),
+                    "fillRef idx={index}"
+                );
+                assert!(shape.gradient_fill.is_none());
+                assert!(
+                    shape.opacity.is_none(),
+                    "unpainted reference alpha must not affect the shape"
+                );
+                assert_eq!(shape.stroke.as_ref().unwrap().color, Color::new(0, 0, 0));
+            }
+        }
+    }
+}
+
+#[test]
 fn test_shape_fill_from_style_fill_ref() {
     // Shape with no explicit fill, but <p:style><a:fillRef> referencing accent1.
     // accent1 = #4472C4 in standard theme.

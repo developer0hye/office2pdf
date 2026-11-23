@@ -929,7 +929,7 @@ struct ShapeState {
     /// `<a:alpha>` on that reference colour. It paints only with the fill the
     /// reference selects, flat or gradient (issue #2159).
     style_fill_alpha: Option<f64>,
-    /// 1-based theme `fillStyleLst` entry named by `<a:fillRef idx>`.
+    /// Theme fill-style reference index, including the no-fill sentinels.
     style_fill_idx: Option<usize>,
     /// `gradient_fill` is the theme entry `<a:fillRef>` selected rather than
     /// one `<p:spPr>` declared.
@@ -2749,9 +2749,8 @@ impl<'a> SlideXmlParser<'a> {
             // `<a:fillRef>` inside `<p:style>` provides fallback fill color.
             b"fillRef" if self.in_shape && !self.shape.in_sp_pr && !self.in_txbody => {
                 self.in_style_fill_ref = true;
-                self.shape.style_fill_idx = get_attr_str(e, b"idx")
-                    .and_then(|value| value.parse::<usize>().ok())
-                    .filter(|idx| *idx > 0);
+                self.shape.style_fill_idx =
+                    get_attr_str(e, b"idx").and_then(|value| value.parse::<usize>().ok());
             }
             // `<a:effectRef>` inside `<p:style>` names a theme effect style.
             b"effectRef" if self.in_shape && !self.shape.in_sp_pr && !self.in_txbody => {
@@ -3576,6 +3575,12 @@ impl<'a> SlideXmlParser<'a> {
             }
             b"fillRef" if self.in_style_fill_ref => {
                 self.in_style_fill_ref = false;
+                // The two no-fill sentinel indices do not paint their child
+                // placeholder color, even when it carries an alpha transform.
+                if matches!(self.shape.style_fill_idx, Some(0 | 1000)) {
+                    self.shape.style_fill_color = None;
+                    self.shape.style_fill_alpha = None;
+                }
             }
             b"fontRef" if self.in_style_font_ref => {
                 self.in_style_font_ref = false;
