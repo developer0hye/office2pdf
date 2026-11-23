@@ -824,3 +824,96 @@ fn wedge_round_rect_callout_selects_the_top_edge_for_an_upward_pointer() {
         "only the upward wedge tip should leave the rounded rectangle"
     );
 }
+
+#[test]
+fn brace_pair_preserves_open_curves_and_adjusted_short_side_radius() {
+    for (width, height, adjustment) in [
+        (240.0_f64, 300.0_f64, 8333.0_f64),
+        (400.0, 120.0, 20000.0),
+        (100.0, 200.0, 40000.0),
+        (120.0, 80.0, 0.0),
+    ] {
+        let shape_xml = make_shape(
+            0,
+            0,
+            (width * 12700.0) as i64,
+            (height * 12700.0) as i64,
+            "bracePair",
+            None,
+            Some(25400),
+            Some("9C003B"),
+        )
+        .replace(
+            "<a:avLst/>",
+            &format!(r#"<a:avLst><a:gd name="adj" fmla="val {adjustment}"/></a:avLst>"#),
+        );
+        let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[make_slide_xml(&[shape_xml])]);
+        let (doc, _) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+        let shape = get_shape(&first_fixed_page(&doc).elements[0]);
+        let ShapeKind::Path { subpaths } = &shape.kind else {
+            panic!("brace pair must have curved subpaths")
+        };
+        assert_eq!(subpaths.len(), 2);
+        assert!(subpaths.iter().all(|path| !path.closed));
+        let radius = width.min(height) * adjustment.clamp(0.0, 25000.0) / 100000.0;
+        let left = &subpaths[0].vertices;
+        let right = &subpaths[1].vertices;
+        assert!((left[0].0 * width - 2.0 * radius).abs() < 1e-6);
+        assert!((left[0].1 - 1.0).abs() < 1e-6);
+        assert!((left.last().unwrap().1).abs() < 1e-6);
+        assert!(
+            left.iter()
+                .any(|&(x, y)| x.abs() < 1e-6 && (y - 0.5).abs() < 1e-6)
+        );
+        assert!(
+            right
+                .iter()
+                .any(|&(x, y)| (x - 1.0).abs() < 1e-6 && (y - 0.5).abs() < 1e-6)
+        );
+        assert!(
+            subpaths
+                .iter()
+                .flat_map(|p| &p.vertices)
+                .all(|&(x, y)| x.is_finite() && y.is_finite())
+        );
+    }
+}
+
+#[test]
+fn brace_pair_separates_enclosed_fill_from_open_outline() {
+    let shape = make_shape(
+        0,
+        0,
+        3048000,
+        3810000,
+        "bracePair",
+        Some("00FF00"),
+        Some(25400),
+        Some("9C003B"),
+    );
+    let data = build_test_pptx(SLIDE_CX, SLIDE_CY, &[make_slide_xml(&[shape])]);
+    let (doc, _) = PptxParser.parse(&data, &ConvertOptions::default()).unwrap();
+    let page = first_fixed_page(&doc);
+    assert_eq!(
+        page.elements.len(),
+        2,
+        "fill perimeter and open strokes have different topology"
+    );
+    let fill = get_shape(&page.elements[0]);
+    let outline = get_shape(&page.elements[1]);
+    assert_eq!(fill.fill, Some(Color::new(0, 255, 0)));
+    assert!(fill.stroke.is_none());
+    let ShapeKind::Path { subpaths } = &fill.kind else {
+        panic!("enclosed fill path")
+    };
+    assert_eq!(subpaths.len(), 1);
+    assert!(subpaths[0].closed);
+    assert!(subpaths[0].vertices.iter().any(|p| p.0 < 0.01));
+    assert!(subpaths[0].vertices.iter().any(|p| p.0 > 0.99));
+    assert_eq!(outline.fill, None);
+    assert!(outline.stroke.is_some());
+    let ShapeKind::Path { subpaths } = &outline.kind else {
+        panic!("open outline path")
+    };
+    assert!(subpaths.iter().all(|p| !p.closed));
+}

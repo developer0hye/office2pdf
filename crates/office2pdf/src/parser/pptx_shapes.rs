@@ -384,6 +384,7 @@ pub(super) fn prst_to_shape_kind(
 ) -> ShapeKind {
     match prst {
         "ellipse" => ShapeKind::Ellipse,
+        "bracePair" => brace_pair(width, height, adj_values).unwrap_or(ShapeKind::Rectangle),
         "line" | "straightConnector1" => {
             let (x1, y1, x2, y2) = line_endpoints(width, height, flip_h, flip_v);
             ShapeKind::Line {
@@ -597,6 +598,71 @@ fn pie_sector(width: f64, height: f64, adj_values: &[f64]) -> Option<ShapeKind> 
                 .collect(),
         )],
     })
+}
+
+/// Annex D bracePair uses four quarter circles per side. Its radius follows
+/// the short side, not the bounding box's aspect ratio.
+fn brace_pair(width: f64, height: f64, adjustments: &[f64]) -> Option<ShapeKind> {
+    if !(width.is_finite() && height.is_finite() && width > 0.0 && height > 0.0) {
+        return None;
+    }
+    let adjustment = adjustments
+        .first()
+        .copied()
+        .filter(|value| value.is_finite())
+        .unwrap_or(8333.0)
+        .clamp(0.0, 25000.0);
+    let radius = width.min(height) * adjustment / 100000.0;
+    let mut left = vec![(2.0 * radius, height)];
+    append_sampled_arc(&mut left, radius, radius, 5400000.0, 5400000.0);
+    left.push((radius, height / 2.0 + radius));
+    append_sampled_arc(&mut left, radius, radius, 0.0, -5400000.0);
+    append_sampled_arc(&mut left, radius, radius, 5400000.0, -5400000.0);
+    left.push((radius, radius));
+    append_sampled_arc(&mut left, radius, radius, 10800000.0, 5400000.0);
+    let left: Vec<(f64, f64)> = left
+        .into_iter()
+        .map(|(x, y)| (x / width, y / height))
+        .collect();
+    let right = left.iter().rev().map(|&(x, y)| (1.0 - x, y)).collect();
+    Some(ShapeKind::Path {
+        subpaths: vec![Subpath::open_outline(left), Subpath::open_outline(right)],
+    })
+}
+
+/// The brace preset's fill joins the two sides, but its stroke must not draw
+/// the joining top/bottom edges. Separate paint elements preserve both paths.
+pub(super) fn separate_brace_pair_fill(elements: &mut Vec<FixedElement>) {
+    let Some(element) = elements.first() else {
+        return;
+    };
+    let FixedElementKind::Shape(shape) = &element.kind else {
+        return;
+    };
+    let ShapeKind::Path { subpaths } = &shape.kind else {
+        return;
+    };
+    if shape.fill.is_none() && shape.gradient_fill.is_none() && shape.pattern_fill.is_none() {
+        return;
+    }
+    let vertices = subpaths
+        .iter()
+        .flat_map(|path| path.vertices.iter().copied())
+        .collect();
+    let mut fill_element = element.clone();
+    if let FixedElementKind::Shape(fill) = &mut fill_element.kind {
+        fill.kind = ShapeKind::Path {
+            subpaths: vec![Subpath::closed_outline(vertices)],
+        };
+        fill.stroke = None;
+    }
+    if let FixedElementKind::Shape(outline) = &mut elements[0].kind {
+        outline.fill = None;
+        outline.gradient_fill = None;
+        outline.pattern_fill = None;
+        outline.shadow = None;
+    }
+    elements.insert(0, fill_element);
 }
 
 /// Build the ECMA-376 `wedgeRoundRectCallout` preset outline.
