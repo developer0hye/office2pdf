@@ -241,7 +241,7 @@ impl GroupTransform {
 /// Called right after the `<p:grpSp>` start tag has been consumed.
 /// Reads through the group's header sections (`nvGrpSpPr`, `grpSpPr`),
 /// extracts the coordinate transform, then slices the original XML to
-/// get the child shapes, and recursively parses them via `parse_slide_xml`.
+/// get the child shapes, and recursively parses their already-selected XML.
 pub(super) fn parse_group_shape<'a>(
     reader: &mut Reader<&[u8]>,
     xml: &str,
@@ -333,11 +333,12 @@ pub(super) fn parse_group_shape<'a>(
 
                     // TODO(#2482): the children's own click actions are dropped here;
                     // carry their link areas out through the group transform.
-                    let (mut child_elements, warnings) = parse_slide_xml(&wrapped, ctx, None)?;
+                    let parsed = super::slides::parse_slide_xml_inner(&wrapped, ctx, false, None)?;
+                    let mut child_elements = parsed.elements;
                     for element in &mut child_elements {
                         transform.apply(element);
                     }
-                    return Ok((child_elements, warnings));
+                    return Ok((child_elements, parsed.warnings));
                 }
             }
             Ok(Event::Eof) => return Ok((Vec::new(), Vec::new())),

@@ -34,7 +34,7 @@ use self::shapes::{
     parse_arrow_head, parse_group_shape, parse_src_rect, pptx_dash_to_border_style,
     preset_text_rect_insets, prst_to_shape_kind,
 };
-use self::slides::{PresentationResources, SlideParseContext, parse_single_slide, parse_slide_xml};
+use self::slides::{PresentationResources, SlideParseContext, parse_single_slide};
 use self::tables::{parse_pptx_table, scale_pptx_table_columns_to_frame};
 use self::text::*;
 use self::theme::{
@@ -62,6 +62,8 @@ pub(super) fn parse_cached_drawing_part<R: Read + std::io::Seek>(
 
 #[path = "pptx_cached_presets.rs"]
 mod cached_presets;
+#[path = "pptx_compatibility.rs"]
+mod compatibility;
 #[path = "pptx_custom_geometry.rs"]
 pub(crate) mod custom_geometry;
 #[path = "pptx_geometry_guides.rs"]

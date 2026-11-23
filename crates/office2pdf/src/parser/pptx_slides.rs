@@ -29,6 +29,7 @@ fn resolve_inheritance_chain<R: Read + std::io::Seek>(
     archive: &mut ZipArchive<R>,
 ) -> Result<SlideInheritanceChain, ConvertError> {
     let slide_xml: String = read_zip_entry(archive, slide_path)?;
+    let slide_xml = super::compatibility::select_alternate_content(&slide_xml)?.into_owned();
     let (layout_path, master_path) = resolve_layout_master_paths(slide_path, archive);
 
     let master_xml: Option<String> = master_path
@@ -37,6 +38,13 @@ fn resolve_inheritance_chain<R: Read + std::io::Seek>(
     let layout_xml: Option<String> = layout_path
         .as_ref()
         .and_then(|path| read_zip_entry(archive, path).ok());
+
+    let master_xml = master_xml
+        .map(|xml| super::compatibility::select_alternate_content(&xml).map(|xml| xml.into_owned()))
+        .transpose()?;
+    let layout_xml = layout_xml
+        .map(|xml| super::compatibility::select_alternate_content(&xml).map(|xml| xml.into_owned()))
+        .transpose()?;
 
     let master_color_map: ColorMapData = master_xml
         .as_deref()
@@ -235,8 +243,9 @@ pub(super) fn parse_cached_drawing(
     color_map: &ColorMapData,
     images: &SlideImageMap,
 ) -> Result<(Vec<FixedElement>, Vec<ConvertWarning>), ConvertError> {
+    let selected_xml = super::compatibility::select_alternate_content(drawing_xml)?;
     let (drawing_xml, mut preset_warnings) =
-        super::cached_presets::expand_cached_presets(drawing_xml)?;
+        super::cached_presets::expand_cached_presets(&selected_xml)?;
     let table_styles: table_styles::TableStyleMap = table_styles::TableStyleMap::new();
     let inherited_text_body_defaults: PptxTextBodyStyleDefaults =
         PptxTextBodyStyleDefaults::default();
@@ -3673,16 +3682,6 @@ impl<'a> SlideXmlParser<'a> {
 
 // ── Main parse function ─────────────────────────────────────────────────
 
-/// Parse a slide XML to extract positioned elements (text boxes, shapes, images).
-pub(super) fn parse_slide_xml<'a>(
-    xml: &'a str,
-    ctx: &SlideParseContext<'a>,
-    placeholder_geometry: Option<&'a PlaceholderGeometryMap>,
-) -> Result<(Vec<FixedElement>, Vec<ConvertWarning>), ConvertError> {
-    parse_slide_xml_inner(xml, ctx, false, placeholder_geometry)
-        .map(|parsed| (parsed.elements, parsed.warnings))
-}
-
 /// A parsed slide part: its elements, warnings and clickable areas.
 #[derive(Default)]
 pub(super) struct ParsedSlidePart {
@@ -3691,7 +3690,7 @@ pub(super) struct ParsedSlidePart {
     pub(super) links: Vec<crate::ir::LinkArea>,
 }
 
-/// As [`parse_slide_xml`], keeping the shapes' click actions as link areas.
+/// Parse selected slide XML, keeping the shapes' click actions as link areas.
 pub(super) fn parse_slide_xml_with_links<'a>(
     xml: &'a str,
     ctx: &SlideParseContext<'a>,
@@ -3796,7 +3795,9 @@ fn group_click_action(
     }
 }
 
-fn parse_slide_xml_inner<'a>(
+/// Parse content whose alternate branches were already selected in the full
+/// part's namespace scope. Group fragments must not repeat that selection.
+pub(super) fn parse_slide_xml_inner<'a>(
     xml: &'a str,
     ctx: &SlideParseContext<'a>,
     skip_placeholders: bool,

@@ -1,0 +1,471 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 446.5152,
+      "bbox_pt": {
+        "height": 33.6,
+        "width": 21.12,
+        "x": 121.44,
+        "y": 221.28
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-400f6e582289",
+      "region": "left"
+    },
+    {
+      "area_pt2": 250.6752,
+      "bbox_pt": {
+        "height": 26.4,
+        "width": 17.76,
+        "x": 222.72,
+        "y": 228.48
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-e4a5d723b988",
+      "region": "left"
+    },
+    {
+      "area_pt2": 219.5712,
+      "bbox_pt": {
+        "height": 26.4,
+        "width": 16.32,
+        "x": 196.32,
+        "y": 228.48
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-698ebbbb20f0",
+      "region": "left"
+    },
+    {
+      "area_pt2": 211.2768,
+      "bbox_pt": {
+        "height": 29.76,
+        "width": 27.84,
+        "x": 277.44,
+        "y": 226.08
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-6cc0298f1269",
+      "region": "left"
+    },
+    {
+      "area_pt2": 188.0064,
+      "bbox_pt": {
+        "height": 14.88,
+        "width": 25.44,
+        "x": 166.08,
+        "y": 228.48
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-8de94f1c8c46",
+      "region": "left"
+    },
+    {
+      "area_pt2": 180.6336,
+      "bbox_pt": {
+        "height": 24.48,
+        "width": 21.12,
+        "x": 252.48,
+        "y": 230.4
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-15e8fddee83c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 146.9952,
+      "bbox_pt": {
+        "height": 17.28,
+        "width": 18.24,
+        "x": 144.48,
+        "y": 237.6
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-b595fc266bfa",
+      "region": "left"
+    },
+    {
+      "area_pt2": 120.2688,
+      "bbox_pt": {
+        "height": 24.48,
+        "width": 14.4,
+        "x": 318.72,
+        "y": 229.92
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-251b089f57f3",
+      "region": "center"
+    },
+    {
+      "area_pt2": 117.2736,
+      "bbox_pt": {
+        "height": 24.48,
+        "width": 16.8,
+        "x": 302.4,
+        "y": 223.2
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-851aa02be50c",
+      "region": "left"
+    },
+    {
+      "area_pt2": 91.008,
+      "bbox_pt": {
+        "height": 17.76,
+        "width": 16.32,
+        "x": 145.44,
+        "y": 228.48
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-350f4d151194",
+      "region": "left"
+    },
+    {
+      "area_pt2": 44.2368,
+      "bbox_pt": {
+        "height": 20.64,
+        "width": 7.68,
+        "x": 166.56,
+        "y": 40.32
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title/caption crops preserve face, content and wrapping. The title baseline differs by about 0.12pt; only sub-material glyph-edge differences remain."
+      },
+      "id": "p2-43accafd2dea",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 27.4176,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 3.84,
+        "x": 215.52,
+        "y": 221.76
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-d5409156d81d",
+      "region": "left"
+    },
+    {
+      "area_pt2": 27.1872,
+      "bbox_pt": {
+        "height": 9.12,
+        "width": 5.28,
+        "x": 253.44,
+        "y": 245.28
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-6d13b32c1066",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.8048,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 3.84,
+        "x": 215.52,
+        "y": 247.68
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-76dd35314fc6",
+      "region": "left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 13.44,
+        "x": 291.84,
+        "y": 54.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title/caption crops preserve face, content and wrapping. The title baseline differs by about 0.12pt; only sub-material glyph-edge differences remain."
+      },
+      "id": "p2-09ee8c9377d4",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 13.44,
+        "x": 424.32,
+        "y": 54.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title/caption crops preserve face, content and wrapping. The title baseline differs by about 0.12pt; only sub-material glyph-edge differences remain."
+      },
+      "id": "p2-d39eda628065",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 13.44,
+        "x": 368.64,
+        "y": 54.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title/caption crops preserve face, content and wrapping. The title baseline differs by about 0.12pt; only sub-material glyph-edge differences remain."
+      },
+      "id": "p2-5f1f6e288916",
+      "region": "top"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 13.44,
+        "x": 228.0,
+        "y": 54.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title/caption crops preserve face, content and wrapping. The title baseline differs by about 0.12pt; only sub-material glyph-edge differences remain."
+      },
+      "id": "p2-aa1597b2e7ee",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 24.192,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 3.36,
+        "x": 84.96,
+        "y": 45.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title/caption crops preserve face, content and wrapping. The title baseline differs by about 0.12pt; only sub-material glyph-edge differences remain."
+      },
+      "id": "p2-0d4294625658",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 7.2,
+        "width": 3.36,
+        "x": 196.32,
+        "y": 254.4
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-ec5f86676788",
+      "region": "left"
+    },
+    {
+      "area_pt2": 23.9616,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 12.48,
+        "x": 315.36,
+        "y": 45.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title/caption crops preserve face, content and wrapping. The title baseline differs by about 0.12pt; only sub-material glyph-edge differences remain."
+      },
+      "id": "p2-a7b918052928",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 12.0,
+        "x": 513.12,
+        "y": 54.72
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title/caption crops preserve face, content and wrapping. The title baseline differs by about 0.12pt; only sub-material glyph-edge differences remain."
+      },
+      "id": "p2-9a64738d794b",
+      "region": "top"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 12.0,
+        "x": 316.32,
+        "y": 54.72
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title/caption crops preserve face, content and wrapping. The title baseline differs by about 0.12pt; only sub-material glyph-edge differences remain."
+      },
+      "id": "p2-166f93a3361d",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 9.6,
+        "x": 499.68,
+        "y": 45.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title/caption crops preserve face, content and wrapping. The title baseline differs by about 0.12pt; only sub-material glyph-edge differences remain."
+      },
+      "id": "p2-998e86ae4e0c",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 3.36,
+        "x": 166.08,
+        "y": 247.68
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-dd1dd329c48b",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 3.36,
+        "x": 177.12,
+        "y": 247.68
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-bff0a612a87f",
+      "region": "left"
+    },
+    {
+      "area_pt2": 22.5792,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 3.36,
+        "x": 188.16,
+        "y": 247.68
+      },
+      "disposition": {
+        "issue": "#2493",
+        "kind": "issue",
+        "note": "Fresh equation crops show the pre-existing 6.88pt high baseline, compact operator spacing and slanted plus/digit on both pages."
+      },
+      "id": "p2-3495234284b7",
+      "region": "left"
+    },
+    {
+      "area_pt2": 21.6576,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 10.08,
+        "x": 94.08,
+        "y": 54.72
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title/caption crops preserve face, content and wrapping. The title baseline differs by about 0.12pt; only sub-material glyph-edge differences remain."
+      },
+      "id": "p2-7bf0dc41c0ea",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 2,
+  "passed": true,
+  "renderer_observations": [],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 28,
+    "duplicate": 0,
+    "total": 28,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}
