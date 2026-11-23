@@ -2,6 +2,9 @@ use super::*;
 use std::io::Write;
 use zip::write::SimpleFileOptions as FileOptions;
 
+#[path = "pptx_alternate_content_tests.rs"]
+mod alternate_content_tests;
+
 // ── Test helpers ─────────────────────────────────────────────────────
 
 /// Build a minimal PPTX file as bytes from slide XML strings.
