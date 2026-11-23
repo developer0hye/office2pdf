@@ -72,6 +72,7 @@ Curated open-source projects relevant to office2pdf's architecture (OOXML → IR
 |----------|------|
 | [ECMA-376](https://ecma-international.org/publications-and-standards/standards/ecma-376/) | Official spec (free download) |
 | [officeopenxml.com](http://officeopenxml.com/) | Readable OOXML reference |
+| [DrawingML bracePair](https://github.com/sverrejb/docxide-pdf/blob/1bb140b662a69f8786015c1b532d37d6084d0934/tools/data/presetShapeDefinitions.xml) | Independent fill/stroke contours and adjustment ([detail](drawingml-brace-pair.md)) |
 | [DrawingML fillRef](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.drawing.fillreference) | No-fill indices and style-matrix indexing ([detail](drawingml-fill-reference.md)) |
 | [PowerPoint BulletFormat docs](https://learn.microsoft.com/en-us/office/vba/api/powerpoint.bulletformat) | PowerPoint bullet semantics reference ([detail](powerpoint-bulletformat.md)) |
 

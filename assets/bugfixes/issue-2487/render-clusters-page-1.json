@@ -1,0 +1,178 @@
+{
+  "clusters": [
+    {
+      "area_pt2": 32.256,
+      "bbox_pt": {
+        "height": 11.04,
+        "width": 12.48,
+        "x": 91.2,
+        "y": 49.92
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title crop has the same Arial face and wraps; approximately 0.12pt baseline displacement and glyph-edge differences are sub-material."
+      },
+      "id": "p1-4d82f33a3ecd",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 13.44,
+        "x": 152.16,
+        "y": 54.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title crop has the same Arial face and wraps; approximately 0.12pt baseline displacement and glyph-edge differences are sub-material."
+      },
+      "id": "p1-0f670f130e14",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 13.44,
+        "x": 206.88,
+        "y": 54.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title crop has the same Arial face and wraps; approximately 0.12pt baseline displacement and glyph-edge differences are sub-material."
+      },
+      "id": "p1-645d4f76cf8a",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.5744,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 13.44,
+        "x": 270.72,
+        "y": 54.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title crop has the same Arial face and wraps; approximately 0.12pt baseline displacement and glyph-edge differences are sub-material."
+      },
+      "id": "p1-f9ef151532ac",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 13.44,
+        "x": 105.6,
+        "y": 54.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title crop has the same Arial face and wraps; approximately 0.12pt baseline displacement and glyph-edge differences are sub-material."
+      },
+      "id": "p1-208539e86025",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 25.344,
+      "bbox_pt": {
+        "height": 6.72,
+        "width": 13.44,
+        "x": 75.84,
+        "y": 54.24
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title crop has the same Arial face and wraps; approximately 0.12pt baseline displacement and glyph-edge differences are sub-material."
+      },
+      "id": "p1-31163d1ebf0d",
+      "region": "top-left"
+    },
+    {
+      "area_pt2": 23.2704,
+      "bbox_pt": {
+        "height": 6.24,
+        "width": 12.0,
+        "x": 359.04,
+        "y": 54.72
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title crop has the same Arial face and wraps; approximately 0.12pt baseline displacement and glyph-edge differences are sub-material."
+      },
+      "id": "p1-e2a14e0029bc",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.8096,
+      "bbox_pt": {
+        "height": 15.36,
+        "width": 9.6,
+        "x": 346.08,
+        "y": 45.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title crop has the same Arial face and wraps; approximately 0.12pt baseline displacement and glyph-edge differences are sub-material."
+      },
+      "id": "p1-db2a317a1fb9",
+      "region": "top"
+    },
+    {
+      "area_pt2": 22.3488,
+      "bbox_pt": {
+        "height": 21.6,
+        "width": 12.48,
+        "x": 137.28,
+        "y": 45.12
+      },
+      "disposition": {
+        "issue": "#1874",
+        "kind": "issue",
+        "note": "Fresh title crop has the same Arial face and wraps; approximately 0.12pt baseline displacement and glyph-edge differences are sub-material."
+      },
+      "id": "p1-547407b4b523",
+      "region": "top-left"
+    }
+  ],
+  "dpi": 150,
+  "duplicate_disposition_cluster_ids": [],
+  "errors": [],
+  "fuzz_percent": 5,
+  "minimum_area_pt2": 20.0,
+  "page": 1,
+  "passed": true,
+  "renderer_observations": [
+    {
+      "bbox_pt": {
+        "height": 302.0,
+        "width": 242.0,
+        "x": 119.0,
+        "y": 159.0
+      },
+      "class": "shape-edge-antialiasing",
+      "note": "Inspected both full-height brace crops at 150 DPI: curve tips, cusps, vertical segments and open endpoints agree; sparse arc-edge fragments remain below the material-cluster floor."
+    }
+  ],
+  "schema_version": 1,
+  "strict": true,
+  "summary": {
+    "dispositioned": 9,
+    "duplicate": 0,
+    "total": 9,
+    "undispositioned": 0,
+    "unknown": 0
+  },
+  "undispositioned_cluster_ids": [],
+  "unknown_disposition_cluster_ids": []
+}

@@ -1169,7 +1169,7 @@ fn finalize_shape(
         .iter()
         .any(|entry| !entry.paragraph.runs.is_empty());
 
-    if has_text {
+    let mut elements = if has_text {
         apply_pptx_saved_normal_autofit(paragraphs, &text_box);
         let blocks: Vec<Block> = group_pptx_text_blocks(std::mem::take(paragraphs));
         // Use explicit line color, falling back to style-based color from
@@ -1401,7 +1401,11 @@ fn finalize_shape(
         }]
     } else {
         Vec::new()
+    };
+    if shape.prst_geom.as_deref() == Some("bracePair") && shape.custom_geometry.is_empty() {
+        super::shapes::separate_brace_pair_fill(&mut elements);
     }
+    elements
 }
 
 /// The path a shape's `<a:custGeom>` flattened to, or `None` when the geometry
